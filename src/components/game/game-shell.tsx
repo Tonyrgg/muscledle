@@ -21,46 +21,16 @@ type ToastState = {
   message: string;
 };
 
-function TopNav() {
-  return (
-    <header className="app-topnav">
-      <div className="app-topnav__inner">
-        <div className="app-topnav__brand">MUSCLEDLE</div>
-        <div className="app-topnav__actions">
-          <div className="app-topnav__tabs">
-            <span className="app-topnav__tab app-topnav__tab--active">Today&apos;s Lift</span>
-            <span className="app-topnav__tab">Archive</span>
-            <span className="app-topnav__tab">Statistics</span>
-          </div>
-          <button className="app-topnav__icon-btn focus-ring material-symbols-outlined" aria-label="leaderboard">
-            leaderboard
-          </button>
-          <button className="app-topnav__icon-btn focus-ring material-symbols-outlined" aria-label="settings">
-            settings
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
+function formatCurrentAttempt(state: PublicTodayGameState | null): string {
+  if (!state) {
+    return "- / -";
+  }
 
-function Legend() {
-  return (
-    <div className="legend-row" aria-hidden>
-      <div className="legend-item">
-        <span className="legend-swatch legend-swatch--green" />
-        <span className="legend-label">Match</span>
-      </div>
-      <div className="legend-item">
-        <span className="legend-swatch legend-swatch--yellow" />
-        <span className="legend-label">Close</span>
-      </div>
-      <div className="legend-item">
-        <span className="legend-swatch legend-swatch--red" />
-        <span className="legend-label">Mismatch</span>
-      </div>
-    </div>
-  );
+  if (state.status === "in_progress") {
+    return `${Math.min(state.guessCount + 1, state.maxGuesses)} / ${state.maxGuesses}`;
+  }
+
+  return `${state.guessCount} / ${state.maxGuesses}`;
 }
 
 export function GameShell({ initialState }: GameShellProps) {
@@ -80,7 +50,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
     window.setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
-    }, 4200);
+    }, 3600);
   }, []);
 
   const loadExercises = useCallback(async () => {
@@ -155,69 +125,77 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [gameState, pushToast, selectedExerciseId]);
 
-  const statusMessage = useMemo(() => {
-    if (!gameState) return "Preparing daily game...";
-    if (gameState.status === "won") return "You solved today's Muscledle.";
-    if (gameState.status === "lost") return "No guesses left for today.";
-    return null;
+  const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
+
+  const statusLine = useMemo(() => {
+    if (!gameState) {
+      return "CONNECTING...";
+    }
+
+    if (gameState.status === "won") {
+      return "TARGET FOUND.";
+    }
+
+    if (gameState.status === "lost") {
+      return "NO ATTEMPTS LEFT.";
+    }
+
+    return "IN PROGRESS.";
   }, [gameState]);
 
-  const attemptsLabel = gameState ? `${gameState.guessCount}/${gameState.maxGuesses}` : "-/-";
-  const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
+  const currentAttemptLabel = formatCurrentAttempt(gameState);
 
   return (
     <>
-      <TopNav />
-      <main className="app-main">
+      <main className="game-page">
         <AnonymousAuthBootstrap onReady={handleAuthReady} />
 
-        <div className="app-content">
-          <div className="hero">
-            <h1 className="hero__title">MUSCLEDLE</h1>
-            <div className="attempts-badge">
-              <span className="attempts-badge__label">Attempts</span>
-              <span className="attempts-badge__divider" />
-              <span className="attempts-badge__value">{attemptsLabel}</span>
+        <section className="game-shell" aria-label="Muscledle gameplay">
+          <header className="game-hero">
+            <div className="game-hero__brand">Muscledle</div>
+            <div className="game-hero__rule" aria-hidden />
+            <h1 className="game-hero__title">MUSCLEDLE</h1>
+            <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
+
+            <div className="game-status-box" role="status" aria-live="polite">
+              <span className="game-status-box__label">Current</span>
+              <span className="game-status-box__value">Attempt {currentAttemptLabel}</span>
             </div>
-            {statusMessage ? <p className="hero__status">{statusMessage}</p> : null}
-          </div>
 
-          <div className="search-section">
-            <div className="search-shell">
-              <GuessInput
-                query={query}
-                selectedExerciseId={selectedExerciseId}
-                exercises={exercises}
-                loadingExercises={loadingExercises}
-                disabled={disabled}
-                submitting={isSubmitting}
-                onQueryChange={handleQueryChange}
-                onSelectExercise={handleSelectExercise}
-                onSubmit={handleSubmit}
-              />
-            </div>
-            <button type="button" onClick={handleSubmit} disabled={disabled || !selectedExerciseId} className="submit-btn">
-              {isSubmitting ? "Submitting..." : "Submit Guess"}
-            </button>
-          </div>
+            <p className="game-hero__state">{statusLine}</p>
+          </header>
 
-          <div className="meta-row">
-            <p className="meta-row__date">Game Date: {gameState?.gameDate ?? "--"}</p>
-            <div className="help-wrap">
-              <button className="help-btn focus-ring material-symbols-outlined" aria-label="help">
-                help
-              </button>
-              <div className="help-tooltip">Hover cards to inspect feedback quickly.</div>
-            </div>
-          </div>
+          <section className="game-input-zone" aria-label="Guess input">
+            <GuessInput
+              query={query}
+              selectedExerciseId={selectedExerciseId}
+              exercises={exercises}
+              loadingExercises={loadingExercises}
+              disabled={disabled}
+              submitting={isSubmitting}
+              onQueryChange={handleQueryChange}
+              onSelectExercise={handleSelectExercise}
+              onSubmit={handleSubmit}
+            />
+          </section>
 
-          <AttemptsTable attempts={gameState?.attempts ?? []} loading={isLoadingState && !gameState} />
-
-          <Legend />
-        </div>
+          <section className="game-table-zone" aria-label="Attempts">
+            <AttemptsTable attempts={gameState?.attempts ?? []} loading={isLoadingState && !gameState} />
+          </section>
+        </section>
       </main>
 
-      {toast ? <div className="toast">{toast.message}</div> : null}
+      <footer className="game-footer" aria-label="Muscledle footer">
+        <nav className="game-footer__links" aria-label="Footer links">
+          <button type="button" className="game-footer__link">HOW TO PLAY</button>
+          <button type="button" className="game-footer__link">STATS</button>
+          <button type="button" className="game-footer__link">ARCHIVE</button>
+          <button type="button" className="game-footer__link">PRIVACY</button>
+        </nav>
+        <p className="game-footer__copy">© 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
+      </footer>
+
+      {toast ? <div className="game-toast">{toast.message}</div> : null}
     </>
   );
 }

@@ -13,6 +13,7 @@ export type PublicAttemptValues = {
 export type PublicGameAttempt = {
   id: string;
   guessExerciseId: string;
+  guessSlug: string;
   guessName: string;
   values: PublicAttemptValues;
   feedback: GuessFeedback;

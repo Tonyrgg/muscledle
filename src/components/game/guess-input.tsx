@@ -61,8 +61,8 @@ function scoreExercise(query: string, exercise: LiveExerciseSuggestion): number 
   const aliases = exercise.aliases.map(normalize);
 
   if (!query) return 10;
-  if (name === query) return 200;
-  if (name.startsWith(query)) return 150;
+  if (name === query) return 220;
+  if (name.startsWith(query)) return 160;
   if (name.includes(query)) return 120;
 
   if (aliases.some((alias) => alias === query)) return 110;
@@ -89,7 +89,6 @@ export function GuessInput({
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const listId = useId();
-  const inputId = useId();
 
   const normalizedQuery = normalize(query);
 
@@ -102,7 +101,7 @@ export function GuessInput({
     return ranked.slice(0, 8).map((entry) => entry.exercise);
   }, [exercises, normalizedQuery]);
 
-  const showDropdown = isOpen && !disabled && query.length > 0 && !selectedExerciseId;
+  const showDropdown = isOpen && !disabled && query.trim().length > 0 && !selectedExerciseId;
 
   const handleSelect = (exercise: LiveExerciseSuggestion) => {
     onSelectExercise(exercise);
@@ -144,13 +143,8 @@ export function GuessInput({
   };
 
   return (
-    <div className="guess-input-root">
-      <div className="guess-input-icon">
-        <span className="material-symbols-outlined">search</span>
-      </div>
-
+    <div className="guess-input">
       <input
-        id={inputId}
         role="combobox"
         aria-expanded={showDropdown}
         aria-controls={listId}
@@ -164,50 +158,42 @@ export function GuessInput({
           window.setTimeout(() => {
             setIsOpen(false);
             setActiveIndex(-1);
-          }, 120);
+          }, 100);
         }}
         onChange={(event) => {
           onQueryChange(event.target.value);
           setIsOpen(true);
         }}
         onKeyDown={handleInputKeyDown}
-        placeholder="Enter exercise name..."
+        placeholder="GUESS THE EXERCISE..."
         disabled={disabled || loadingExercises || submitting}
-        className="guess-input-field focus-ring"
+        className="guess-input__field"
       />
 
       {showDropdown ? (
-        <div id={listId} role="listbox" className="guess-dropdown">
+        <div id={listId} role="listbox" className="guess-input__dropdown">
           {loadingExercises ? (
-            <div className="loading-stack" style={{ padding: "0.75rem" }}>
-              <div className="loading-row shimmer" />
-              <div className="loading-row shimmer" />
-              <div className="loading-row shimmer" />
-            </div>
+            <p className="guess-input__empty">LOADING EXERCISES...</p>
           ) : suggestions.length === 0 ? (
-            <p className="guess-dropdown__empty">No exercises found.</p>
+            <p className="guess-input__empty">NO MATCH FOUND.</p>
           ) : (
-            suggestions.map((exercise, index) => {
-              const isActive = index === activeIndex;
-
-              return (
-                <button
-                  id={`${listId}-option-${index}`}
-                  key={exercise.id}
-                  role="option"
-                  aria-selected={selectedExerciseId === exercise.id}
-                  type="button"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
-                    handleSelect(exercise);
-                  }}
-                  className={`guess-option ${isActive ? "guess-option--active" : ""}`}
-                >
-                  <span className="guess-option__name">{exercise.name}</span>
-                  <span className="guess-option__slug">{exercise.slug}</span>
-                </button>
-              );
-            })
+            suggestions.map((exercise, index) => (
+              <button
+                id={`${listId}-option-${index}`}
+                key={exercise.id}
+                role="option"
+                aria-selected={selectedExerciseId === exercise.id}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  handleSelect(exercise);
+                }}
+                className={`guess-input__option ${index === activeIndex ? "guess-input__option--active" : ""}`}
+              >
+                <span>{exercise.name}</span>
+                <span className="guess-input__option-slug">{exercise.slug}</span>
+              </button>
+            ))
           )}
         </div>
       ) : null}

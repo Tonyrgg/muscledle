@@ -48,5 +48,5 @@ export function AnonymousAuthBootstrap({ onReady }: AnonymousAuthBootstrapProps)
     return null;
   }
 
-  return <p className="text-sm text-zinc-400">Signing in anonymously...</p>;
+  return <p className="auth-bootstrap-note">AUTHENTICATING...</p>;
 }

@@ -29,6 +29,7 @@ type GameAttemptRow = {
 
 type ExerciseNameRow = {
   id: string;
+  slug: string;
   name: string;
   muscle: string[];
   equipment: string[];
@@ -139,12 +140,12 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
 
   const guessIds = (attemptRows ?? []).map((row) => row.guess_exercise_id);
 
-  let namesById = new Map<string, string>();
+  let detailsById = new Map<string, ExerciseNameRow>();
 
   if (guessIds.length > 0) {
     const { data: exerciseRows, error: exercisesError } = await supabase
       .from("exercises")
-      .select("id, name, muscle, equipment, movement, pattern, reps, goal, ego")
+      .select("id, slug, name, muscle, equipment, movement, pattern, reps, goal, ego")
       .in("id", guessIds)
       .returns<ExerciseNameRow[]>();
 
@@ -152,8 +153,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
       throw new Error(`Failed to resolve guessed exercise names: ${exercisesError.message}`);
     }
 
-    namesById = new Map((exerciseRows ?? []).map((row) => [row.id, row.name]));
-    const detailsById = new Map((exerciseRows ?? []).map((row) => [row.id, row]));
+    detailsById = new Map((exerciseRows ?? []).map((row) => [row.id, row]));
 
     const attempts = (attemptRows ?? []).map((row) => {
       const details = detailsById.get(row.guess_exercise_id);
@@ -161,7 +161,8 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
       return {
         id: row.id,
         guessExerciseId: row.guess_exercise_id,
-        guessName: namesById.get(row.guess_exercise_id) ?? "Unknown Exercise",
+        guessSlug: details?.slug ?? "",
+        guessName: details?.name ?? "Unknown Exercise",
         values: {
           muscle: details?.muscle.join(" / ") ?? "-",
           equipment: details?.equipment.join(" / ") ?? "-",
@@ -188,7 +189,8 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   const attempts = (attemptRows ?? []).map((row) => ({
     id: row.id,
     guessExerciseId: row.guess_exercise_id,
-    guessName: namesById.get(row.guess_exercise_id) ?? "Unknown Exercise",
+    guessSlug: detailsById.get(row.guess_exercise_id)?.slug ?? "",
+    guessName: detailsById.get(row.guess_exercise_id)?.name ?? "Unknown Exercise",
     values: {
       muscle: "-",
       equipment: "-",
