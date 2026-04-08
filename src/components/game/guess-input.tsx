@@ -1,0 +1,216 @@
+'use client';
+
+import { type KeyboardEvent, useId, useMemo, useState } from "react";
+import type { LiveExerciseSuggestion } from "@/lib/game/client";
+
+type GuessInputProps = {
+  query: string;
+  selectedExerciseId: string | null;
+  exercises: LiveExerciseSuggestion[];
+  loadingExercises: boolean;
+  disabled: boolean;
+  submitting: boolean;
+  onQueryChange: (value: string) => void;
+  onSelectExercise: (exercise: LiveExerciseSuggestion) => void;
+  onSubmit: () => void;
+};
+
+type RankedExercise = {
+  exercise: LiveExerciseSuggestion;
+  score: number;
+};
+
+function normalize(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toLowerCase();
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  const costs = new Array(b.length + 1).fill(0);
+
+  for (let j = 0; j <= b.length; j += 1) {
+    costs[j] = j;
+  }
+
+  for (let i = 1; i <= a.length; i += 1) {
+    let prev = costs[0];
+    costs[0] = i;
+
+    for (let j = 1; j <= b.length; j += 1) {
+      const temp = costs[j];
+      const replace = prev + (a[i - 1] === b[j - 1] ? 0 : 1);
+      const insert = costs[j] + 1;
+      const remove = costs[j - 1] + 1;
+      costs[j] = Math.min(replace, insert, remove);
+      prev = temp;
+    }
+  }
+
+  return costs[b.length];
+}
+
+function scoreExercise(query: string, exercise: LiveExerciseSuggestion): number {
+  const name = normalize(exercise.name);
+  const aliases = exercise.aliases.map(normalize);
+
+  if (!query) return 10;
+  if (name === query) return 200;
+  if (name.startsWith(query)) return 150;
+  if (name.includes(query)) return 120;
+
+  if (aliases.some((alias) => alias === query)) return 110;
+  if (aliases.some((alias) => alias.startsWith(query))) return 95;
+  if (aliases.some((alias) => alias.includes(query))) return 80;
+
+  const nameDistance = levenshteinDistance(query, name.slice(0, Math.max(query.length, 1)));
+  if (nameDistance <= 2) return 70 - nameDistance * 5;
+
+  return -1;
+}
+
+export function GuessInput({
+  query,
+  selectedExerciseId,
+  exercises,
+  loadingExercises,
+  disabled,
+  submitting,
+  onQueryChange,
+  onSelectExercise,
+  onSubmit,
+}: GuessInputProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const listId = useId();
+  const inputId = useId();
+
+  const normalizedQuery = normalize(query);
+
+  const suggestions = useMemo(() => {
+    const ranked: RankedExercise[] = exercises
+      .map((exercise) => ({ exercise, score: scoreExercise(normalizedQuery, exercise) }))
+      .filter((entry) => entry.score >= 0)
+      .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name));
+
+    return ranked.slice(0, 8).map((entry) => entry.exercise);
+  }, [exercises, normalizedQuery]);
+
+  const showDropdown = isOpen && !disabled && query.length > 0 && !selectedExerciseId;
+
+  const handleSelect = (exercise: LiveExerciseSuggestion) => {
+    onSelectExercise(exercise);
+    setIsOpen(false);
+    setActiveIndex(-1);
+  };
+
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex((prev) => (suggestions.length === 0 ? -1 : Math.min(prev + 1, suggestions.length - 1)));
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setIsOpen(true);
+      setActiveIndex((prev) => (suggestions.length === 0 ? -1 : Math.max(prev - 1, 0)));
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setIsOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+
+      if (showDropdown && activeIndex >= 0 && suggestions[activeIndex]) {
+        handleSelect(suggestions[activeIndex]);
+        return;
+      }
+
+      onSubmit();
+    }
+  };
+
+  return (
+    <div className="guess-input-root">
+      <div className="guess-input-icon">
+        <span className="material-symbols-outlined">search</span>
+      </div>
+
+      <input
+        id={inputId}
+        role="combobox"
+        aria-expanded={showDropdown}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={
+          showDropdown && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
+        }
+        value={query}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => {
+          window.setTimeout(() => {
+            setIsOpen(false);
+            setActiveIndex(-1);
+          }, 120);
+        }}
+        onChange={(event) => {
+          onQueryChange(event.target.value);
+          setIsOpen(true);
+        }}
+        onKeyDown={handleInputKeyDown}
+        placeholder="Enter exercise name..."
+        disabled={disabled || loadingExercises || submitting}
+        className="guess-input-field focus-ring"
+      />
+
+      {showDropdown ? (
+        <div id={listId} role="listbox" className="guess-dropdown">
+          {loadingExercises ? (
+            <div className="loading-stack" style={{ padding: "0.75rem" }}>
+              <div className="loading-row shimmer" />
+              <div className="loading-row shimmer" />
+              <div className="loading-row shimmer" />
+            </div>
+          ) : suggestions.length === 0 ? (
+            <p className="guess-dropdown__empty">No exercises found.</p>
+          ) : (
+            suggestions.map((exercise, index) => {
+              const isActive = index === activeIndex;
+
+              return (
+                <button
+                  id={`${listId}-option-${index}`}
+                  key={exercise.id}
+                  role="option"
+                  aria-selected={selectedExerciseId === exercise.id}
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    handleSelect(exercise);
+                  }}
+                  className={`guess-option ${isActive ? "guess-option--active" : ""}`}
+                >
+                  <span className="guess-option__name">{exercise.name}</span>
+                  <span className="guess-option__slug">{exercise.slug}</span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
