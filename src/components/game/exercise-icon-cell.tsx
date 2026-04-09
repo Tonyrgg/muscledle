@@ -2,24 +2,29 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getExerciseIconCandidates } from "@/lib/exercises/icons";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
   exerciseName: string;
+  exerciseMuscleGroup: string | null;
 };
 
-function resolveExerciseIconPath(exerciseSlug: string): string {
-  if (!exerciseSlug) {
-    return "";
-  }
-
-  return `/exercises/${exerciseSlug}.svg`;
-}
-
-export function ExerciseIconCell({ exerciseSlug, exerciseName }: ExerciseIconCellProps) {
-  const [imageFailed, setImageFailed] = useState(false);
+export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
+  const [candidateIndex, setCandidateIndex] = useState(0);
   const [touchOpen, setTouchOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  const iconCandidates = useMemo(
+    () => getExerciseIconCandidates({ slug: exerciseSlug, muscle_group: exerciseMuscleGroup }),
+    [exerciseMuscleGroup, exerciseSlug],
+  );
+
+  const activeIconPath = iconCandidates[candidateIndex] ?? "";
+
+  useEffect(() => {
+    setCandidateIndex(0);
+  }, [exerciseSlug, exerciseMuscleGroup]);
 
   useEffect(() => {
     if (!touchOpen) {
@@ -35,8 +40,6 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName }: ExerciseIconCel
     window.addEventListener("pointerdown", onPointerDown);
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [touchOpen]);
-
-  const iconPath = useMemo(() => resolveExerciseIconPath(exerciseSlug), [exerciseSlug]);
 
   return (
     <button
@@ -54,14 +57,23 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName }: ExerciseIconCel
       }}
     >
       <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-        {!imageFailed && iconPath ? (
+        {activeIconPath ? (
           <Image
-            src={iconPath}
+            key={activeIconPath}
+            src={activeIconPath}
             alt=""
             className="exercise-icon-cell__icon"
             width={40}
             height={40}
-            onError={() => setImageFailed(true)}
+            onError={() => {
+              setCandidateIndex((current) => {
+                if (current >= iconCandidates.length - 1) {
+                  return current;
+                }
+
+                return current + 1;
+              });
+            }}
           />
         ) : (
           <span className="exercise-icon-cell__fallback">

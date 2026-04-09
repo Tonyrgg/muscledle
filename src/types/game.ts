@@ -15,6 +15,7 @@ export type PublicGameAttempt = {
   guessExerciseId: string;
   guessSlug: string;
   guessName: string;
+  guessMuscleGroup: string | null;
   values: PublicAttemptValues;
   feedback: GuessFeedback;
   isCorrect: boolean;

@@ -26,6 +26,7 @@ type ExerciseNameRow = {
   id: string;
   slug: string;
   name: string;
+  muscle_group: string;
   muscle: string[];
   equipment: string[];
   movement: string[];
@@ -137,7 +138,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   if (guessIds.length > 0) {
     const { data: exerciseRows, error: exercisesError } = await supabase
       .from("exercises")
-      .select("id, slug, name, muscle, equipment, movement, pattern, reps, goal, ego")
+      .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
       .in("id", guessIds)
       .returns<ExerciseNameRow[]>();
 
@@ -155,6 +156,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
         guessExerciseId: row.guess_exercise_id,
         guessSlug: details?.slug ?? "",
         guessName: details?.name ?? "Unknown Exercise",
+        guessMuscleGroup: details?.muscle_group ?? null,
         values: {
           muscle: details?.muscle.join(" / ") ?? "-",
           equipment: details?.equipment.join(" / ") ?? "-",
@@ -183,6 +185,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     guessExerciseId: row.guess_exercise_id,
     guessSlug: detailsById.get(row.guess_exercise_id)?.slug ?? "",
     guessName: detailsById.get(row.guess_exercise_id)?.name ?? "Unknown Exercise",
+    guessMuscleGroup: detailsById.get(row.guess_exercise_id)?.muscle_group ?? null,
     values: {
       muscle: "-",
       equipment: "-",

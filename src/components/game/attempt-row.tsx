@@ -10,7 +10,11 @@ export function AttemptRow({ attempt }: AttemptRowProps) {
   return (
     <div className="attempts-grid attempts-row" role="row">
       <div className="attempts-exercise-cell" role="cell">
-        <ExerciseIconCell exerciseName={attempt.guessName} exerciseSlug={attempt.guessSlug} />
+        <ExerciseIconCell
+          exerciseName={attempt.guessName}
+          exerciseSlug={attempt.guessSlug}
+          exerciseMuscleGroup={attempt.guessMuscleGroup}
+        />
       </div>
 
       <FeedbackCell color={attempt.feedback.muscle} value={attempt.values.muscle} />
