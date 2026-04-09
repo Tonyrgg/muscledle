@@ -242,6 +242,13 @@ input {
   background: #1c1c1c;
   max-height: 18rem;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.guess-input__dropdown::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .guess-input__empty {
@@ -255,13 +262,14 @@ input {
 
 .guess-input__option {
   display: flex;
+  align-items: center;
   width: 100%;
   justify-content: space-between;
   gap: 0.85rem;
   border: 0;
   border-top: 1px solid #2e2e2e;
   background: transparent;
-  padding: 0.8rem 0.95rem;
+  padding: 0.8rem 1.2rem;
   color: var(--text-primary);
   text-align: left;
   font-size: 0.75rem;
@@ -280,9 +288,9 @@ input {
 }
 
 .guess-input__option-icon {
-  width: 1.25rem;
-  min-width: 1.25rem;
-  height: 1.25rem;
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
