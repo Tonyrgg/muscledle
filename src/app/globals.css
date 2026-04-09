@@ -358,8 +358,8 @@ input {
 }
 
 .exercise-icon-cell__icon {
-  width: 2.05rem;
-  height: 2.05rem;
+  width: clamp(3rem, 5vw, 4rem);
+  height: clamp(3rem, 5vw, 4rem);
   object-fit: contain;
 }
 
@@ -642,6 +642,11 @@ input {
 
   .feedback-cell {
     font-size: 0.68rem;
+  }
+
+  .exercise-icon-cell__icon {
+    width: clamp(2.6rem, 8vw, 3.2rem);
+    height: clamp(2.6rem, 8vw, 3.2rem);
   }
 }
 
