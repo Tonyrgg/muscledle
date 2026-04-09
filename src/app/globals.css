@@ -374,8 +374,8 @@ input {
 }
 
 .exercise-icon-cell__icon {
-  width: clamp(3rem, 5vw, 4rem);
-  height: clamp(3rem, 5vw, 4rem);
+  width: clamp(3.8rem, 6.2vw, 4.8rem);
+  height: clamp(3.8rem, 6.2vw, 4.8rem);
   object-fit: contain;
 }
 
@@ -657,8 +657,8 @@ input {
   }
 
   .exercise-icon-cell__icon {
-    width: clamp(2.6rem, 8vw, 3.2rem);
-    height: clamp(2.6rem, 8vw, 3.2rem);
+    width: clamp(3.1rem, 10vw, 4rem);
+    height: clamp(3.1rem, 10vw, 4rem);
   }
 }
 
