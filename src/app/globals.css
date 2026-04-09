@@ -156,6 +156,17 @@ input {
   position: relative;
 }
 
+.guess-input__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.55rem;
+}
+
+.guess-input__field-wrap {
+  position: relative;
+}
+
 .guess-input__field {
   width: 100%;
   min-height: clamp(3.4rem, 7vw, 3.9rem);
@@ -183,6 +194,41 @@ input {
 .guess-input__field:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.guess-input__submit {
+  width: clamp(3.4rem, 7vw, 3.9rem);
+  min-width: clamp(3.4rem, 7vw, 3.9rem);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface-strong);
+  color: var(--accent);
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.guess-input__submit:hover:not(:disabled),
+.guess-input__submit:focus-visible:not(:disabled) {
+  border-color: var(--accent);
+  background: #232323;
+}
+
+.guess-input__submit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+}
+
+.guess-input__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: #777;
+  background: #1d1d1d;
 }
 
 .guess-input__dropdown {
@@ -289,7 +335,7 @@ input {
 .attempts-exercise-cell {
   border: 1px solid var(--border);
   background: var(--surface-strong);
-  min-height: 5.75rem;
+  min-height: 6.9rem;
 }
 
 .exercise-icon-cell {

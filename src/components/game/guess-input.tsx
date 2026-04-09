@@ -102,6 +102,8 @@ export function GuessInput({
   }, [exercises, normalizedQuery]);
 
   const showDropdown = isOpen && !disabled && query.trim().length > 0 && !selectedExerciseId;
+  const canSubmitFromButton =
+    query.trim().length > 0 && !disabled && !loadingExercises && !submitting;
 
   const handleSelect = (exercise: LiveExerciseSuggestion) => {
     onSelectExercise(exercise);
@@ -144,59 +146,73 @@ export function GuessInput({
 
   return (
     <div className="guess-input">
-      <input
-        role="combobox"
-        aria-expanded={showDropdown}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={
-          showDropdown && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
-        }
-        value={query}
-        onFocus={() => setIsOpen(true)}
-        onBlur={() => {
-          window.setTimeout(() => {
-            setIsOpen(false);
-            setActiveIndex(-1);
-          }, 100);
-        }}
-        onChange={(event) => {
-          onQueryChange(event.target.value);
-          setIsOpen(true);
-        }}
-        onKeyDown={handleInputKeyDown}
-        placeholder="GUESS THE EXERCISE..."
-        disabled={disabled || loadingExercises || submitting}
-        className="guess-input__field"
-      />
+      <div className="guess-input__row">
+        <div className="guess-input__field-wrap">
+          <input
+            role="combobox"
+            aria-expanded={showDropdown}
+            aria-controls={listId}
+            aria-autocomplete="list"
+            aria-activedescendant={
+              showDropdown && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
+            }
+            value={query}
+            onFocus={() => setIsOpen(true)}
+            onBlur={() => {
+              window.setTimeout(() => {
+                setIsOpen(false);
+                setActiveIndex(-1);
+              }, 100);
+            }}
+            onChange={(event) => {
+              onQueryChange(event.target.value);
+              setIsOpen(true);
+            }}
+            onKeyDown={handleInputKeyDown}
+            placeholder="GUESS THE EXERCISE..."
+            disabled={disabled || loadingExercises || submitting}
+            className="guess-input__field"
+          />
 
-      {showDropdown ? (
-        <div id={listId} role="listbox" className="guess-input__dropdown">
-          {loadingExercises ? (
-            <p className="guess-input__empty">LOADING EXERCISES...</p>
-          ) : suggestions.length === 0 ? (
-            <p className="guess-input__empty">NO MATCH FOUND.</p>
-          ) : (
-            suggestions.map((exercise, index) => (
-              <button
-                id={`${listId}-option-${index}`}
-                key={exercise.id}
-                role="option"
-                aria-selected={selectedExerciseId === exercise.id}
-                type="button"
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  handleSelect(exercise);
-                }}
-                className={`guess-input__option ${index === activeIndex ? "guess-input__option--active" : ""}`}
-              >
-                <span>{exercise.name}</span>
-                <span className="guess-input__option-slug">{exercise.slug}</span>
-              </button>
-            ))
-          )}
+          {showDropdown ? (
+            <div id={listId} role="listbox" className="guess-input__dropdown">
+              {loadingExercises ? (
+                <p className="guess-input__empty">LOADING EXERCISES...</p>
+              ) : suggestions.length === 0 ? (
+                <p className="guess-input__empty">NO MATCH FOUND.</p>
+              ) : (
+                suggestions.map((exercise, index) => (
+                  <button
+                    id={`${listId}-option-${index}`}
+                    key={exercise.id}
+                    role="option"
+                    aria-selected={selectedExerciseId === exercise.id}
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      handleSelect(exercise);
+                    }}
+                    className={`guess-input__option ${index === activeIndex ? "guess-input__option--active" : ""}`}
+                  >
+                    <span>{exercise.name}</span>
+                    <span className="guess-input__option-slug">{exercise.slug}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+
+        <button
+          type="button"
+          className="guess-input__submit"
+          aria-label="Submit guess"
+          onClick={onSubmit}
+          disabled={!canSubmitFromButton}
+        >
+          <span aria-hidden>➤</span>
+        </button>
+      </div>
     </div>
   );
 }
