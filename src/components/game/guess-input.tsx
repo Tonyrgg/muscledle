@@ -69,8 +69,21 @@ function scoreExercise(query: string, exercise: LiveExerciseSuggestion): number 
   if (aliases.some((alias) => alias.startsWith(query))) return 95;
   if (aliases.some((alias) => alias.includes(query))) return 80;
 
-  const nameDistance = levenshteinDistance(query, name.slice(0, Math.max(query.length, 1)));
-  if (nameDistance <= 2) return 70 - nameDistance * 5;
+  // Keep typo tolerance strict to avoid unrelated suggestions (e.g. "ww" -> random exercises).
+  if (query.length >= 4 && name[0] === query[0]) {
+    const nameDistance = levenshteinDistance(query, name.slice(0, query.length));
+    if (nameDistance <= 1) return 72 - nameDistance * 7;
+  }
+
+  if (query.length >= 4) {
+    const closeAlias = aliases.some((alias) => {
+      if (!alias || alias[0] !== query[0]) return false;
+      const aliasDistance = levenshteinDistance(query, alias.slice(0, query.length));
+      return aliasDistance <= 1;
+    });
+
+    if (closeAlias) return 68;
+  }
 
   return -1;
 }

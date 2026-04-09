@@ -123,7 +123,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     .from("game_attempts")
     .select("id, guess_exercise_id, feedback, is_correct, created_at")
     .eq("user_daily_game_id", game.id)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .returns<GameAttemptRow[]>();
 
   if (attemptsError) {
