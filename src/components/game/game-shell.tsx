@@ -32,6 +32,16 @@ export function GameShell({ initialState }: GameShellProps) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastIdRef = useRef(0);
 
+  const attemptedExerciseIds = useMemo(
+    () => new Set((gameState?.attempts ?? []).map((attempt) => attempt.guessExerciseId)),
+    [gameState?.attempts],
+  );
+
+  const selectableExercises = useMemo(
+    () => exercises.filter((exercise) => !attemptedExerciseIds.has(exercise.id)),
+    [attemptedExerciseIds, exercises],
+  );
+
   const pushToast = useCallback((message: string) => {
     const id = ++toastIdRef.current;
     setToast({ id, message });
@@ -95,6 +105,12 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
+    if (attemptedExerciseIds.has(selectedExerciseId)) {
+      pushToast("You already guessed this exercise.");
+      setSelectedExerciseId(null);
+      return;
+    }
+
     if (!gameState || gameState.status !== "in_progress") {
       return;
     }
@@ -111,9 +127,10 @@ export function GameShell({ initialState }: GameShellProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [gameState, pushToast, selectedExerciseId]);
+  }, [attemptedExerciseIds, gameState, pushToast, selectedExerciseId]);
 
   const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
+  const showPromptSubtitle = !gameState || gameState.guessCount === 0;
 
   return (
     <>
@@ -122,16 +139,19 @@ export function GameShell({ initialState }: GameShellProps) {
 
         <section className="game-shell" aria-label="Muscledle gameplay">
           <header className="game-hero">
-            <div className="game-hero__brand">Muscledle</div>
-            <div className="game-hero__rule" aria-hidden />
-            <h1 className="game-hero__title">MUSCLEDLE</h1>
+            <h1 className="game-hero__title">
+              <span className="game-hero__title-main">MUSCLE</span>
+              <span className="game-hero__title-accent">DLE</span>
+            </h1>
             <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
 
             <div className="game-prompt-panel" role="status" aria-live="polite">
               <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
-              <p className="game-prompt-panel__subtitle">
-                Type any exercise name to begin.
-              </p>
+              {showPromptSubtitle ? (
+                <p className="game-prompt-panel__subtitle">
+                  Type any exercise name to begin.
+                </p>
+              ) : null}
             </div>
 
           </header>
@@ -140,7 +160,7 @@ export function GameShell({ initialState }: GameShellProps) {
             <GuessInput
               query={query}
               selectedExerciseId={selectedExerciseId}
-              exercises={exercises}
+              exercises={selectableExercises}
               loadingExercises={loadingExercises}
               disabled={disabled}
               submitting={isSubmitting}

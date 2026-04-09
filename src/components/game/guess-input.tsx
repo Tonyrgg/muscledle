@@ -1,6 +1,7 @@
 'use client';
 
 import { type KeyboardEvent, useId, useMemo, useState } from "react";
+import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
 type GuessInputProps = {
@@ -208,7 +209,15 @@ export function GuessInput({
                     className={`guess-input__option ${index === activeIndex ? "guess-input__option--active" : ""}`}
                   >
                     <span>{exercise.name}</span>
-                    <span className="guess-input__option-slug">{exercise.slug}</span>
+                    <span className="guess-input__option-icon" aria-hidden>
+                      <img
+                        src={getMuscleGroupIconPath(resolveMuscleGroupIconKey(exercise))}
+                        alt=""
+                        width={18}
+                        height={18}
+                        loading="lazy"
+                      />
+                    </span>
                   </button>
                 ))
               )}
@@ -223,7 +232,7 @@ export function GuessInput({
           onClick={onSubmit}
           disabled={!canSubmitFromButton}
         >
-          <span aria-hidden>➤</span>
+          <span className="guess-input__submit-glyph" aria-hidden>{"\u27A4"}</span>
         </button>
       </div>
     </div>

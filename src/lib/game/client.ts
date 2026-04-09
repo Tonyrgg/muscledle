@@ -5,6 +5,7 @@ export type LiveExerciseSuggestion = {
   name: string;
   slug: string;
   aliases: string[];
+  muscle_group: string;
 };
 
 type ErrorPayload = {
@@ -73,7 +74,7 @@ export async function submitGuessRequest(
 export async function fetchLiveExercises(): Promise<LiveExerciseSuggestion[]> {
   const response = await fetch("/api/exercises", {
     method: "GET",
-    cache: "force-cache",
+    cache: "no-store",
   });
 
   return parseOrThrow<LiveExerciseSuggestion[]>(

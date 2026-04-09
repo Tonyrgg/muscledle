@@ -6,6 +6,7 @@ type ExerciseSuggestionRow = {
   name: string;
   slug: string;
   aliases: string[];
+  muscle_group: string;
 };
 
 export async function GET() {
@@ -14,7 +15,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("exercises")
-      .select("id, name, slug, aliases")
+      .select("id, name, slug, aliases, muscle_group")
       .eq("is_live", true)
       .order("name", { ascending: true })
       .returns<ExerciseSuggestionRow[]>();
