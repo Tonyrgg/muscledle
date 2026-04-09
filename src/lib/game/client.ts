@@ -1,4 +1,5 @@
 import type { PublicTodayGameState } from "@/types/game";
+import { createClient } from "@/lib/supabase/client";
 
 export type LiveExerciseSuggestion = {
   id: string;
@@ -26,10 +27,33 @@ async function parseOrThrow<T>(response: Response, fallbackMessage: string): Pro
   return payload as T;
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      return {};
+    }
+
+    const token = data.session?.access_token;
+
+    if (!token) {
+      return {};
+    }
+
+    return { Authorization: `Bearer ${token}` };
+  } catch {
+    return {};
+  }
+}
+
 export async function fetchTodayGameState(): Promise<PublicTodayGameState> {
+  const authHeaders = await getAuthHeaders();
   const response = await fetch("/api/game/today", {
     method: "GET",
     cache: "no-store",
+    headers: authHeaders,
   });
 
   return parseOrThrow<PublicTodayGameState>(
@@ -41,10 +65,12 @@ export async function fetchTodayGameState(): Promise<PublicTodayGameState> {
 export async function submitGuessRequest(
   guessExerciseId: string,
 ): Promise<PublicTodayGameState> {
+  const authHeaders = await getAuthHeaders();
   const response = await fetch("/api/game/guess", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders,
     },
     body: JSON.stringify({ guessExerciseId }),
   });

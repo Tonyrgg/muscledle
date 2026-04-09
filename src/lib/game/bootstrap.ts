@@ -2,7 +2,8 @@ import { trackEvent } from "@/lib/analytics/track";
 import { resolveDailySelection, resolveYesterdaySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { PublicTodayGameState } from "@/types/game";
 
 type UserDailyGameRow = {
@@ -36,10 +37,12 @@ type ExerciseNameRow = {
   ego: string[];
 };
 
-async function ensureUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
-  const supabase = await createClient();
+const TECHNICAL_MAX_GUESSES = 2147483647;
 
-  const { data: existing, error: existingError } = await supabase
+async function ensureUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
+  const admin = createAdminClient();
+
+  const { data: existing, error: existingError } = await admin
     .from("user_daily_games")
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .eq("user_id", userId)
@@ -52,7 +55,7 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
 
   if (existing) {
     if (existing.status === "lost") {
-      const { data: reopened, error: reopenError } = await supabase
+      const { data: reopened, error: reopenError } = await admin
         .from("user_daily_games")
         .update({
           status: "in_progress",
@@ -72,14 +75,14 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
     return existing;
   }
 
-  const { data: created, error: createError } = await supabase
+  const { data: created, error: createError } = await admin
     .from("user_daily_games")
     .insert({
       user_id: userId,
       game_date: gameDate,
       status: "in_progress",
       guess_count: 0,
-      max_guesses: null,
+      max_guesses: TECHNICAL_MAX_GUESSES,
     })
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
@@ -88,7 +91,7 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
     throw new Error(`Failed to create user daily game: ${createError.message}`);
   }
 
-  await supabase.from("user_stats").upsert({ user_id: userId }, { onConflict: "user_id" });
+  await admin.from("user_stats").upsert({ user_id: userId }, { onConflict: "user_id" });
 
   await trackEvent({
     userId,
@@ -100,16 +103,11 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
 }
 
 export async function getTodayGameState(): Promise<PublicTodayGameState> {
-  const supabase = await createClient();
+  await createClient();
+  const admin = createAdminClient();
   const gameDate = gameDateRome();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-
-  if (userError) {
-    throw new Error(`Failed to load authenticated user: ${userError.message}`);
-  }
-
-  const user = userData.user;
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     throw new AuthRequiredError();
@@ -120,7 +118,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
 
   const game = await ensureUserDailyGame(user.id, gameDate);
 
-  const { data: attemptRows, error: attemptsError } = await supabase
+  const { data: attemptRows, error: attemptsError } = await admin
     .from("game_attempts")
     .select("id, guess_exercise_id, feedback, is_correct, created_at")
     .eq("user_daily_game_id", game.id)
@@ -136,7 +134,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   let detailsById = new Map<string, ExerciseNameRow>();
 
   if (guessIds.length > 0) {
-    const { data: exerciseRows, error: exercisesError } = await supabase
+    const { data: exerciseRows, error: exercisesError } = await admin
       .from("exercises")
       .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
       .in("id", guessIds)

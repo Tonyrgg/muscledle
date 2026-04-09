@@ -16,6 +16,9 @@ export async function GET() {
     }
 
     console.error("/api/game/today failed", error);
-    return NextResponse.json({ error: "Failed to load today's game state." }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to load today's game state." },
+      { status: 500 },
+    );
   }
 }

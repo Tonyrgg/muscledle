@@ -4,7 +4,8 @@ import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { getTodayGameState } from "@/lib/game/bootstrap";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Exercise } from "@/types/exercise";
 import type { PublicTodayGameState } from "@/types/game";
 
@@ -17,10 +18,12 @@ type UserDailyGameRow = {
   max_guesses: number | null;
 };
 
-async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
-  const supabase = await createClient();
+const TECHNICAL_MAX_GUESSES = 2147483647;
 
-  const { data: existing, error: existingError } = await supabase
+async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
+  const admin = createAdminClient();
+
+  const { data: existing, error: existingError } = await admin
     .from("user_daily_games")
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .eq("user_id", userId)
@@ -33,7 +36,7 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
 
   if (existing) {
     if (existing.status === "lost") {
-      const { data: reopened, error: reopenError } = await supabase
+      const { data: reopened, error: reopenError } = await admin
         .from("user_daily_games")
         .update({
           status: "in_progress",
@@ -53,14 +56,14 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
     return existing;
   }
 
-  const { data: created, error: createError } = await supabase
+  const { data: created, error: createError } = await admin
     .from("user_daily_games")
     .insert({
       user_id: userId,
       game_date: gameDate,
       status: "in_progress",
       guess_count: 0,
-      max_guesses: null,
+      max_guesses: TECHNICAL_MAX_GUESSES,
     })
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
@@ -81,16 +84,11 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
 export async function submitGuess(input: {
   guessExerciseId: string;
 }): Promise<PublicTodayGameState> {
-  const supabase = await createClient();
+  await createClient();
+  const admin = createAdminClient();
   const gameDate = gameDateRome();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-
-  if (userError) {
-    throw new Error(`Failed to load authenticated user: ${userError.message}`);
-  }
-
-  const user = userData.user;
+  const user = await getAuthenticatedUser();
 
   if (!user) {
     throw new AuthRequiredError();
@@ -104,7 +102,7 @@ export async function submitGuess(input: {
     throw new GameConflictError("Game is already finished for today.");
   }
 
-  const { data: guessedExercise, error: guessError } = await supabase
+  const { data: guessedExercise, error: guessError } = await admin
     .from("exercises")
     .select("*")
     .eq("id", input.guessExerciseId)
@@ -119,7 +117,7 @@ export async function submitGuess(input: {
     throw new GameConflictError("Guessed exercise does not exist or is not live.");
   }
 
-  const { data: targetExercise, error: targetError } = await supabase
+  const { data: targetExercise, error: targetError } = await admin
     .from("exercises")
     .select("*")
     .eq("id", dailySelection.exerciseId)
@@ -145,7 +143,7 @@ export async function submitGuess(input: {
 
   const nowIso = new Date().toISOString();
 
-  const { error: attemptError } = await supabase.from("game_attempts").insert({
+  const { error: attemptError } = await admin.from("game_attempts").insert({
     user_id: user.id,
     game_date: gameDate,
     user_daily_game_id: userDailyGame.id,
@@ -174,7 +172,7 @@ export async function submitGuess(input: {
     updatePayload.finished_at = nowIso;
   }
 
-  const { error: updateGameError } = await supabase
+  const { error: updateGameError } = await admin
     .from("user_daily_games")
     .update(updatePayload)
     .eq("id", userDailyGame.id);

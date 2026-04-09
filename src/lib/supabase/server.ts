@@ -1,8 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+
+async function getRequestAccessToken(): Promise<string | null> {
+  const headerStore = await headers();
+  const authorization = headerStore.get("authorization") ?? "";
+
+  if (!authorization.startsWith("Bearer ")) {
+    return null;
+  }
+
+  const token = authorization.slice("Bearer ".length).trim();
+  return token.length > 0 ? token : null;
+}
 
 export async function createClient() {
   const cookieStore = await cookies();
+  const accessToken = await getRequestAccessToken();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -25,6 +38,13 @@ export async function createClient() {
         }
       },
     },
+    global: accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined,
   });
 }
 
@@ -36,5 +56,21 @@ export async function getAuthenticatedUser() {
     throw new Error(`Failed to read authenticated user: ${error.message}`);
   }
 
-  return data.user;
+  if (data.user) {
+    return data.user;
+  }
+
+  const accessToken = await getRequestAccessToken();
+
+  if (!accessToken) {
+    return null;
+  }
+
+  const { data: tokenData, error: tokenError } = await supabase.auth.getUser(accessToken);
+
+  if (tokenError) {
+    throw new Error(`Failed to read authenticated user from bearer token: ${tokenError.message}`);
+  }
+
+  return tokenData.user;
 }
