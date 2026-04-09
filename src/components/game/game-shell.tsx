@@ -21,18 +21,6 @@ type ToastState = {
   message: string;
 };
 
-function formatCurrentAttempt(state: PublicTodayGameState | null): string {
-  if (!state) {
-    return "- / -";
-  }
-
-  if (state.status === "in_progress") {
-    return `${Math.min(state.guessCount + 1, state.maxGuesses)} / ${state.maxGuesses}`;
-  }
-
-  return `${state.guessCount} / ${state.maxGuesses}`;
-}
-
 export function GameShell({ initialState }: GameShellProps) {
   const [gameState, setGameState] = useState<PublicTodayGameState | null>(initialState);
   const [isLoadingState, setIsLoadingState] = useState(false);
@@ -127,24 +115,6 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
 
-  const statusLine = useMemo(() => {
-    if (!gameState) {
-      return "CONNECTING...";
-    }
-
-    if (gameState.status === "won") {
-      return "TARGET FOUND.";
-    }
-
-    if (gameState.status === "lost") {
-      return "NO ATTEMPTS LEFT.";
-    }
-
-    return "IN PROGRESS.";
-  }, [gameState]);
-
-  const currentAttemptLabel = formatCurrentAttempt(gameState);
-
   return (
     <>
       <main className="game-page">
@@ -157,12 +127,13 @@ export function GameShell({ initialState }: GameShellProps) {
             <h1 className="game-hero__title">MUSCLEDLE</h1>
             <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
 
-            <div className="game-status-box" role="status" aria-live="polite">
-              <span className="game-status-box__label">Current</span>
-              <span className="game-status-box__value">Attempt {currentAttemptLabel}</span>
+            <div className="game-prompt-panel" role="status" aria-live="polite">
+              <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
+              <p className="game-prompt-panel__subtitle">
+                Type any exercise name to begin.
+              </p>
             </div>
 
-            <p className="game-hero__state">{statusLine}</p>
           </header>
 
           <section className="game-input-zone" aria-label="Guess input">
@@ -182,6 +153,15 @@ export function GameShell({ initialState }: GameShellProps) {
           <section className="game-table-zone" aria-label="Attempts">
             <AttemptsTable attempts={gameState?.attempts ?? []} loading={isLoadingState && !gameState} />
           </section>
+
+          <section className="yesterday-exercise" aria-label="Yesterday exercise">
+            <p className="yesterday-exercise__text">
+              Yesterday&apos;s exercise was{" "}
+              <span className="yesterday-exercise__name">
+                {gameState?.yesterdayExerciseName ?? "Unknown"}
+              </span>
+            </p>
+          </section>
         </section>
       </main>
 
@@ -192,7 +172,7 @@ export function GameShell({ initialState }: GameShellProps) {
           <button type="button" className="game-footer__link">ARCHIVE</button>
           <button type="button" className="game-footer__link">PRIVACY</button>
         </nav>
-        <p className="game-footer__copy">© 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
+        <p className="game-footer__copy">(C) 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
       </footer>
 
       {toast ? <div className="game-toast">{toast.message}</div> : null}

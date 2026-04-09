@@ -8,3 +8,9 @@ export function gameDateRome(): string {
 
   return formatter.format(new Date());
 }
+
+export function shiftIsoDate(isoDate: string, deltaDays: number): string {
+  const value = new Date(`${isoDate}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + deltaDays);
+  return value.toISOString().slice(0, 10);
+}

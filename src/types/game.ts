@@ -22,8 +22,8 @@ export type PublicGameAttempt = {
 
 export type PublicTodayGameState = {
   gameDate: string;
+  yesterdayExerciseName: string | null;
   status: "in_progress" | "won" | "lost";
   guessCount: number;
-  maxGuesses: number;
   attempts: PublicGameAttempt[];
 };

@@ -11,10 +11,29 @@ const columns = ["Exercise", "Muscle", "Equipment", "Movement", "Pattern", "Reps
 export function AttemptsTable({ attempts, loading = false }: AttemptsTableProps) {
   if (loading) {
     return (
-      <div className="attempts-loading" aria-live="polite">
-        <div className="attempts-loading__row" />
-        <div className="attempts-loading__row" />
-        <div className="attempts-loading__row" />
+      <div className="attempts-table-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
+        <div className="attempts-table attempts-loading">
+          <div className="attempts-grid attempts-grid--header attempts-grid--skeleton-header">
+            {columns.map((column) => (
+              <div key={column} className="attempts-header-cell attempts-header-cell--skeleton">
+                {column}
+              </div>
+            ))}
+          </div>
+
+          <div className="attempts-body">
+            {Array.from({ length: 3 }).map((_, rowIndex) => (
+              <div key={rowIndex} className="attempts-grid attempts-loading__grid-row" aria-hidden>
+                {Array.from({ length: columns.length }).map((__, cellIndex) => (
+                  <div
+                    key={`${rowIndex}-${cellIndex}`}
+                    className={`attempts-loading__cell ${cellIndex === 0 ? "attempts-loading__cell--icon" : ""}`}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

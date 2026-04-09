@@ -1,14 +1,9 @@
 import { trackEvent } from "@/lib/analytics/track";
+import { resolveDailySelection, resolveYesterdaySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
-import { AuthRequiredError, GameConflictError, normalizeFeedback } from "@/lib/game/shared";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
 import { createClient } from "@/lib/supabase/server";
 import type { PublicTodayGameState } from "@/types/game";
-
-type DailyExerciseRow = {
-  game_date: string;
-  exercise_id: string;
-};
 
 type UserDailyGameRow = {
   id: string;
@@ -40,8 +35,6 @@ type ExerciseNameRow = {
   ego: string[];
 };
 
-const DEFAULT_MAX_GUESSES = 6;
-
 async function ensureUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
   const supabase = await createClient();
 
@@ -57,6 +50,24 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
   }
 
   if (existing) {
+    if (existing.status === "lost") {
+      const { data: reopened, error: reopenError } = await supabase
+        .from("user_daily_games")
+        .update({
+          status: "in_progress",
+          finished_at: null,
+        })
+        .eq("id", existing.id)
+        .select("id, user_id, game_date, status, guess_count, max_guesses")
+        .single<UserDailyGameRow>();
+
+      if (reopenError) {
+        throw new Error(`Failed to reopen user daily game: ${reopenError.message}`);
+      }
+
+      return reopened;
+    }
+
     return existing;
   }
 
@@ -67,7 +78,7 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
       game_date: gameDate,
       status: "in_progress",
       guess_count: 0,
-      max_guesses: DEFAULT_MAX_GUESSES,
+      max_guesses: null,
     })
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
@@ -87,26 +98,6 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
   return created;
 }
 
-async function getTodayDailyExercise(gameDate: string): Promise<DailyExerciseRow> {
-  const admin = createAdminClient();
-
-  const { data: dailyExercise, error: dailyExerciseError } = await admin
-    .from("daily_exercises")
-    .select("game_date, exercise_id")
-    .eq("game_date", gameDate)
-    .maybeSingle<DailyExerciseRow>();
-
-  if (dailyExerciseError) {
-    throw new Error(`Failed to load daily exercise: ${dailyExerciseError.message}`);
-  }
-
-  if (!dailyExercise?.exercise_id) {
-    throw new GameConflictError(`No daily exercise configured for ${gameDate}.`);
-  }
-
-  return dailyExercise;
-}
-
 export async function getTodayGameState(): Promise<PublicTodayGameState> {
   const supabase = await createClient();
   const gameDate = gameDateRome();
@@ -123,7 +114,8 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     throw new AuthRequiredError();
   }
 
-  await getTodayDailyExercise(gameDate);
+  await resolveDailySelection(gameDate);
+  const yesterdaySelection = await resolveYesterdaySelection(gameDate);
 
   const game = await ensureUserDailyGame(user.id, gameDate);
 
@@ -179,9 +171,9 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
 
     return {
       gameDate,
+      yesterdayExerciseName: yesterdaySelection.exerciseName,
       status: game.status,
       guessCount: game.guess_count,
-      maxGuesses: game.max_guesses ?? DEFAULT_MAX_GUESSES,
       attempts,
     };
   }
@@ -206,9 +198,9 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
 
   return {
     gameDate,
+    yesterdayExerciseName: yesterdaySelection.exerciseName,
     status: game.status,
     guessCount: game.guess_count,
-    maxGuesses: game.max_guesses ?? DEFAULT_MAX_GUESSES,
     attempts,
   };
 }

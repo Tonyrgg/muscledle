@@ -1,17 +1,12 @@
 import { trackEvent } from "@/lib/analytics/track";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
+import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { getTodayGameState } from "@/lib/game/bootstrap";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Exercise } from "@/types/exercise";
 import type { PublicTodayGameState } from "@/types/game";
-
-type DailyExerciseRow = {
-  game_date: string;
-  exercise_id: string;
-};
 
 type UserDailyGameRow = {
   id: string;
@@ -21,8 +16,6 @@ type UserDailyGameRow = {
   guess_count: number;
   max_guesses: number | null;
 };
-
-const DEFAULT_MAX_GUESSES = 6;
 
 async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
   const supabase = await createClient();
@@ -39,6 +32,24 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
   }
 
   if (existing) {
+    if (existing.status === "lost") {
+      const { data: reopened, error: reopenError } = await supabase
+        .from("user_daily_games")
+        .update({
+          status: "in_progress",
+          finished_at: null,
+        })
+        .eq("id", existing.id)
+        .select("id, user_id, game_date, status, guess_count, max_guesses")
+        .single<UserDailyGameRow>();
+
+      if (reopenError) {
+        throw new Error(`Failed to reopen user daily game: ${reopenError.message}`);
+      }
+
+      return reopened;
+    }
+
     return existing;
   }
 
@@ -49,7 +60,7 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
       game_date: gameDate,
       status: "in_progress",
       guess_count: 0,
-      max_guesses: DEFAULT_MAX_GUESSES,
+      max_guesses: null,
     })
     .select("id, user_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
@@ -70,12 +81,7 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
 export async function submitGuess(input: {
   guessExerciseId: string;
 }): Promise<PublicTodayGameState> {
-  console.log("SUBMIT_GUESS_START");
-  console.log("input", input);
-  console.log("guessExerciseId", input.guessExerciseId);
-
   const supabase = await createClient();
-  const admin = createAdminClient();
   const gameDate = gameDateRome();
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -85,41 +91,17 @@ export async function submitGuess(input: {
   }
 
   const user = userData.user;
-  console.log("user.id", user?.id);
 
   if (!user) {
     throw new AuthRequiredError();
   }
 
-  console.log("gameDate", gameDate);
-
-  const { data: dailyExercise, error: dailyError } = await admin
-    .from("daily_exercises")
-    .select("game_date, exercise_id")
-    .eq("game_date", gameDate)
-    .maybeSingle<DailyExerciseRow>();
-
-  if (dailyError) {
-    throw new Error(`Failed to load today's daily exercise: ${dailyError.message}`);
-  }
-
-  console.log("dailyExercise", dailyExercise);
-
-  if (!dailyExercise?.exercise_id) {
-    throw new GameConflictError(`No daily exercise configured for ${gameDate}.`);
-  }
+  const dailySelection = await resolveDailySelection(gameDate);
 
   const userDailyGame = await getOrCreateUserDailyGame(user.id, gameDate);
-  console.log("userDailyGame", userDailyGame);
 
   if (userDailyGame.status !== "in_progress") {
     throw new GameConflictError("Game is already finished for today.");
-  }
-
-  const maxGuesses = userDailyGame.max_guesses ?? DEFAULT_MAX_GUESSES;
-
-  if (userDailyGame.guess_count >= maxGuesses) {
-    throw new GameConflictError("Maximum guesses reached for today.");
   }
 
   const { data: guessedExercise, error: guessError } = await supabase
@@ -133,8 +115,6 @@ export async function submitGuess(input: {
     throw new Error(`Failed to load guessed exercise: ${guessError.message}`);
   }
 
-  console.log("guessedExercise", guessedExercise);
-
   if (!guessedExercise) {
     throw new GameConflictError("Guessed exercise does not exist or is not live.");
   }
@@ -142,7 +122,7 @@ export async function submitGuess(input: {
   const { data: targetExercise, error: targetError } = await supabase
     .from("exercises")
     .select("*")
-    .eq("id", dailyExercise.exercise_id)
+    .eq("id", dailySelection.exerciseId)
     .maybeSingle<Exercise>();
 
   if (targetError) {
@@ -161,13 +141,10 @@ export async function submitGuess(input: {
 
   if (correct) {
     nextStatus = "won";
-  } else if (newGuessCount >= maxGuesses) {
-    nextStatus = "lost";
   }
 
   const nowIso = new Date().toISOString();
 
-  console.log("inserting attempt...");
   const { error: attemptError } = await supabase.from("game_attempts").insert({
     user_id: user.id,
     game_date: gameDate,
@@ -197,7 +174,6 @@ export async function submitGuess(input: {
     updatePayload.finished_at = nowIso;
   }
 
-  console.log("updating user daily game...");
   const { error: updateGameError } = await supabase
     .from("user_daily_games")
     .update(updatePayload)
@@ -222,14 +198,6 @@ export async function submitGuess(input: {
     await trackEvent({
       userId: user.id,
       eventName: "game_won",
-      payload: { gameDate, guessCount: newGuessCount },
-    });
-  }
-
-  if (nextStatus === "lost") {
-    await trackEvent({
-      userId: user.id,
-      eventName: "game_lost",
       payload: { gameDate, guessCount: newGuessCount },
     });
   }
