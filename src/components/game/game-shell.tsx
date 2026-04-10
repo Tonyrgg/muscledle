@@ -36,6 +36,12 @@ type InfiniteGameState = {
   maxAttemptsPerRound: number;
 };
 
+type MarathonTransitionState = {
+  phase: "solved" | "next";
+  exerciseName: string;
+  score: number;
+};
+
 function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
     id: exercise.id,
@@ -101,8 +107,11 @@ export function GameShell({ initialState }: GameShellProps) {
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState | null>(null);
   const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(null);
+  const [marathonTransition, setMarathonTransition] = useState<MarathonTransitionState | null>(null);
   const toastIdRef = useRef(0);
   const revealTimeoutRef = useRef<number | null>(null);
+  const marathonSolvedTimeoutRef = useRef<number | null>(null);
+  const marathonNextTimeoutRef = useRef<number | null>(null);
 
   const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
 
@@ -160,6 +169,18 @@ export function GameShell({ initialState }: GameShellProps) {
     };
   }, [revealingAttemptId]);
 
+  useEffect(() => {
+    return () => {
+      if (marathonSolvedTimeoutRef.current !== null) {
+        window.clearTimeout(marathonSolvedTimeoutRef.current);
+      }
+
+      if (marathonNextTimeoutRef.current !== null) {
+        window.clearTimeout(marathonNextTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
       return;
@@ -200,6 +221,17 @@ export function GameShell({ initialState }: GameShellProps) {
   }, [gameState, loadExercises, loadTodayState]);
 
   const handleModeChange = useCallback((nextMode: GameMode) => {
+    if (marathonSolvedTimeoutRef.current !== null) {
+      window.clearTimeout(marathonSolvedTimeoutRef.current);
+      marathonSolvedTimeoutRef.current = null;
+    }
+
+    if (marathonNextTimeoutRef.current !== null) {
+      window.clearTimeout(marathonNextTimeoutRef.current);
+      marathonNextTimeoutRef.current = null;
+    }
+
+    setMarathonTransition(null);
     setMode(nextMode);
     setQuery("");
     setSelectedExerciseId(null);
@@ -268,6 +300,10 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
+    if (marathonTransition) {
+      return;
+    }
+
     if (!activeInfiniteTarget) {
       pushToast("No target exercise available.");
       return;
@@ -310,13 +346,32 @@ export function GameShell({ initialState }: GameShellProps) {
         return;
       }
 
-      setInfiniteState({
-        ...infiniteState,
+      setMarathonTransition({
+        phase: "solved",
+        exerciseName: activeInfiniteTarget.name,
         score: nextScore,
-        currentIndex: nextIndex,
-        attempts: [],
       });
-      pushToast(`Correct. Score ${nextScore}. Next exercise loaded.`);
+
+      marathonSolvedTimeoutRef.current = window.setTimeout(() => {
+        setMarathonTransition({
+          phase: "next",
+          exerciseName: activeInfiniteTarget.name,
+          score: nextScore,
+        });
+        marathonSolvedTimeoutRef.current = null;
+
+        marathonNextTimeoutRef.current = window.setTimeout(() => {
+          setInfiniteState({
+            ...infiniteState,
+            score: nextScore,
+            currentIndex: nextIndex,
+            attempts: [],
+          });
+          setMarathonTransition(null);
+          marathonNextTimeoutRef.current = null;
+        }, 1500);
+      }, 2200);
+
       return;
     }
 
@@ -340,6 +395,7 @@ export function GameShell({ initialState }: GameShellProps) {
     exerciseById,
     exercises.length,
     infiniteState,
+    marathonTransition,
     pushToast,
     selectedExerciseId,
   ]);
@@ -358,7 +414,18 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
+    if (marathonSolvedTimeoutRef.current !== null) {
+      window.clearTimeout(marathonSolvedTimeoutRef.current);
+      marathonSolvedTimeoutRef.current = null;
+    }
+
+    if (marathonNextTimeoutRef.current !== null) {
+      window.clearTimeout(marathonNextTimeoutRef.current);
+      marathonNextTimeoutRef.current = null;
+    }
+
     setInfiniteState(createInfiniteGameState());
+    setMarathonTransition(null);
     setQuery("");
     setSelectedExerciseId(null);
     setRevealingAttemptId(null);
@@ -375,7 +442,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const disabled =
     mode === "daily"
       ? !gameState || gameState.status !== "in_progress" || isSubmitting
-      : !infiniteState || infiniteState.status !== "in_progress";
+      : !infiniteState || infiniteState.status !== "in_progress" || marathonTransition !== null;
 
   return (
     <>
@@ -473,13 +540,31 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          <section className="game-table-zone" aria-label="Attempts">
-            <AttemptsTable
-              attempts={activeAttempts}
-              loading={mode === "daily" ? isLoadingState && !gameState : false}
-              revealingAttemptId={revealingAttemptId}
-            />
-          </section>
+          <div className="marathon-stage">
+            <section className="game-table-zone" aria-label="Attempts">
+              <AttemptsTable
+                attempts={activeAttempts}
+                loading={mode === "daily" ? isLoadingState && !gameState : false}
+                revealingAttemptId={revealingAttemptId}
+              />
+            </section>
+
+            {mode === "infinite" && marathonTransition ? (
+              <section className="marathon-transition" aria-live="polite">
+                <div className="marathon-transition__panel">
+                  <p className="marathon-transition__kicker">
+                    {marathonTransition.phase === "solved" ? "Correct" : "Next Exercise"}
+                  </p>
+                  <p className="marathon-transition__title">
+                    {marathonTransition.phase === "solved"
+                      ? marathonTransition.exerciseName
+                      : "Preparing next challenge"}
+                  </p>
+                  <p className="marathon-transition__score">Score {marathonTransition.score}</p>
+                </div>
+              </section>
+            ) : null}
+          </div>
 
           {mode === "daily" ? (
             <section className="yesterday-exercise" aria-label="Yesterday exercise">

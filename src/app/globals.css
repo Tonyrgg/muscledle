@@ -560,6 +560,11 @@ input {
   width: min(100%, 940px);
 }
 
+.marathon-stage {
+  position: relative;
+  width: min(100%, 940px);
+}
+
 .attempts-table-scroll {
   width: 100%;
   overflow-x: auto;
@@ -971,6 +976,55 @@ input {
 
 .yesterday-exercise__name {
   color: var(--accent);
+}
+
+.marathon-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 130;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(7, 7, 7, 0.78);
+  backdrop-filter: blur(3px);
+}
+
+.marathon-transition__panel {
+  width: min(100%, 500px);
+  border: 1px solid #6e3a18;
+  box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.24), 0 20px 42px rgba(0, 0, 0, 0.52);
+  background: linear-gradient(180deg, #232323 0%, #171513 100%);
+  padding: 1.25rem 1.35rem;
+  text-align: center;
+}
+
+.marathon-transition__kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.marathon-transition__title {
+  margin: 0.45rem 0 0;
+  color: var(--text-primary);
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.1rem, 3vw, 1.6rem);
+  font-style: italic;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.marathon-transition__score {
+  margin: 0.55rem 0 0;
+  color: #e0e0e0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 @keyframes skeleton-sweep {
