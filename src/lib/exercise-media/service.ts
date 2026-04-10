@@ -136,9 +136,9 @@ export async function syncExerciseGifBySlug(
 
   if (!isValidGifUrl(best.candidate.gifUrl)) {
     if (best.candidate.id) {
-      const probe = await probeExerciseDbGifById(best.candidate.id, "360");
+      const probe = await probeExerciseDbGifById(best.candidate.id);
       if (probe.ok) {
-        const proxyMediaUrl = buildExerciseDbProxyGifUrl(best.candidate.id, "360");
+        const proxyMediaUrl = buildExerciseDbProxyGifUrl(best.candidate.id);
         const savedProxy = await persistStatus({
           slug: cleanSlug,
           status: "matched",

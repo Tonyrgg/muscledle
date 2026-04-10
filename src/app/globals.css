@@ -498,10 +498,12 @@ input {
 }
 
 .exercise-media-preview__gif {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   max-height: min(72vh, 620px);
   object-fit: contain;
   display: block;
+  margin: 0 auto;
   border: 1px solid var(--border);
   background: #202020;
 }

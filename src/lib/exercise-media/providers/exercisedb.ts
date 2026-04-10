@@ -141,6 +141,11 @@ export async function searchExerciseDbByName(query: string): Promise<ExternalExe
 
 const ALLOWED_RESOLUTIONS = new Set(["180", "360", "720", "1080"]);
 
+function getPreferredResolution(): string {
+  const envValue = (process.env.EXERCISEDB_GIF_RESOLUTION ?? "1080").trim();
+  return ALLOWED_RESOLUTIONS.has(envValue) ? envValue : "1080";
+}
+
 function getProviderConfig() {
   return {
     baseUrl: (process.env.EXERCISEDB_API_BASE_URL ?? "https://exercisedb.p.rapidapi.com").replace(/\/+$/, ""),
@@ -149,14 +154,14 @@ function getProviderConfig() {
   };
 }
 
-export function buildExerciseDbProxyGifUrl(exerciseId: string, resolution = "360"): string {
+export function buildExerciseDbProxyGifUrl(exerciseId: string, resolution = getPreferredResolution()): string {
   const safeResolution = ALLOWED_RESOLUTIONS.has(resolution) ? resolution : "360";
   return `/api/exercises/media-gif?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${safeResolution}`;
 }
 
 export async function probeExerciseDbGifById(
   exerciseId: string,
-  resolution = "360",
+  resolution = getPreferredResolution(),
 ): Promise<{ ok: boolean; status: number; error?: string }> {
   const { baseUrl, host, key } = getProviderConfig();
 
