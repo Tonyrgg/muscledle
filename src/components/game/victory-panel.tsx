@@ -129,7 +129,7 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
     };
   }, [winningSlug]);
 
-  const orderedAttempts = useMemo(() => [...attempts].reverse(), [attempts]);
+  const orderedAttempts = useMemo(() => [...attempts], [attempts]);
 
   const emojiRows = useMemo(
     () =>

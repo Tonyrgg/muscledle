@@ -625,7 +625,9 @@ input {
 }
 
 .exercise-media-modal__panel {
-  width: min(92vw, 760px);
+  width: fit-content;
+  min-width: min(92vw, 320px);
+  max-width: min(92vw, 760px);
   max-height: min(86vh, 760px);
   overflow: auto;
   border: 1px solid var(--border);
@@ -968,7 +970,9 @@ input {
   }
 
   .exercise-media-modal__panel {
-    width: min(96vw, 760px);
+    width: fit-content;
+    min-width: min(96vw, 280px);
+    max-width: min(96vw, 760px);
     padding: 0.7rem;
   }
 
