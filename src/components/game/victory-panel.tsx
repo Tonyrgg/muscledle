@@ -218,10 +218,18 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
         </div>
 
         <div className="victory-panel__actions">
-          <button type="button" className="victory-panel__action" onClick={() => void copyText()}>
+          <button
+            type="button"
+            className="exercise-media-modal__close victory-panel__action"
+            onClick={() => void copyText()}
+          >
             Copy Result
           </button>
-          <button type="button" className="victory-panel__action victory-panel__action--placeholder" disabled>
+          <button
+            type="button"
+            className="exercise-media-modal__close victory-panel__action victory-panel__action--placeholder"
+            disabled
+          >
             Share (Soon)
           </button>
         </div>

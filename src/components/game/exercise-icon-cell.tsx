@@ -12,10 +12,23 @@ type ExerciseIconCellProps = {
   exerciseMuscleGroup: string | null;
 };
 
+type ExerciseMediaResponse = {
+  ok: boolean;
+  media?: {
+    mediaUrl: string | null;
+  } | null;
+};
+
+const mediaUrlCache = new Map<string, string | null>();
+
 export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [mediaState, setMediaState] = useState<{ slug: string; url: string | null }>({
+    slug: exerciseSlug,
+    url: mediaUrlCache.get(exerciseSlug) ?? null,
+  });
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const iconCandidates = useMemo(
@@ -23,7 +36,49 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
     [exerciseMuscleGroup, exerciseSlug],
   );
 
-  const activeIconPath = iconCandidates[candidateIndex] ?? "";
+  const safeCandidateIndex = Math.min(candidateIndex, Math.max(0, iconCandidates.length - 1));
+  const activeIconPath = iconCandidates[safeCandidateIndex] ?? "";
+  const mediaUrl =
+    mediaState.slug === exerciseSlug
+      ? mediaState.url
+      : (mediaUrlCache.get(exerciseSlug) ?? null);
+
+  useEffect(() => {
+    const cached = mediaUrlCache.get(exerciseSlug);
+    if (cached !== undefined) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadExerciseMedia() {
+      try {
+        const response = await fetch(`/api/exercises/${encodeURIComponent(exerciseSlug)}/media`, {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        const payload = (await response.json().catch(() => null)) as ExerciseMediaResponse | null;
+        const nextUrl = response.ok && payload?.ok ? (payload.media?.mediaUrl ?? null) : null;
+
+        mediaUrlCache.set(exerciseSlug, nextUrl);
+        if (active) {
+          setMediaState({ slug: exerciseSlug, url: nextUrl });
+        }
+      } catch {
+        mediaUrlCache.set(exerciseSlug, null);
+        if (active) {
+          setMediaState({ slug: exerciseSlug, url: null });
+        }
+      }
+    }
+
+    void loadExerciseMedia();
+
+    return () => {
+      active = false;
+    };
+  }, [exerciseSlug]);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -80,7 +135,18 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {activeIconPath ? (
+          {mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt=""
+              className="exercise-icon-cell__gif"
+              loading="lazy"
+              onError={() => {
+                mediaUrlCache.set(exerciseSlug, null);
+                setMediaState({ slug: exerciseSlug, url: null });
+              }}
+            />
+          ) : activeIconPath ? (
             <Image
               key={`${exerciseSlug}-${activeIconPath}`}
               src={activeIconPath}
