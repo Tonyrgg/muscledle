@@ -28,3 +28,10 @@ export type PublicTodayGameState = {
   guessCount: number;
   attempts: PublicGameAttempt[];
 };
+
+export type SubmitGuessResponse = {
+  gameDate: string;
+  status: "in_progress" | "won" | "lost";
+  guessCount: number;
+  attempt: PublicGameAttempt;
+};

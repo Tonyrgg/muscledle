@@ -1,4 +1,4 @@
-import type { PublicTodayGameState } from "@/types/game";
+import type { PublicTodayGameState, SubmitGuessResponse } from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
 
 export type LiveExerciseSuggestion = {
@@ -64,7 +64,7 @@ export async function fetchTodayGameState(): Promise<PublicTodayGameState> {
 
 export async function submitGuessRequest(
   guessExerciseId: string,
-): Promise<PublicTodayGameState> {
+): Promise<SubmitGuessResponse> {
   const authHeaders = await getAuthHeaders();
   const response = await fetch("/api/game/guess", {
     method: "POST",
@@ -94,7 +94,7 @@ export async function submitGuessRequest(
     throw new Error(errorMessage || "Failed to submit guess.");
   }
 
-  return payload as PublicTodayGameState;
+  return payload as SubmitGuessResponse;
 }
 
 export async function fetchLiveExercises(): Promise<LiveExerciseSuggestion[]> {

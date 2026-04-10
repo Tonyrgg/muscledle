@@ -119,7 +119,18 @@ export function GameShell({ initialState }: GameShellProps) {
 
     try {
       const updated = await submitGuessRequest(selectedExerciseId);
-      setGameState(updated);
+      setGameState((current) => {
+        if (!current || current.gameDate !== updated.gameDate) {
+          return current;
+        }
+
+        return {
+          ...current,
+          status: updated.status,
+          guessCount: updated.guessCount,
+          attempts: [updated.attempt, ...current.attempts],
+        };
+      });
       setQuery("");
       setSelectedExerciseId(null);
     } catch (error) {

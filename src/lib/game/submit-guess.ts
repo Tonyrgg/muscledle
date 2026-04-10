@@ -2,12 +2,11 @@ import { trackEvent } from "@/lib/analytics/track";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
-import { getTodayGameState } from "@/lib/game/bootstrap";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { getAuthenticatedUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Exercise } from "@/types/exercise";
-import type { PublicTodayGameState } from "@/types/game";
+import type { PublicGameAttempt, SubmitGuessResponse } from "@/types/game";
 
 type UserDailyGameRow = {
   id: string;
@@ -83,8 +82,7 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
 
 export async function submitGuess(input: {
   guessExerciseId: string;
-}): Promise<PublicTodayGameState> {
-  await createClient();
+}): Promise<SubmitGuessResponse> {
   const admin = createAdminClient();
   const gameDate = gameDateRome();
 
@@ -94,20 +92,29 @@ export async function submitGuess(input: {
     throw new AuthRequiredError();
   }
 
-  const dailySelection = await resolveDailySelection(gameDate);
-
-  const userDailyGame = await getOrCreateUserDailyGame(user.id, gameDate);
+  const [dailySelection, userDailyGame] = await Promise.all([
+    resolveDailySelection(gameDate),
+    getOrCreateUserDailyGame(user.id, gameDate),
+  ]);
 
   if (userDailyGame.status !== "in_progress") {
     throw new GameConflictError("Game is already finished for today.");
   }
 
-  const { data: guessedExercise, error: guessError } = await admin
-    .from("exercises")
-    .select("*")
-    .eq("id", input.guessExerciseId)
-    .eq("is_live", true)
-    .maybeSingle<Exercise>();
+  const [{ data: guessedExercise, error: guessError }, { data: targetExercise, error: targetError }] =
+    await Promise.all([
+      admin
+        .from("exercises")
+        .select("*")
+        .eq("id", input.guessExerciseId)
+        .eq("is_live", true)
+        .maybeSingle<Exercise>(),
+      admin
+        .from("exercises")
+        .select("*")
+        .eq("id", dailySelection.exerciseId)
+        .maybeSingle<Exercise>(),
+    ]);
 
   if (guessError) {
     throw new Error(`Failed to load guessed exercise: ${guessError.message}`);
@@ -116,12 +123,6 @@ export async function submitGuess(input: {
   if (!guessedExercise) {
     throw new GameConflictError("Guessed exercise does not exist or is not live.");
   }
-
-  const { data: targetExercise, error: targetError } = await admin
-    .from("exercises")
-    .select("*")
-    .eq("id", dailySelection.exerciseId)
-    .maybeSingle<Exercise>();
 
   if (targetError) {
     throw new Error(`Failed to load target exercise: ${targetError.message}`);
@@ -143,18 +144,26 @@ export async function submitGuess(input: {
 
   const nowIso = new Date().toISOString();
 
-  const { error: attemptError } = await admin.from("game_attempts").insert({
-    user_id: user.id,
-    game_date: gameDate,
-    user_daily_game_id: userDailyGame.id,
-    guess_index: newGuessCount,
-    guess_exercise_id: input.guessExerciseId,
-    feedback,
-    is_correct: correct,
-  });
+  const { data: insertedAttempt, error: attemptError } = await admin
+    .from("game_attempts")
+    .insert({
+      user_id: user.id,
+      game_date: gameDate,
+      user_daily_game_id: userDailyGame.id,
+      guess_index: newGuessCount,
+      guess_exercise_id: input.guessExerciseId,
+      feedback,
+      is_correct: correct,
+    })
+    .select("id")
+    .single<{ id: string }>();
 
   if (attemptError) {
     throw new Error(`Failed to write game attempt: ${attemptError.message}`);
+  }
+
+  if (!insertedAttempt?.id) {
+    throw new Error("Failed to write game attempt: missing inserted attempt id.");
   }
 
   const updatePayload: {
@@ -181,7 +190,26 @@ export async function submitGuess(input: {
     throw new Error(`Failed to update daily game state: ${updateGameError.message}`);
   }
 
-  await trackEvent({
+  const nextAttempt: PublicGameAttempt = {
+    id: insertedAttempt.id,
+    guessExerciseId: guessedExercise.id,
+    guessSlug: guessedExercise.slug,
+    guessName: guessedExercise.name,
+    guessMuscleGroup: guessedExercise.muscle_group ?? null,
+    values: {
+      muscle: guessedExercise.muscle.join(" / "),
+      equipment: guessedExercise.equipment.join(" / "),
+      movement: guessedExercise.movement.join(" / "),
+      pattern: guessedExercise.pattern.join(" / "),
+      reps: guessedExercise.reps.join(" / "),
+      goal: guessedExercise.goal.join(" / "),
+      ego: guessedExercise.ego.join(" / "),
+    },
+    feedback,
+    isCorrect: correct,
+  };
+
+  void trackEvent({
     userId: user.id,
     eventName: "guess_submitted",
     payload: {
@@ -193,12 +221,17 @@ export async function submitGuess(input: {
   });
 
   if (nextStatus === "won") {
-    await trackEvent({
+    void trackEvent({
       userId: user.id,
       eventName: "game_won",
       payload: { gameDate, guessCount: newGuessCount },
     });
   }
 
-  return getTodayGameState();
+  return {
+    gameDate,
+    status: nextStatus,
+    guessCount: newGuessCount,
+    attempt: nextAttempt,
+  };
 }
