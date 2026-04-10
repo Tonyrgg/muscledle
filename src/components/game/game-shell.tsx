@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
 import { GuessInput } from "@/components/game/guess-input";
+import { VictoryPanel } from "@/components/game/victory-panel";
 import {
   fetchLiveExercises,
   fetchTodayGameState,
@@ -167,6 +168,8 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
   const showPromptSubtitle = !gameState || gameState.guessCount === 0;
+  const isWon = gameState?.status === "won";
+  const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
 
   return (
     <>
@@ -181,30 +184,43 @@ export function GameShell({ initialState }: GameShellProps) {
             </h1>
             <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
 
-            <div className="game-prompt-panel" role="status" aria-live="polite">
-              <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
-              {showPromptSubtitle ? (
-                <p className="game-prompt-panel__subtitle">
-                  Type any exercise name to begin.
-                </p>
-              ) : null}
-            </div>
+            {!isWon ? (
+              <div className="game-prompt-panel" role="status" aria-live="polite">
+                <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
+                {showPromptSubtitle ? (
+                  <p className="game-prompt-panel__subtitle">
+                    Type any exercise name to begin.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
           </header>
 
-          <section className="game-input-zone" aria-label="Guess input">
-            <GuessInput
-              query={query}
-              selectedExerciseId={selectedExerciseId}
-              exercises={selectableExercises}
-              loadingExercises={loadingExercises}
-              disabled={disabled}
-              submitting={isSubmitting}
-              onQueryChange={handleQueryChange}
-              onSelectExercise={handleSelectExercise}
-              onSubmit={handleSubmit}
-            />
-          </section>
+          {isWon ? (
+            <section className="game-win-zone" aria-label="Victory summary">
+              <VictoryPanel
+                gameDate={gameState?.gameDate ?? ""}
+                guessCount={gameState?.guessCount ?? 0}
+                winningAttempt={winningAttempt}
+                attempts={gameState?.attempts ?? []}
+              />
+            </section>
+          ) : (
+            <section className="game-input-zone" aria-label="Guess input">
+              <GuessInput
+                query={query}
+                selectedExerciseId={selectedExerciseId}
+                exercises={selectableExercises}
+                loadingExercises={loadingExercises}
+                disabled={disabled}
+                submitting={isSubmitting}
+                onQueryChange={handleQueryChange}
+                onSelectExercise={handleSelectExercise}
+                onSubmit={handleSubmit}
+              />
+            </section>
+          )}
 
           <section className="game-table-zone" aria-label="Attempts">
             <AttemptsTable
