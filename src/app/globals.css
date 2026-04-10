@@ -735,7 +735,7 @@ input {
 
 .feedback-cell__tooltip {
   position: fixed;
-  transform: translateY(-100%);
+  transform: translate(-50%, -100%);
   z-index: 140;
   min-width: 0;
   max-width: min(20rem, calc(100vw - 1rem));

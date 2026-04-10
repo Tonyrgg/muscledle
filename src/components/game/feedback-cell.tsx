@@ -33,13 +33,14 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
   const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
     const viewportPadding = 12;
     const tooltipMaxWidth = 320;
-    const minX = viewportPadding;
-    const maxX = Math.max(viewportPadding, window.innerWidth - tooltipMaxWidth - viewportPadding);
+    const tooltipHalfWidth = tooltipMaxWidth / 2;
+    const minX = viewportPadding + tooltipHalfWidth;
+    const maxX = Math.max(minX, window.innerWidth - viewportPadding - tooltipHalfWidth);
     const minY = 44;
     const maxY = Math.max(minY, window.innerHeight - viewportPadding);
 
     return {
-      x: Math.max(minX, Math.min(clientX + 14, maxX)),
+      x: Math.max(minX, Math.min(clientX, maxX)),
       y: Math.max(minY, Math.min(clientY - 10, maxY)),
     };
   };
