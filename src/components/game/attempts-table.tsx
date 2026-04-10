@@ -4,11 +4,16 @@ import type { PublicGameAttempt } from "@/types/game";
 type AttemptsTableProps = {
   attempts: PublicGameAttempt[];
   loading?: boolean;
+  revealingAttemptId?: string | null;
 };
 
 const columns = ["Exercise", "Muscle", "Equipment", "Movement", "Pattern", "Reps", "Goal", "Ego"] as const;
 
-export function AttemptsTable({ attempts, loading = false }: AttemptsTableProps) {
+export function AttemptsTable({
+  attempts,
+  loading = false,
+  revealingAttemptId = null,
+}: AttemptsTableProps) {
   if (loading) {
     return (
       <div className="attempts-table-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
@@ -55,7 +60,7 @@ export function AttemptsTable({ attempts, loading = false }: AttemptsTableProps)
 
         <div className="attempts-body" role="rowgroup">
           {attempts.map((attempt) => (
-            <AttemptRow key={attempt.id} attempt={attempt} />
+            <AttemptRow key={attempt.id} attempt={attempt} isRevealing={attempt.id === revealingAttemptId} />
           ))}
         </div>
       </div>

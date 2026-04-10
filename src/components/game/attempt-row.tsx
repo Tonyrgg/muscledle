@@ -4,9 +4,10 @@ import type { PublicGameAttempt } from "@/types/game";
 
 type AttemptRowProps = {
   attempt: PublicGameAttempt;
+  isRevealing?: boolean;
 };
 
-export function AttemptRow({ attempt }: AttemptRowProps) {
+export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
   return (
     <div className="attempts-grid attempts-row" role="row">
       <div className="attempts-exercise-cell" role="cell">
@@ -17,13 +18,13 @@ export function AttemptRow({ attempt }: AttemptRowProps) {
         />
       </div>
 
-      <FeedbackCell color={attempt.feedback.muscle} value={attempt.values.muscle} />
-      <FeedbackCell color={attempt.feedback.equipment} value={attempt.values.equipment} />
-      <FeedbackCell color={attempt.feedback.movement} value={attempt.values.movement} />
-      <FeedbackCell color={attempt.feedback.pattern} value={attempt.values.pattern} />
-      <FeedbackCell color={attempt.feedback.reps} value={attempt.values.reps} />
-      <FeedbackCell color={attempt.feedback.goal} value={attempt.values.goal} />
-      <FeedbackCell color={attempt.feedback.ego} value={attempt.values.ego} />
+      <FeedbackCell color={attempt.feedback.muscle} value={attempt.values.muscle} isRevealing={isRevealing} revealOrder={0} />
+      <FeedbackCell color={attempt.feedback.equipment} value={attempt.values.equipment} isRevealing={isRevealing} revealOrder={1} />
+      <FeedbackCell color={attempt.feedback.movement} value={attempt.values.movement} isRevealing={isRevealing} revealOrder={2} />
+      <FeedbackCell color={attempt.feedback.pattern} value={attempt.values.pattern} isRevealing={isRevealing} revealOrder={3} />
+      <FeedbackCell color={attempt.feedback.reps} value={attempt.values.reps} isRevealing={isRevealing} revealOrder={4} />
+      <FeedbackCell color={attempt.feedback.goal} value={attempt.values.goal} isRevealing={isRevealing} revealOrder={5} />
+      <FeedbackCell color={attempt.feedback.ego} value={attempt.values.ego} isRevealing={isRevealing} revealOrder={6} />
     </div>
   );
 }

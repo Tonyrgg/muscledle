@@ -346,6 +346,7 @@ input {
 
 .attempts-row {
   align-items: stretch;
+  perspective: 900px;
 }
 
 .attempts-exercise-cell {
@@ -435,6 +436,8 @@ input {
   text-transform: uppercase;
   text-align: center;
   color: #f7f7f7;
+  backface-visibility: hidden;
+  transform-origin: center;
 }
 
 .feedback-cell--green {
@@ -447,6 +450,10 @@ input {
 
 .feedback-cell--red {
   background: var(--feedback-red);
+}
+
+.feedback-cell--reveal {
+  animation: feedback-flip-reveal 520ms cubic-bezier(0.2, 0.82, 0.22, 1) both;
 }
 
 .attempts-empty {
@@ -596,6 +603,22 @@ input {
   }
 }
 
+@keyframes feedback-flip-reveal {
+  0% {
+    opacity: 0;
+    transform: rotateY(-90deg);
+  }
+
+  55% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+    transform: rotateY(0deg);
+  }
+}
+
 @media (max-width: 1024px) {
   .attempts-grid {
     grid-template-columns: 98px repeat(7, minmax(98px, 1fr));
@@ -670,4 +693,5 @@ input {
   .attempts-loading__cell::after {
     animation: none;
   }
+
 }

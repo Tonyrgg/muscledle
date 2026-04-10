@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
 import { GuessInput } from "@/components/game/guess-input";
@@ -30,7 +30,9 @@ export function GameShell({ initialState }: GameShellProps) {
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(null);
   const toastIdRef = useRef(0);
+  const revealTimeoutRef = useRef<number | null>(null);
 
   const attemptedExerciseIds = useMemo(
     () => new Set((gameState?.attempts ?? []).map((attempt) => attempt.guessExerciseId)),
@@ -50,6 +52,28 @@ export function GameShell({ initialState }: GameShellProps) {
       setToast((current) => (current?.id === id ? null : current));
     }, 3600);
   }, []);
+
+  useEffect(() => {
+    if (!revealingAttemptId) {
+      return;
+    }
+
+    if (revealTimeoutRef.current !== null) {
+      window.clearTimeout(revealTimeoutRef.current);
+    }
+
+    revealTimeoutRef.current = window.setTimeout(() => {
+      setRevealingAttemptId(null);
+      revealTimeoutRef.current = null;
+    }, 2600);
+
+    return () => {
+      if (revealTimeoutRef.current !== null) {
+        window.clearTimeout(revealTimeoutRef.current);
+        revealTimeoutRef.current = null;
+      }
+    };
+  }, [revealingAttemptId]);
 
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
@@ -119,6 +143,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
     try {
       const updated = await submitGuessRequest(selectedExerciseId);
+      setRevealingAttemptId(updated.attempt.id);
       setGameState((current) => {
         if (!current || current.gameDate !== updated.gameDate) {
           return current;
@@ -182,7 +207,11 @@ export function GameShell({ initialState }: GameShellProps) {
           </section>
 
           <section className="game-table-zone" aria-label="Attempts">
-            <AttemptsTable attempts={gameState?.attempts ?? []} loading={isLoadingState && !gameState} />
+            <AttemptsTable
+              attempts={gameState?.attempts ?? []}
+              loading={isLoadingState && !gameState}
+              revealingAttemptId={revealingAttemptId}
+            />
           </section>
 
           <section className="yesterday-exercise" aria-label="Yesterday exercise">
