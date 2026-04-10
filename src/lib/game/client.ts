@@ -1,12 +1,20 @@
 import type { PublicTodayGameState, SubmitGuessResponse } from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
+import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps } from "@/types/exercise";
 
 export type LiveExerciseSuggestion = {
   id: string;
   name: string;
   slug: string;
   aliases: string[];
-  muscle_group: string;
+  muscle_group: MuscleGroup;
+  muscle: Muscle[];
+  equipment: Equipment[];
+  movement: Movement[];
+  pattern: Pattern[];
+  reps: Reps[];
+  goal: Goal[];
+  ego: Ego[];
 };
 
 type ErrorPayload = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from "react";
+import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { getAttributeDefinition, type FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
 import type { FeedbackColor } from "@/types/exercise";
@@ -22,13 +22,8 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
 export function FeedbackCell({ column, color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
-  const [canRenderPortal, setCanRenderPortal] = useState(false);
 
   const tooltipText = useMemo(() => getAttributeDefinition(column, value), [column, value]);
-
-  useEffect(() => {
-    setCanRenderPortal(true);
-  }, []);
 
   const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
     const viewportPadding = 12;
@@ -86,7 +81,7 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
       onPointerLeave={handlePointerLeave}
     >
       <span>{value}</span>
-      {tooltipOpen && cursorPosition && canRenderPortal
+      {tooltipOpen && cursorPosition && typeof document !== "undefined"
         ? createPortal(
             <div
               className="feedback-cell__tooltip"

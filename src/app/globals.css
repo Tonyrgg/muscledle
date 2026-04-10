@@ -142,6 +142,46 @@ input {
   color: var(--text-muted);
 }
 
+.mode-switch {
+  margin-top: 0.9rem;
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  width: min(100%, 340px);
+}
+
+.mode-switch__button {
+  border: 1px solid var(--border);
+  background: #222;
+  color: #a7a7a7;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mode-switch__button--active {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: #1d1d1d;
+}
+
+.mode-switch__button:hover,
+.mode-switch__button:focus-visible {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.game-prompt-panel--infinite .game-prompt-panel__subtitle {
+  margin-top: 0.36rem;
+}
+
+.game-prompt-panel__restart {
+  margin-top: 0.72rem;
+}
+
 .game-input-zone {
   width: min(100%, 690px);
 }

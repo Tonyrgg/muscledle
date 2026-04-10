@@ -11,7 +11,9 @@ import {
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
-import type { PublicTodayGameState } from "@/types/game";
+import { evaluateGuess } from "@/lib/exercises/evaluate";
+import type { Exercise } from "@/types/exercise";
+import type { PublicGameAttempt, PublicTodayGameState } from "@/types/game";
 
 type GameShellProps = {
   initialState: PublicTodayGameState | null;
@@ -22,8 +24,75 @@ type ToastState = {
   message: string;
 };
 
+type GameMode = "daily" | "infinite";
+
+type InfiniteStatus = "in_progress" | "lost" | "completed";
+
+type InfiniteGameState = {
+  status: InfiniteStatus;
+  score: number;
+  currentIndex: number;
+  attempts: PublicGameAttempt[];
+  maxAttemptsPerRound: number;
+};
+
+function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
+  return {
+    id: exercise.id,
+    slug: exercise.slug,
+    name: exercise.name,
+    aliases: exercise.aliases,
+    muscle: exercise.muscle,
+    equipment: exercise.equipment,
+    movement: exercise.movement,
+    pattern: exercise.pattern,
+    reps: exercise.reps,
+    goal: exercise.goal,
+    ego: exercise.ego,
+    muscle_group: exercise.muscle_group,
+    is_live: true,
+  };
+}
+
+function createInfiniteGameState(): InfiniteGameState {
+  return {
+    status: "in_progress",
+    score: 0,
+    currentIndex: 0,
+    attempts: [],
+    maxAttemptsPerRound: 7,
+  };
+}
+
+function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
+  const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
+  // In infinite mode the win condition must be the exact exercise, not just matching attributes.
+  const correct = guess.id === target.id;
+
+  return {
+    id: `inf-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    guessExerciseId: guess.id,
+    guessSlug: guess.slug,
+    guessName: guess.name,
+    guessMuscleGroup: guess.muscle_group,
+    values: {
+      muscle: guess.muscle.join(" / "),
+      equipment: guess.equipment.join(" / "),
+      movement: guess.movement.join(" / "),
+      pattern: guess.pattern.join(" / "),
+      reps: guess.reps.join(" / "),
+      goal: guess.goal.join(" / "),
+      ego: guess.ego.join(" / "),
+    },
+    feedback,
+    isCorrect: correct,
+  };
+}
+
 export function GameShell({ initialState }: GameShellProps) {
+  const [mode, setMode] = useState<GameMode>("daily");
   const [gameState, setGameState] = useState<PublicTodayGameState | null>(initialState);
+  const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exercises, setExercises] = useState<LiveExerciseSuggestion[]>([]);
@@ -35,9 +104,24 @@ export function GameShell({ initialState }: GameShellProps) {
   const toastIdRef = useRef(0);
   const revealTimeoutRef = useRef<number | null>(null);
 
+  const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
+
+  const activeInfiniteTarget = useMemo(() => {
+    if (!infiniteState) {
+      return null;
+    }
+
+    return exercises[infiniteState.currentIndex] ?? null;
+  }, [exercises, infiniteState]);
+
+  const activeAttempts = useMemo(
+    () => (mode === "daily" ? gameState?.attempts ?? [] : infiniteState?.attempts ?? []),
+    [gameState?.attempts, infiniteState?.attempts, mode],
+  );
+
   const attemptedExerciseIds = useMemo(
-    () => new Set((gameState?.attempts ?? []).map((attempt) => attempt.guessExerciseId)),
-    [gameState?.attempts],
+    () => new Set(activeAttempts.map((attempt) => attempt.guessExerciseId)),
+    [activeAttempts],
   );
 
   const selectableExercises = useMemo(
@@ -86,6 +170,7 @@ export function GameShell({ initialState }: GameShellProps) {
     try {
       const result = await fetchLiveExercises();
       setExercises(result);
+      setInfiniteState(createInfiniteGameState());
     } catch (error) {
       pushToast(error instanceof Error ? error.message : "Failed to load exercises.");
     } finally {
@@ -114,6 +199,13 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [gameState, loadExercises, loadTodayState]);
 
+  const handleModeChange = useCallback((nextMode: GameMode) => {
+    setMode(nextMode);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+  }, []);
+
   const handleQueryChange = useCallback((value: string) => {
     setQuery(value);
     setSelectedExerciseId(null);
@@ -124,7 +216,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setSelectedExerciseId(exercise.id);
   }, []);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmitDaily = useCallback(async () => {
     if (!selectedExerciseId) {
       pushToast("Select an exercise from the dropdown first.");
       return;
@@ -166,10 +258,124 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [attemptedExerciseIds, gameState, pushToast, selectedExerciseId]);
 
-  const disabled = !gameState || gameState.status !== "in_progress" || isSubmitting;
-  const showPromptSubtitle = !gameState || gameState.guessCount === 0;
-  const isWon = gameState?.status === "won";
+  const handleSubmitInfinite = useCallback(() => {
+    if (!selectedExerciseId) {
+      pushToast("Select an exercise from the dropdown first.");
+      return;
+    }
+
+    if (!infiniteState || infiniteState.status !== "in_progress") {
+      return;
+    }
+
+    if (!activeInfiniteTarget) {
+      pushToast("No target exercise available.");
+      return;
+    }
+
+    if (attemptedExerciseIds.has(selectedExerciseId)) {
+      pushToast("You already guessed this exercise in this round.");
+      setSelectedExerciseId(null);
+      return;
+    }
+
+    const guessed = exerciseById.get(selectedExerciseId);
+
+    if (!guessed) {
+      pushToast("Selected exercise is not available.");
+      return;
+    }
+
+    const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
+    const attempts = [attempt, ...infiniteState.attempts];
+    const attemptsUsed = attempts.length;
+
+    setRevealingAttemptId(attempt.id);
+    setQuery("");
+    setSelectedExerciseId(null);
+
+    if (attempt.isCorrect) {
+      const nextScore = infiniteState.score + 1;
+      const nextIndex = infiniteState.currentIndex + 1;
+
+      if (nextIndex >= exercises.length) {
+        setInfiniteState({
+          ...infiniteState,
+          score: nextScore,
+          currentIndex: nextIndex,
+          attempts,
+          status: "completed",
+        });
+        pushToast(`Perfect run completed. Final score: ${nextScore}.`);
+        return;
+      }
+
+      setInfiniteState({
+        ...infiniteState,
+        score: nextScore,
+        currentIndex: nextIndex,
+        attempts: [],
+      });
+      pushToast(`Correct. Score ${nextScore}. Next exercise loaded.`);
+      return;
+    }
+
+    if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
+      setInfiniteState({
+        ...infiniteState,
+        attempts,
+        status: "lost",
+      });
+      pushToast("Run over. You used all 7 attempts.");
+      return;
+    }
+
+    setInfiniteState({
+      ...infiniteState,
+      attempts,
+    });
+  }, [
+    activeInfiniteTarget,
+    attemptedExerciseIds,
+    exerciseById,
+    exercises.length,
+    infiniteState,
+    pushToast,
+    selectedExerciseId,
+  ]);
+
+  const handleSubmit = useCallback(async () => {
+    if (mode === "daily") {
+      await handleSubmitDaily();
+      return;
+    }
+
+    handleSubmitInfinite();
+  }, [handleSubmitDaily, handleSubmitInfinite, mode]);
+
+  const restartInfiniteMode = useCallback(() => {
+    if (exercises.length === 0) {
+      return;
+    }
+
+    setInfiniteState(createInfiniteGameState());
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+  }, [exercises.length]);
+
+  const isDailyWon = gameState?.status === "won";
   const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
+
+  const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
+  const infiniteAttemptsLeft = infiniteState ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed) : 0;
+  const infiniteTotal = exercises.length;
+  const infiniteRemaining = infiniteState ? Math.max(0, infiniteTotal - infiniteState.score) : infiniteTotal;
+
+  const disabled =
+    mode === "daily"
+      ? !gameState || gameState.status !== "in_progress" || isSubmitting
+      : !infiniteState || infiniteState.status !== "in_progress";
 
   return (
     <>
@@ -184,20 +390,61 @@ export function GameShell({ initialState }: GameShellProps) {
             </h1>
             <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
 
-            {!isWon ? (
+            <div className="mode-switch" aria-label="Game mode switch">
+              <button
+                type="button"
+                aria-pressed={mode === "daily"}
+                className={`mode-switch__button ${mode === "daily" ? "mode-switch__button--active" : ""}`}
+                onClick={() => handleModeChange("daily")}
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                aria-pressed={mode === "infinite"}
+                className={`mode-switch__button ${mode === "infinite" ? "mode-switch__button--active" : ""}`}
+                onClick={() => handleModeChange("infinite")}
+              >
+                Marathon
+              </button>
+            </div>
+
+            {mode === "daily" && !isDailyWon ? (
               <div className="game-prompt-panel" role="status" aria-live="polite">
                 <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
-                {showPromptSubtitle ? (
-                  <p className="game-prompt-panel__subtitle">
-                    Type any exercise name to begin.
-                  </p>
+                {(!gameState || gameState.guessCount === 0) ? (
+                  <p className="game-prompt-panel__subtitle">Type any exercise name to begin.</p>
                 ) : null}
               </div>
             ) : null}
 
+            {mode === "infinite" ? (
+              <div className="game-prompt-panel game-prompt-panel--infinite" role="status" aria-live="polite">
+                <h2 className="game-prompt-panel__title">
+                  {infiniteState?.status === "completed"
+                    ? "Marathon completed"
+                    : infiniteState?.status === "lost"
+                      ? "Marathon over"
+                      : "Marathon mode"}
+                </h2>
+                <p className="game-prompt-panel__subtitle">
+                  SCORE {infiniteState?.score ?? 0} / {infiniteTotal} - ATTEMPTS LEFT {infiniteAttemptsLeft}
+                </p>
+                <p className="game-prompt-panel__subtitle">REMAINING EXERCISES {infiniteRemaining}</p>
+                {infiniteState?.status !== "in_progress" ? (
+                  <button
+                    type="button"
+                    className="exercise-media-modal__close game-prompt-panel__restart"
+                    onClick={restartInfiniteMode}
+                  >
+                    Restart Run
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
           </header>
 
-          {isWon ? (
+          {mode === "daily" && isDailyWon ? (
             <section className="game-win-zone" aria-label="Victory summary">
               <VictoryPanel
                 gameDate={gameState?.gameDate ?? ""}
@@ -206,7 +453,9 @@ export function GameShell({ initialState }: GameShellProps) {
                 attempts={gameState?.attempts ?? []}
               />
             </section>
-          ) : (
+          ) : null}
+
+          {(mode === "infinite" || (mode === "daily" && !isDailyWon)) ? (
             <section className="game-input-zone" aria-label="Guess input">
               <GuessInput
                 query={query}
@@ -217,27 +466,31 @@ export function GameShell({ initialState }: GameShellProps) {
                 submitting={isSubmitting}
                 onQueryChange={handleQueryChange}
                 onSelectExercise={handleSelectExercise}
-                onSubmit={handleSubmit}
+                onSubmit={() => {
+                  void handleSubmit();
+                }}
               />
             </section>
-          )}
+          ) : null}
 
           <section className="game-table-zone" aria-label="Attempts">
             <AttemptsTable
-              attempts={gameState?.attempts ?? []}
-              loading={isLoadingState && !gameState}
+              attempts={activeAttempts}
+              loading={mode === "daily" ? isLoadingState && !gameState : false}
               revealingAttemptId={revealingAttemptId}
             />
           </section>
 
-          <section className="yesterday-exercise" aria-label="Yesterday exercise">
-            <p className="yesterday-exercise__text">
-              Yesterday&apos;s exercise was{" "}
-              <span className="yesterday-exercise__name">
-                {gameState?.yesterdayExerciseName ?? "Unknown"}
-              </span>
-            </p>
-          </section>
+          {mode === "daily" ? (
+            <section className="yesterday-exercise" aria-label="Yesterday exercise">
+              <p className="yesterday-exercise__text">
+                Yesterday&apos;s exercise was{" "}
+                <span className="yesterday-exercise__name">
+                  {gameState?.yesterdayExerciseName ?? "Unknown"}
+                </span>
+              </p>
+            </section>
+          ) : null}
         </section>
       </main>
 
