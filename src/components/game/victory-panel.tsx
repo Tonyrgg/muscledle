@@ -57,9 +57,9 @@ function formatCountdown(totalMs: number): string {
 }
 
 function feedbackToEmoji(color: FeedbackColor): string {
-  if (color === "green") return "🟩";
-  if (color === "yellow") return "🟨";
-  return "🟥";
+  if (color === "green") return "\u{1F7E9}";
+  if (color === "yellow") return "\u{1F7E8}";
+  return "\u{1F7E5}";
 }
 
 function feedbackToClass(color: FeedbackColor): string {
@@ -69,6 +69,7 @@ function feedbackToClass(color: FeedbackColor): string {
 }
 
 export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }: VictoryPanelProps) {
+  const [expanded, setExpanded] = useState(true);
   const [countdown, setCountdown] = useState(() => formatCountdown(getMsUntilNextRomeMidnight(new Date())));
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(winningAttempt?.guessSlug ? null : "Demo unavailable");
@@ -148,7 +149,7 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
   );
 
   const shareText = useMemo(() => {
-    const header = `I solved today's #Muscledle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} 💪`;
+    const header = `I solved today's #Muscledle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
     const body = emojiRows.join("\n");
     const footer = "https://muscledle.local";
     return [header, body, footer].filter(Boolean).join("\n");
@@ -171,71 +172,87 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
       <div className="victory-panel__head">
         <p className="victory-panel__kicker">Victory</p>
         <h3 className="victory-panel__title">You guessed {winningAttempt?.guessName ?? "today's exercise"}</h3>
-      </div>
-
-      <div className="victory-panel__media-wrap">
-        {mediaUrl ? (
-          <img
-            src={mediaUrl}
-            alt={`Demo ${winningAttempt?.guessName ?? "exercise"}`}
-            className="victory-panel__media"
-            onError={() => {
-              setMediaUrl(null);
-              setMediaError("Demo unavailable");
-            }}
+        <button
+          type="button"
+          className="exercise-media-modal__close victory-panel__toggle"
+          onClick={() => setExpanded((current) => !current)}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse victory details" : "Expand victory details"}
+        >
+          <span
+            className={`victory-panel__chevron ${expanded ? "victory-panel__chevron--up" : "victory-panel__chevron--down"}`}
+            aria-hidden
           />
-        ) : (
-          <p className="victory-panel__media-fallback">{mediaError ?? "Loading demo..."}</p>
-        )}
+        </button>
       </div>
 
-      <div className="victory-panel__stats">
-        <p className="victory-panel__stat-line">
-          Attempts: <span>{guessCount}</span>
-        </p>
-        <p className="victory-panel__stat-label">Next exercise in</p>
-        <p className="victory-panel__countdown">{countdown}</p>
-        <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>
-      </div>
+      {expanded ? (
+        <>
+          <div className="victory-panel__media-wrap">
+            {mediaUrl ? (
+              <img
+                src={mediaUrl}
+                alt={`Demo ${winningAttempt?.guessName ?? "exercise"}`}
+                className="victory-panel__media"
+                onError={() => {
+                  setMediaUrl(null);
+                  setMediaError("Demo unavailable");
+                }}
+              />
+            ) : (
+              <p className="victory-panel__media-fallback">{mediaError ?? "Loading demo..."}</p>
+            )}
+          </div>
 
-      <div className="victory-panel__share-card">
-        <p className="victory-panel__share-text">
-          I solved today&apos;s #Muscledle ({gameDate}) in {guessCount} guess{guessCount === 1 ? "" : "es"} 💪
-        </p>
+          <div className="victory-panel__stats">
+            <p className="victory-panel__stat-line">
+              Attempts: <span>{guessCount}</span>
+            </p>
+            <p className="victory-panel__stat-label">Next exercise in</p>
+            <p className="victory-panel__countdown">{countdown}</p>
+            <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>
+          </div>
 
-        <div className="victory-panel__grid" aria-label="Result grid">
-          {orderedAttempts.map((attempt) => (
-            <div className="victory-panel__grid-row" key={attempt.id}>
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.muscle)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.equipment)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.movement)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.pattern)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.reps)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.goal)}`} />
-              <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.ego)}`} />
+          <div className="victory-panel__share-card">
+            <p className="victory-panel__share-text">
+              I solved today&apos;s #Muscledle ({gameDate}) in {guessCount} guess{guessCount === 1 ? "" : "es"} ??
+            </p>
+
+            <div className="victory-panel__grid" aria-label="Result grid">
+              {orderedAttempts.map((attempt) => (
+                <div className="victory-panel__grid-row" key={attempt.id}>
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.muscle)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.equipment)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.movement)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.pattern)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.reps)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.goal)}`} />
+                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.ego)}`} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="victory-panel__actions">
-          <button
-            type="button"
-            className="exercise-media-modal__close victory-panel__action"
-            onClick={() => void copyText()}
-          >
-            Copy Result
-          </button>
-          <button
-            type="button"
-            className="exercise-media-modal__close victory-panel__action victory-panel__action--placeholder"
-            disabled
-          >
-            Share (Soon)
-          </button>
-        </div>
+            <div className="victory-panel__actions">
+              <button
+                type="button"
+                className="exercise-media-modal__close victory-panel__action"
+                onClick={() => void copyText()}
+              >
+                Copy Result
+              </button>
+              <button
+                type="button"
+                className="exercise-media-modal__close victory-panel__action victory-panel__action--placeholder"
+                disabled
+              >
+                Share (Soon)
+              </button>
+            </div>
 
-        {copied ? <p className="victory-panel__copied">{copied}</p> : null}
-      </div>
+            {copied ? <p className="victory-panel__copied">{copied}</p> : null}
+          </div>
+        </>
+      ) : null}
     </section>
   );
 }

@@ -158,6 +158,7 @@ input {
 }
 
 .victory-panel__head {
+  position: relative;
   text-align: center;
   margin-bottom: 0.7rem;
 }
@@ -172,13 +173,44 @@ input {
 }
 
 .victory-panel__title {
-  margin: 0.34rem 0 0;
+  margin: 0.34rem 2.8rem 0;
   color: var(--text-primary);
   font-family: var(--font-display), "Oswald", sans-serif;
   font-size: clamp(1rem, 2.6vw, 1.45rem);
   letter-spacing: 0.02em;
   font-style: italic;
   text-transform: uppercase;
+}
+
+.victory-panel__toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.victory-panel__chevron {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  display: inline-block;
+}
+
+.victory-panel__chevron--down {
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.victory-panel__chevron--up {
+  transform: rotate(-135deg) translate(-1px, -1px);
 }
 
 .victory-panel__media-wrap {
