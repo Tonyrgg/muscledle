@@ -699,6 +699,7 @@ input {
 }
 
 .feedback-cell {
+  position: relative;
   display: flex;
   min-height: 5.75rem;
   align-items: center;
@@ -713,6 +714,7 @@ input {
   color: #f7f7f7;
   backface-visibility: hidden;
   transform-origin: center;
+  cursor: pointer;
 }
 
 .feedback-cell--green {
@@ -729,6 +731,27 @@ input {
 
 .feedback-cell--reveal {
   animation: feedback-flip-reveal 520ms cubic-bezier(0.2, 0.82, 0.22, 1) both;
+}
+
+.feedback-cell__tooltip {
+  position: fixed;
+  transform: translateY(-100%);
+  z-index: 140;
+  min-width: 0;
+  max-width: min(20rem, calc(100vw - 1rem));
+  border: 1px solid var(--accent);
+  background: rgba(7, 7, 7, 0.98);
+  color: #f5f5f5;
+  padding: 0.55rem 0.65rem;
+  font-family: var(--font-body), "Roboto Condensed", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.28;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+  white-space: normal;
 }
 
 .attempts-empty {

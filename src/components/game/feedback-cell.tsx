@@ -1,7 +1,12 @@
-import type { CSSProperties } from "react";
+"use client";
+
+import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
+import { getAttributeDefinition, type FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
 import type { FeedbackColor } from "@/types/exercise";
 
 type FeedbackCellProps = {
+  column: FeedbackColumnKey;
   color: FeedbackColor;
   value: string;
   isRevealing?: boolean;
@@ -14,7 +19,55 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
   red: "feedback-cell--red",
 };
 
-export function FeedbackCell({ color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
+export function FeedbackCell({ column, color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
+  const [canRenderPortal, setCanRenderPortal] = useState(false);
+
+  const tooltipText = useMemo(() => getAttributeDefinition(column, value), [column, value]);
+
+  useEffect(() => {
+    setCanRenderPortal(true);
+  }, []);
+
+  const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
+    const viewportPadding = 12;
+    const tooltipMaxWidth = 320;
+    const minX = viewportPadding;
+    const maxX = Math.max(viewportPadding, window.innerWidth - tooltipMaxWidth - viewportPadding);
+    const minY = 44;
+    const maxY = Math.max(minY, window.innerHeight - viewportPadding);
+
+    return {
+      x: Math.max(minX, Math.min(clientX + 14, maxX)),
+      y: Math.max(minY, Math.min(clientY - 10, maxY)),
+    };
+  };
+
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (!tooltipOpen) {
+      return;
+    }
+
+    setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
+  };
+
+  const handleClick = (event: PointerEvent<HTMLDivElement>) => {
+    const nextOpen = !tooltipOpen;
+    setTooltipOpen(nextOpen);
+
+    if (!nextOpen) {
+      return;
+    }
+
+    setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
+  };
+
+  const handlePointerLeave = () => {
+    setTooltipOpen(false);
+    setCursorPosition(null);
+  };
+
   const style: CSSProperties | undefined = isRevealing
     ? {
         animationDelay: `${revealOrder * 180}ms`,
@@ -27,8 +80,25 @@ export function FeedbackCell({ color, value, isRevealing = false, revealOrder = 
       role="cell"
       aria-label={value}
       style={style}
+      onClick={handleClick}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
     >
       <span>{value}</span>
+      {tooltipOpen && cursorPosition && canRenderPortal
+        ? createPortal(
+            <div
+              className="feedback-cell__tooltip"
+              style={{
+                left: `${cursorPosition.x}px`,
+                top: `${cursorPosition.y}px`,
+              }}
+            >
+              {tooltipText}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
