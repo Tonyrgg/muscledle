@@ -526,6 +526,8 @@ export function GameShell({ initialState }: GameShellProps) {
       ? infiniteState.exerciseOrderIds.length
       : exercises.length;
   const infiniteRemaining = infiniteState ? Math.max(0, infiniteTotal - infiniteState.score) : infiniteTotal;
+  const marathonProgressPct =
+    infiniteTotal > 0 ? Math.min(100, Math.max(0, Math.round(((infiniteState?.score ?? 0) / infiniteTotal) * 100))) : 0;
 
   const disabled =
     mode === "daily"
@@ -575,7 +577,16 @@ export function GameShell({ initialState }: GameShellProps) {
 
             {mode === "infinite" ? (
               <div className="game-prompt-panel game-prompt-panel--infinite" role="status" aria-live="polite">
-                <h2 className="game-prompt-panel__title">
+                <p className="marathon-hud__kicker">
+                  {infiniteState?.status === "completed"
+                    ? "Run Complete"
+                    : infiniteState?.status === "lost"
+                      ? "Run Failed"
+                      : infiniteState?.status === "not_started"
+                        ? "Get Ready"
+                        : "Live Run"}
+                </p>
+                <h2 className="game-prompt-panel__title marathon-hud__title">
                   {infiniteState?.status === "completed"
                     ? "Marathon completed"
                     : infiniteState?.status === "lost"
@@ -584,10 +595,26 @@ export function GameShell({ initialState }: GameShellProps) {
                         ? "Marathon ready"
                       : "Marathon mode"}
                 </h2>
-                <p className="game-prompt-panel__subtitle">
-                  SCORE {infiniteState?.score ?? 0} / {infiniteTotal} - ATTEMPTS LEFT {infiniteAttemptsLeft}
-                </p>
-                <p className="game-prompt-panel__subtitle">REMAINING EXERCISES {infiniteRemaining}</p>
+                <div className="marathon-hud__bar-wrap" aria-label="Marathon progress">
+                  <div className="marathon-hud__bar">
+                    <span className="marathon-hud__bar-fill" style={{ width: `${marathonProgressPct}%` }} />
+                  </div>
+                  <p className="marathon-hud__bar-label">{marathonProgressPct}% complete</p>
+                </div>
+                <div className="marathon-hud__stats">
+                  <p className="marathon-hud__stat">
+                    <span className="marathon-hud__stat-label">Score</span>
+                    <strong>{infiniteState?.score ?? 0}</strong>
+                  </p>
+                  <p className="marathon-hud__stat">
+                    <span className="marathon-hud__stat-label">Attempts Left</span>
+                    <strong>{infiniteAttemptsLeft}</strong>
+                  </p>
+                  <p className="marathon-hud__stat">
+                    <span className="marathon-hud__stat-label">Remaining</span>
+                    <strong>{infiniteRemaining}</strong>
+                  </p>
+                </div>
                 {infiniteState?.status === "lost" || infiniteState?.status === "completed" ? (
                   <button
                     type="button"
