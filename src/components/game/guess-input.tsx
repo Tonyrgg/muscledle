@@ -231,7 +231,7 @@ export function GuessInput({
           type="button"
           className="guess-input__submit"
           aria-label="Submit guess"
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           disabled={!canSubmitFromButton}
         >
           <span className="guess-input__submit-glyph" aria-hidden>{"\u27A4"}</span>
