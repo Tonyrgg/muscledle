@@ -33,7 +33,18 @@ export function AttemptsTable({
                   <div
                     key={`${rowIndex}-${cellIndex}`}
                     className={`attempts-loading__cell ${cellIndex === 0 ? "attempts-loading__cell--icon" : ""}`}
-                  />
+                  >
+                    {cellIndex === 0 ? (
+                      <div className="attempts-loading__exercise-skeleton">
+                        <span className="attempts-loading__exercise-glyph" />
+                        <span className="attempts-loading__exercise-line attempts-loading__exercise-line--main" />
+                      </div>
+                    ) : (
+                      <div className="attempts-loading__value-skeleton">
+                        <span className="attempts-loading__value-line" />
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             ))}

@@ -869,11 +869,11 @@ input {
 }
 
 .attempts-grid--skeleton-header {
-  opacity: 0.65;
+  opacity: 0.9;
 }
 
 .attempts-header-cell--skeleton {
-  color: #7c7c7c;
+  color: #7f7f7f;
 }
 
 .attempts-loading__grid-row {
@@ -883,9 +883,12 @@ input {
 .attempts-loading__cell {
   position: relative;
   min-height: 5.75rem;
-  border: 1px solid var(--border);
-  background: #262626;
+  border: 1px solid #363636;
+  background: #202020;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .attempts-loading__cell::after {
@@ -893,24 +896,89 @@ input {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0));
-  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+  animation: skeleton-sweep 1.7s ease-in-out infinite;
 }
 
 .attempts-loading__cell--icon {
-  background: #2d2d2d;
+  justify-content: flex-start;
+  padding: 0.62rem;
+  background: #222;
 }
 
-.attempts-loading__cell--icon::before {
-  content: "";
-  position: absolute;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid #4b4b4b;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+.attempts-loading__exercise-skeleton {
+  position: relative;
   z-index: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+}
+
+.attempts-loading__exercise-glyph {
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid #454545;
+  background: transparent;
+  border-radius: 0.3rem;
+}
+
+.attempts-loading__exercise-line {
+  display: block;
+  border-radius: 999px;
+  background: #4f4f4f;
+}
+
+.attempts-loading__exercise-line--main {
+  width: 58%;
+  height: 0.32rem;
+}
+
+.attempts-loading__value-skeleton {
+  position: relative;
+  z-index: 1;
+  width: 68%;
+  display: flex;
+  justify-content: center;
+}
+
+.attempts-loading__value-line {
+  display: block;
+  width: 100%;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: #505050;
+}
+
+/*
+ * Legacy richer skeleton classes kept for compatibility,
+ * now normalized to minimal style.
+ */
+.attempts-loading__exercise-line--sub {
+  display: none;
+}
+
+.attempts-loading__exercise-glyph,
+.attempts-loading__exercise-line,
+.attempts-loading__value-line {
+  animation: none;
+}
+
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 .game-footer {
@@ -1262,6 +1330,17 @@ input {
 @keyframes skeleton-sweep {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.58;
+  }
+
+  50% {
+    opacity: 0.96;
   }
 }
 
