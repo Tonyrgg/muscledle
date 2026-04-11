@@ -20,7 +20,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "incline-dumbbell-press",
     name: "Incline Dumbbell Press",
-    aliases: ["incline db press"],
+    aliases: ["incline db press", "incline chest press", "dumbbell incline press on exercise ball"],
     muscle: ["chest"],
     equipment: ["dumbbells"],
     movement: ["push"],
@@ -146,7 +146,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "lunges",
     name: "Lunges",
-    aliases: ["dumbbell lunges"],
+    aliases: ["dumbbell lunges", "dumbbell lunge", "barbell lunge"],
     muscle: ["legs"],
     equipment: ["dumbbells"],
     movement: ["push"],
@@ -188,7 +188,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "dumbbell-shoulder-press",
     name: "Dumbbell Shoulder Press",
-    aliases: ["db shoulder press"],
+    aliases: ["db shoulder press", "dumbbell press on exercise ball"],
     muscle: ["shoulders"],
     equipment: ["dumbbells"],
     movement: ["push"],
@@ -314,7 +314,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "cable-crunch",
     name: "Cable Crunch",
-    aliases: [],
+    aliases: ["cable kneeling crunch", "kneeling crunch"],
     muscle: ["core"],
     equipment: ["cable"],
     movement: ["core"],
@@ -370,7 +370,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "cable-crossover",
     name: "Cable Crossover",
-    aliases: ["cable fly"],
+    aliases: ["cable fly", "cable upper chest crossovers", "cable standing up straight crossovers"],
     muscle: ["chest"],
     equipment: ["cable"],
     movement: ["isolation"],
@@ -398,7 +398,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "seated-cable-row",
     name: "Seated Cable Row",
-    aliases: ["cable row"],
+    aliases: ["cable row", "cable seated row", "cable low seated row"],
     muscle: ["back"],
     equipment: ["cable"],
     movement: ["pull"],
@@ -454,7 +454,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "bulgarian-split-squat",
     name: "Bulgarian Split Squat",
-    aliases: ["rear foot elevated split squat"],
+    aliases: ["rear foot elevated split squat", "single leg split squat", "dumbbell single leg split squat"],
     muscle: ["legs"],
     equipment: ["dumbbells"],
     movement: ["push"],
@@ -538,7 +538,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "face-pull",
     name: "Face Pull",
-    aliases: ["rope face pull"],
+    aliases: ["rope face pull", "cable rear delt row (with rope)", "cable standing rear delt row (with rope)"],
     muscle: ["shoulders", "back"],
     equipment: ["cable"],
     movement: ["pull"],
@@ -580,7 +580,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "cable-woodchopper",
     name: "Cable Woodchopper",
-    aliases: ["wood chop"],
+    aliases: ["wood chop", "cable twist", "cable twist (up-down)"],
     muscle: ["core"],
     equipment: ["cable"],
     movement: ["core"],
@@ -594,7 +594,7 @@ export const exercisesSeed: ExerciseSeed[] = [
   {
     slug: "ab-wheel-rollout",
     name: "Ab Wheel Rollout",
-    aliases: ["ab rollout"],
+    aliases: ["ab rollout", "wheel rollout"],
     muscle: ["core"],
     equipment: ["bodyweight"],
     movement: ["core"],
