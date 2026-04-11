@@ -996,6 +996,77 @@ input {
   color: var(--accent);
 }
 
+.info-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  background: rgba(8, 10, 14, 0.76);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.info-sheet__panel {
+  width: min(100%, 980px);
+  margin-top: 1rem;
+  border: 1px solid #39414c;
+  background: linear-gradient(180deg, #1b222b 0%, #171e27 100%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.46);
+  padding: 1rem 1rem 1.1rem;
+}
+
+.info-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid #495260;
+  padding-bottom: 0.62rem;
+}
+
+.info-sheet__title {
+  margin: 0;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.35rem, 3.6vw, 2rem);
+  color: #f4f4f4;
+  letter-spacing: 0.01em;
+}
+
+.info-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 0.8rem;
+}
+
+.info-sheet__section {
+  border-bottom: 1px solid rgba(73, 82, 96, 0.44);
+  padding-bottom: 0.75rem;
+}
+
+.info-sheet__section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-sheet__section-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #eaf3ff;
+}
+
+.info-sheet__section p {
+  margin: 0.25rem 0 0;
+  color: #d7dde7;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .archive-page {
   min-height: 100vh;
   padding: 1rem 0.75rem 2rem;
@@ -1292,6 +1363,20 @@ input {
 
   .archive-toolbar {
     grid-template-columns: 1fr;
+  }
+
+  .info-sheet {
+    padding: 0.6rem;
+  }
+
+  .info-sheet__panel {
+    margin-top: 0.2rem;
+    padding: 0.8rem 0.75rem 0.9rem;
+  }
+
+  .info-sheet__head {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

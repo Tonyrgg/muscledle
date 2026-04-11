@@ -45,6 +45,8 @@ type MarathonTransitionState = {
   score: number;
 };
 
+type FooterModal = "how-to-play" | "privacy" | null;
+
 function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
     id: exercise.id,
@@ -126,6 +128,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(null);
   const [marathonTransition, setMarathonTransition] = useState<MarathonTransitionState | null>(null);
+  const [footerModal, setFooterModal] = useState<FooterModal>(null);
   const toastIdRef = useRef(0);
   const revealTimeoutRef = useRef<number | null>(null);
   const marathonSolvedTimeoutRef = useRef<number | null>(null);
@@ -203,6 +206,25 @@ export function GameShell({ initialState }: GameShellProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!footerModal) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFooterModal(null);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [footerModal]);
 
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
@@ -664,13 +686,95 @@ export function GameShell({ initialState }: GameShellProps) {
 
       <footer className="game-footer" aria-label="Muscledle footer">
         <nav className="game-footer__links" aria-label="Footer links">
-          <button type="button" className="game-footer__link">HOW TO PLAY</button>
+          <button type="button" className="game-footer__link" onClick={() => setFooterModal("how-to-play")}>
+            HOW TO PLAY
+          </button>
           <button type="button" className="game-footer__link">STATS</button>
           <Link href="/archive" className="game-footer__link">ARCHIVE</Link>
-          <button type="button" className="game-footer__link">PRIVACY</button>
+          <button type="button" className="game-footer__link" onClick={() => setFooterModal("privacy")}>
+            PRIVACY
+          </button>
         </nav>
         <p className="game-footer__copy">(C) 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
       </footer>
+
+      {footerModal ? (
+        <section className="info-sheet" aria-label="Information modal" onClick={() => setFooterModal(null)}>
+          <div className="info-sheet__panel" onClick={(event) => event.stopPropagation()}>
+            <div className="info-sheet__head">
+              <h2 className="info-sheet__title">{footerModal === "how-to-play" ? "How To Play" : "Privacy"}</h2>
+              <button type="button" className="exercise-media-modal__close" onClick={() => setFooterModal(null)}>
+                Close
+              </button>
+            </div>
+
+            {footerModal === "how-to-play" ? (
+              <div className="info-sheet__body">
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Goal</h3>
+                  <p>Guess today&apos;s exercise in as few attempts as possible.</p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">How Feedback Works</h3>
+                  <p>
+                    Each row compares your guess with the daily target across seven attributes: muscle, equipment,
+                    movement, pattern, reps, goal, ego.
+                  </p>
+                  <p>
+                    Green means correct. Yellow means partially aligned. Red means wrong for that attribute.
+                  </p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Game Modes</h3>
+                  <p>
+                    Daily: one target per day, reset at midnight Europe/Rome.
+                  </p>
+                  <p>
+                    Marathon: continuous run, one target after another, score based on solved rounds.
+                  </p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Tips</h3>
+                  <p>Use autocomplete, submit quickly, then adjust based on color patterns.</p>
+                  <p>Open ARCHIVE to inspect exercise coverage and historical data.</p>
+                </section>
+              </div>
+            ) : (
+              <div className="info-sheet__body">
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Data We Store</h3>
+                  <p>
+                    We store gameplay data needed to run the game: guesses, feedback, daily game state, and aggregate
+                    stats.
+                  </p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Media And Enrichment</h3>
+                  <p>
+                    Exercise GIFs and enrichment metadata are synced server-side and saved in the internal database.
+                  </p>
+                  <p>
+                    Provider data is used as raw input only. Gameplay remains based on Muscledle internal fields.
+                  </p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Authentication</h3>
+                  <p>
+                    Sessions use Supabase auth. Anonymous sessions may be used to enable gameplay before account linking.
+                  </p>
+                </section>
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Contact</h3>
+                  <p>
+                    For data requests or deletion, contact the project admin and provide your user identifier if
+                    available.
+                  </p>
+                </section>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {toast ? <div className="game-toast">{toast.message}</div> : null}
     </>
