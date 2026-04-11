@@ -304,13 +304,15 @@ export function GameShell({ initialState }: GameShellProps) {
     setSelectedExerciseId(exercise.id);
   }, []);
 
-  const handleSubmitDaily = useCallback(async () => {
-    if (!selectedExerciseId) {
+  const handleSubmitDaily = useCallback(async (overrideExerciseId?: string) => {
+    const exerciseId = overrideExerciseId ?? selectedExerciseId;
+
+    if (!exerciseId) {
       pushToast("Select an exercise from the dropdown first.");
       return;
     }
 
-    if (attemptedExerciseIds.has(selectedExerciseId)) {
+    if (attemptedExerciseIds.has(exerciseId)) {
       pushToast("You already guessed this exercise.");
       setSelectedExerciseId(null);
       return;
@@ -323,7 +325,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setIsSubmitting(true);
 
     try {
-      const updated = await submitGuessRequest(selectedExerciseId);
+      const updated = await submitGuessRequest(exerciseId);
       setRevealingAttemptId(updated.attempt.id);
       setGameState((current) => {
         if (!current || current.gameDate !== updated.gameDate) {
@@ -346,8 +348,10 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [attemptedExerciseIds, gameState, pushToast, selectedExerciseId]);
 
-  const handleSubmitInfinite = useCallback(() => {
-    if (!selectedExerciseId) {
+  const handleSubmitInfinite = useCallback((overrideExerciseId?: string) => {
+    const exerciseId = overrideExerciseId ?? selectedExerciseId;
+
+    if (!exerciseId) {
       pushToast("Select an exercise from the dropdown first.");
       return;
     }
@@ -365,13 +369,13 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
-    if (attemptedExerciseIds.has(selectedExerciseId)) {
+    if (attemptedExerciseIds.has(exerciseId)) {
       pushToast("You already guessed this exercise in this round.");
       setSelectedExerciseId(null);
       return;
     }
 
-    const guessed = exerciseById.get(selectedExerciseId);
+    const guessed = exerciseById.get(exerciseId);
 
     if (!guessed) {
       pushToast("Selected exercise is not available.");
@@ -455,13 +459,15 @@ export function GameShell({ initialState }: GameShellProps) {
     selectedExerciseId,
   ]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (exercise?: LiveExerciseSuggestion) => {
+    const overrideExerciseId = exercise?.id;
+
     if (mode === "daily") {
-      await handleSubmitDaily();
+      await handleSubmitDaily(overrideExerciseId);
       return;
     }
 
-    handleSubmitInfinite();
+    handleSubmitInfinite(overrideExerciseId);
   }, [handleSubmitDaily, handleSubmitInfinite, mode]);
 
   const restartInfiniteMode = useCallback(() => {
@@ -607,8 +613,8 @@ export function GameShell({ initialState }: GameShellProps) {
                 submitting={isSubmitting}
                 onQueryChange={handleQueryChange}
                 onSelectExercise={handleSelectExercise}
-                onSubmit={() => {
-                  void handleSubmit();
+                onSubmit={(exercise) => {
+                  void handleSubmit(exercise);
                 }}
               />
             </section>

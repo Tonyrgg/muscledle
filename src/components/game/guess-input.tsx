@@ -13,7 +13,7 @@ type GuessInputProps = {
   submitting: boolean;
   onQueryChange: (value: string) => void;
   onSelectExercise: (exercise: LiveExerciseSuggestion) => void;
-  onSubmit: () => void;
+  onSubmit: (exercise?: LiveExerciseSuggestion) => void;
 };
 
 type RankedExercise = {
@@ -149,8 +149,10 @@ export function GuessInput({
     if (event.key === "Enter") {
       event.preventDefault();
 
-      if (showDropdown && activeIndex >= 0 && suggestions[activeIndex]) {
-        handleSelect(suggestions[activeIndex]);
+      if (showDropdown && suggestions.length > 0) {
+        const picked = activeIndex >= 0 && suggestions[activeIndex] ? suggestions[activeIndex] : suggestions[0];
+        handleSelect(picked);
+        onSubmit(picked);
         return;
       }
 

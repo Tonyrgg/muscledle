@@ -806,6 +806,9 @@ input {
   text-transform: uppercase;
   text-align: center;
   color: #f7f7f7;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   backface-visibility: hidden;
   transform-origin: center;
   cursor: pointer;
