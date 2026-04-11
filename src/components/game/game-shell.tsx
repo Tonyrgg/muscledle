@@ -26,7 +26,7 @@ type ToastState = {
 
 type GameMode = "daily" | "infinite";
 
-type InfiniteStatus = "in_progress" | "lost" | "completed";
+type InfiniteStatus = "not_started" | "in_progress" | "lost" | "completed";
 
 type InfiniteGameState = {
   status: InfiniteStatus;
@@ -34,6 +34,8 @@ type InfiniteGameState = {
   currentIndex: number;
   attempts: PublicGameAttempt[];
   maxAttemptsPerRound: number;
+  exerciseOrderIds: string[];
+  runSeed: number | null;
 };
 
 type MarathonTransitionState = {
@@ -62,12 +64,27 @@ function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
 
 function createInfiniteGameState(): InfiniteGameState {
   return {
-    status: "in_progress",
+    status: "not_started",
     score: 0,
     currentIndex: 0,
     attempts: [],
     maxAttemptsPerRound: 7,
+    exerciseOrderIds: [],
+    runSeed: null,
   };
+}
+
+function createShuffledExerciseOrder(exercises: LiveExerciseSuggestion[]): string[] {
+  const ids = exercises.map((exercise) => exercise.id);
+
+  for (let i = ids.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = ids[i];
+    ids[i] = ids[j];
+    ids[j] = tmp;
+  }
+
+  return ids;
 }
 
 function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
@@ -116,12 +133,17 @@ export function GameShell({ initialState }: GameShellProps) {
   const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
 
   const activeInfiniteTarget = useMemo(() => {
-    if (!infiniteState) {
+    if (!infiniteState || infiniteState.status === "not_started") {
       return null;
     }
 
-    return exercises[infiniteState.currentIndex] ?? null;
-  }, [exercises, infiniteState]);
+    const targetId = infiniteState.exerciseOrderIds[infiniteState.currentIndex];
+    if (!targetId) {
+      return null;
+    }
+
+    return exerciseById.get(targetId) ?? null;
+  }, [exerciseById, infiniteState]);
 
   const activeAttempts = useMemo(
     () => (mode === "daily" ? gameState?.attempts ?? [] : infiniteState?.attempts ?? []),
@@ -238,6 +260,40 @@ export function GameShell({ initialState }: GameShellProps) {
     setRevealingAttemptId(null);
   }, []);
 
+  const startMarathonRun = useCallback(() => {
+    if (exercises.length === 0) {
+      pushToast("Exercises are still loading.");
+      return;
+    }
+
+    if (marathonSolvedTimeoutRef.current !== null) {
+      window.clearTimeout(marathonSolvedTimeoutRef.current);
+      marathonSolvedTimeoutRef.current = null;
+    }
+
+    if (marathonNextTimeoutRef.current !== null) {
+      window.clearTimeout(marathonNextTimeoutRef.current);
+      marathonNextTimeoutRef.current = null;
+    }
+
+    const order = createShuffledExerciseOrder(exercises);
+    const seed = Date.now();
+
+    setInfiniteState({
+      status: "in_progress",
+      score: 0,
+      currentIndex: 0,
+      attempts: [],
+      maxAttemptsPerRound: 7,
+      exerciseOrderIds: order,
+      runSeed: seed,
+    });
+    setMarathonTransition(null);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+  }, [exercises, pushToast]);
+
   const handleQueryChange = useCallback((value: string) => {
     setQuery(value);
     setSelectedExerciseId(null);
@@ -334,7 +390,7 @@ export function GameShell({ initialState }: GameShellProps) {
       const nextScore = infiniteState.score + 1;
       const nextIndex = infiniteState.currentIndex + 1;
 
-      if (nextIndex >= exercises.length) {
+      if (nextIndex >= infiniteState.exerciseOrderIds.length) {
         setInfiniteState({
           ...infiniteState,
           score: nextScore,
@@ -393,7 +449,6 @@ export function GameShell({ initialState }: GameShellProps) {
     activeInfiniteTarget,
     attemptedExerciseIds,
     exerciseById,
-    exercises.length,
     infiniteState,
     marathonTransition,
     pushToast,
@@ -433,10 +488,14 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const isDailyWon = gameState?.status === "won";
   const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
+  const isMarathonStarted = infiniteState !== null && infiniteState.status !== "not_started";
 
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
   const infiniteAttemptsLeft = infiniteState ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed) : 0;
-  const infiniteTotal = exercises.length;
+  const infiniteTotal =
+    infiniteState && infiniteState.exerciseOrderIds.length > 0
+      ? infiniteState.exerciseOrderIds.length
+      : exercises.length;
   const infiniteRemaining = infiniteState ? Math.max(0, infiniteTotal - infiniteState.score) : infiniteTotal;
 
   const disabled =
@@ -492,13 +551,15 @@ export function GameShell({ initialState }: GameShellProps) {
                     ? "Marathon completed"
                     : infiniteState?.status === "lost"
                       ? "Marathon over"
+                      : infiniteState?.status === "not_started"
+                        ? "Marathon ready"
                       : "Marathon mode"}
                 </h2>
                 <p className="game-prompt-panel__subtitle">
                   SCORE {infiniteState?.score ?? 0} / {infiniteTotal} - ATTEMPTS LEFT {infiniteAttemptsLeft}
                 </p>
                 <p className="game-prompt-panel__subtitle">REMAINING EXERCISES {infiniteRemaining}</p>
-                {infiniteState?.status !== "in_progress" ? (
+                {infiniteState?.status === "lost" || infiniteState?.status === "completed" ? (
                   <button
                     type="button"
                     className="exercise-media-modal__close game-prompt-panel__restart"
@@ -511,6 +572,19 @@ export function GameShell({ initialState }: GameShellProps) {
             ) : null}
           </header>
 
+          {mode === "infinite" && !isMarathonStarted ? (
+            <section className="marathon-start-zone" aria-label="Start marathon">
+              <button
+                type="button"
+                className="exercise-media-modal__close marathon-start-zone__button"
+                onClick={startMarathonRun}
+                disabled={loadingExercises || exercises.length === 0}
+              >
+                Start
+              </button>
+            </section>
+          ) : null}
+
           {mode === "daily" && isDailyWon ? (
             <section className="game-win-zone" aria-label="Victory summary">
               <VictoryPanel
@@ -522,7 +596,7 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {(mode === "infinite" || (mode === "daily" && !isDailyWon)) ? (
+          {(mode === "daily" && !isDailyWon) || (mode === "infinite" && isMarathonStarted) ? (
             <section className="game-input-zone" aria-label="Guess input">
               <GuessInput
                 query={query}
@@ -540,31 +614,33 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          <div className="marathon-stage">
-            <section className="game-table-zone" aria-label="Attempts">
-              <AttemptsTable
-                attempts={activeAttempts}
-                loading={mode === "daily" ? isLoadingState && !gameState : false}
-                revealingAttemptId={revealingAttemptId}
-              />
-            </section>
-
-            {mode === "infinite" && marathonTransition ? (
-              <section className="marathon-transition" aria-live="polite">
-                <div className="marathon-transition__panel">
-                  <p className="marathon-transition__kicker">
-                    {marathonTransition.phase === "solved" ? "Correct" : "Next Exercise"}
-                  </p>
-                  <p className="marathon-transition__title">
-                    {marathonTransition.phase === "solved"
-                      ? marathonTransition.exerciseName
-                      : "Preparing next challenge"}
-                  </p>
-                  <p className="marathon-transition__score">Score {marathonTransition.score}</p>
-                </div>
+          {(mode === "daily" || isMarathonStarted) ? (
+            <div className="marathon-stage">
+              <section className="game-table-zone" aria-label="Attempts">
+                <AttemptsTable
+                  attempts={activeAttempts}
+                  loading={mode === "daily" ? isLoadingState && !gameState : false}
+                  revealingAttemptId={revealingAttemptId}
+                />
               </section>
-            ) : null}
-          </div>
+
+              {mode === "infinite" && marathonTransition ? (
+                <section className="marathon-transition" aria-live="polite">
+                  <div className="marathon-transition__panel">
+                    <p className="marathon-transition__kicker">
+                      {marathonTransition.phase === "solved" ? "Correct" : "Next Exercise"}
+                    </p>
+                    <p className="marathon-transition__title">
+                      {marathonTransition.phase === "solved"
+                        ? marathonTransition.exerciseName
+                        : "Preparing next challenge"}
+                    </p>
+                    <p className="marathon-transition__score">Score {marathonTransition.score}</p>
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          ) : null}
 
           {mode === "daily" ? (
             <section className="yesterday-exercise" aria-label="Yesterday exercise">

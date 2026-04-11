@@ -182,6 +182,24 @@ input {
   margin-top: 0.72rem;
 }
 
+.marathon-start-zone {
+  width: min(100%, 690px);
+  display: flex;
+  justify-content: center;
+}
+
+.marathon-start-zone__button {
+  width: min(100%, 260px);
+  min-height: 3rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+}
+
+.marathon-start-zone__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .game-input-zone {
   width: min(100%, 690px);
 }

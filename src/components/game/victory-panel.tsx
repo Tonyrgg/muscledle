@@ -62,12 +62,6 @@ function feedbackToEmoji(color: FeedbackColor): string {
   return "\u{1F7E5}";
 }
 
-function feedbackToClass(color: FeedbackColor): string {
-  if (color === "green") return "victory-panel__grid-cell--green";
-  if (color === "yellow") return "victory-panel__grid-cell--yellow";
-  return "victory-panel__grid-cell--red";
-}
-
 export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const [countdown, setCountdown] = useState(() => formatCountdown(getMsUntilNextRomeMidnight(new Date())));
@@ -214,24 +208,6 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
           </div>
 
           <div className="victory-panel__share-card">
-            <p className="victory-panel__share-text">
-              I solved today&apos;s #Muscledle ({gameDate}) in {guessCount} guess{guessCount === 1 ? "" : "es"} ??
-            </p>
-
-            <div className="victory-panel__grid" aria-label="Result grid">
-              {orderedAttempts.map((attempt) => (
-                <div className="victory-panel__grid-row" key={attempt.id}>
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.muscle)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.equipment)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.movement)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.pattern)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.reps)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.goal)}`} />
-                  <span className={`victory-panel__grid-cell ${feedbackToClass(attempt.feedback.ego)}`} />
-                </div>
-              ))}
-            </div>
-
             <div className="victory-panel__actions">
               <button
                 type="button"
