@@ -12,6 +12,7 @@ import {
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
+import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
 import { evaluateGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
 import type { PublicGameAttempt, PublicTodayGameState } from "@/types/game";
@@ -71,7 +72,7 @@ function createInfiniteGameState(): InfiniteGameState {
     score: 0,
     currentIndex: 0,
     attempts: [],
-    maxAttemptsPerRound: 7,
+    maxAttemptsPerRound: 10,
     exerciseOrderIds: [],
     runSeed: null,
   };
@@ -307,7 +308,7 @@ export function GameShell({ initialState }: GameShellProps) {
       score: 0,
       currentIndex: 0,
       attempts: [],
-      maxAttemptsPerRound: 7,
+      maxAttemptsPerRound: 10,
       exerciseOrderIds: order,
       runSeed: seed,
     });
@@ -349,6 +350,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
     try {
       const updated = await submitGuessRequest(exerciseId);
+      await preloadExerciseMedia(updated.attempt.guessSlug);
       setRevealingAttemptId(updated.attempt.id);
       setGameState((current) => {
         if (!current || current.gameDate !== updated.gameDate) {
@@ -371,7 +373,7 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [attemptedExerciseIds, gameState, pushToast, selectedExerciseId]);
 
-  const handleSubmitInfinite = useCallback((overrideExerciseId?: string) => {
+  const handleSubmitInfinite = useCallback(async (overrideExerciseId?: string) => {
     const exerciseId = overrideExerciseId ?? selectedExerciseId;
 
     if (!exerciseId) {
@@ -409,70 +411,77 @@ export function GameShell({ initialState }: GameShellProps) {
     const attempts = [attempt, ...infiniteState.attempts];
     const attemptsUsed = attempts.length;
 
-    setRevealingAttemptId(attempt.id);
-    setQuery("");
-    setSelectedExerciseId(null);
+    setIsSubmitting(true);
 
-    if (attempt.isCorrect) {
-      const pointsEarned = Math.max(1, infiniteState.maxAttemptsPerRound - attemptsUsed + 1);
-      const nextScore = infiniteState.score + pointsEarned;
-      const nextIndex = infiniteState.currentIndex + 1;
+    try {
+      await preloadExerciseMedia(attempt.guessSlug);
+      setRevealingAttemptId(attempt.id);
+      setQuery("");
+      setSelectedExerciseId(null);
 
-      if (nextIndex >= infiniteState.exerciseOrderIds.length) {
-        setInfiniteState({
-          ...infiniteState,
-          score: nextScore,
-          currentIndex: nextIndex,
-          attempts,
-          status: "completed",
-        });
-        pushToast(`Perfect run completed. Final score: ${nextScore}.`);
-        return;
-      }
+      if (attempt.isCorrect) {
+        const pointsEarned = Math.max(1, infiniteState.maxAttemptsPerRound - attemptsUsed + 1);
+        const nextScore = infiniteState.score + pointsEarned;
+        const nextIndex = infiniteState.currentIndex + 1;
 
-      setMarathonTransition({
-        phase: "solved",
-        exerciseName: activeInfiniteTarget.name,
-        score: nextScore,
-      });
-
-      marathonSolvedTimeoutRef.current = window.setTimeout(() => {
-        setMarathonTransition({
-          phase: "next",
-          exerciseName: activeInfiniteTarget.name,
-          score: nextScore,
-        });
-        marathonSolvedTimeoutRef.current = null;
-
-        marathonNextTimeoutRef.current = window.setTimeout(() => {
+        if (nextIndex >= infiniteState.exerciseOrderIds.length) {
           setInfiniteState({
             ...infiniteState,
             score: nextScore,
             currentIndex: nextIndex,
-            attempts: [],
+            attempts,
+            status: "completed",
           });
-          setMarathonTransition(null);
-          marathonNextTimeoutRef.current = null;
-        }, 1500);
-      }, 2200);
+          pushToast(`Perfect run completed. Final score: ${nextScore}.`);
+          return;
+        }
 
-      return;
-    }
+        setMarathonTransition({
+          phase: "solved",
+          exerciseName: activeInfiniteTarget.name,
+          score: nextScore,
+        });
 
-    if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
+        marathonSolvedTimeoutRef.current = window.setTimeout(() => {
+          setMarathonTransition({
+            phase: "next",
+            exerciseName: activeInfiniteTarget.name,
+            score: nextScore,
+          });
+          marathonSolvedTimeoutRef.current = null;
+
+          marathonNextTimeoutRef.current = window.setTimeout(() => {
+            setInfiniteState({
+              ...infiniteState,
+              score: nextScore,
+              currentIndex: nextIndex,
+              attempts: [],
+            });
+            setMarathonTransition(null);
+            marathonNextTimeoutRef.current = null;
+          }, 1500);
+        }, 2200);
+
+        return;
+      }
+
+      if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
+        setInfiniteState({
+          ...infiniteState,
+          attempts,
+          status: "lost",
+        });
+        pushToast(`Run over. You used all ${infiniteState.maxAttemptsPerRound} attempts.`);
+        return;
+      }
+
       setInfiniteState({
         ...infiniteState,
         attempts,
-        status: "lost",
       });
-      pushToast("Run over. You used all 7 attempts.");
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setInfiniteState({
-      ...infiniteState,
-      attempts,
-    });
   }, [
     activeInfiniteTarget,
     attemptedExerciseIds,
@@ -491,7 +500,7 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
-    handleSubmitInfinite(overrideExerciseId);
+    await handleSubmitInfinite(overrideExerciseId);
   }, [handleSubmitDaily, handleSubmitInfinite, mode]);
 
   const restartInfiniteMode = useCallback(() => {
@@ -536,7 +545,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const disabled =
     mode === "daily"
       ? !gameState || gameState.status !== "in_progress" || isSubmitting
-      : !infiniteState || infiniteState.status !== "in_progress" || marathonTransition !== null;
+      : !infiniteState || infiniteState.status !== "in_progress" || marathonTransition !== null || isSubmitting;
 
   return (
     <>

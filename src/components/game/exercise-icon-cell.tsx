@@ -5,6 +5,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExerciseMediaPreview } from "@/components/exercises/exercise-media-preview";
 import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import {
+  clearExerciseMediaUrl,
+  getCachedExerciseMediaUrl,
+  hasResolvedExerciseMedia,
+  isExerciseMediaLoaded,
+  markExerciseMediaLoaded,
+  resolveExerciseMediaUrl,
+} from "@/lib/game/exercise-media-client";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
@@ -12,23 +20,19 @@ type ExerciseIconCellProps = {
   exerciseMuscleGroup: string | null;
 };
 
-type ExerciseMediaResponse = {
-  ok: boolean;
-  media?: {
-    mediaUrl: string | null;
-  } | null;
-};
-
-const mediaUrlCache = new Map<string, string | null>();
-
-export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
+export function ExerciseIconCell({
+  exerciseSlug,
+  exerciseName,
+  exerciseMuscleGroup,
+}: ExerciseIconCellProps) {
   const [candidateIndex, setCandidateIndex] = useState(0);
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mediaState, setMediaState] = useState<{ slug: string; url: string | null }>({
+  const [mediaState, setMediaState] = useState<{ slug: string; url: string | null; resolved: boolean }>(() => ({
     slug: exerciseSlug,
-    url: mediaUrlCache.get(exerciseSlug) ?? null,
-  });
+    url: getCachedExerciseMediaUrl(exerciseSlug) ?? null,
+    resolved: hasResolvedExerciseMedia(exerciseSlug),
+  }));
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const iconCandidates = useMemo(
@@ -41,35 +45,21 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
   const mediaUrl =
     mediaState.slug === exerciseSlug
       ? mediaState.url
-      : (mediaUrlCache.get(exerciseSlug) ?? null);
+      : (getCachedExerciseMediaUrl(exerciseSlug) ?? null);
+  const [, forceGifRefresh] = useState(0);
+  const isGifLoaded = Boolean(mediaUrl) && isExerciseMediaLoaded(mediaUrl);
 
   useEffect(() => {
-    const cached = mediaUrlCache.get(exerciseSlug);
-    if (cached !== undefined) {
+    if (mediaState.resolved) {
       return;
     }
 
     let active = true;
 
     async function loadExerciseMedia() {
-      try {
-        const response = await fetch(`/api/exercises/${encodeURIComponent(exerciseSlug)}/media`, {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        const payload = (await response.json().catch(() => null)) as ExerciseMediaResponse | null;
-        const nextUrl = response.ok && payload?.ok ? (payload.media?.mediaUrl ?? null) : null;
-
-        mediaUrlCache.set(exerciseSlug, nextUrl);
-        if (active) {
-          setMediaState({ slug: exerciseSlug, url: nextUrl });
-        }
-      } catch {
-        mediaUrlCache.set(exerciseSlug, null);
-        if (active) {
-          setMediaState({ slug: exerciseSlug, url: null });
-        }
+      const nextUrl = await resolveExerciseMediaUrl(exerciseSlug);
+      if (active) {
+        setMediaState({ slug: exerciseSlug, url: nextUrl, resolved: true });
       }
     }
 
@@ -78,7 +68,7 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
     return () => {
       active = false;
     };
-  }, [exerciseSlug]);
+  }, [exerciseSlug, mediaState.resolved]);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -135,35 +125,59 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {mediaUrl ? (
+          {mediaUrl && isGifLoaded ? (
             <img
               src={mediaUrl}
               alt=""
-              className="exercise-icon-cell__gif"
+              className="exercise-icon-cell__gif exercise-icon-cell__gif--ready"
               loading="lazy"
+              onLoad={() => {
+                markExerciseMediaLoaded(mediaUrl);
+                forceGifRefresh((current) => current + 1);
+              }}
               onError={() => {
-                mediaUrlCache.set(exerciseSlug, null);
-                setMediaState({ slug: exerciseSlug, url: null });
+                clearExerciseMediaUrl(exerciseSlug);
+                setMediaState({ slug: exerciseSlug, url: null, resolved: true });
+                forceGifRefresh((current) => current + 1);
               }}
             />
           ) : activeIconPath ? (
-            <Image
-              key={`${exerciseSlug}-${activeIconPath}`}
-              src={activeIconPath}
-              alt=""
-              className="exercise-icon-cell__icon"
-              width={40}
-              height={40}
-              onError={() => {
-                setCandidateIndex((current) => {
-                  if (current >= iconCandidates.length - 1) {
-                    return current;
-                  }
+            <>
+              {mediaUrl ? (
+                <img
+                  src={mediaUrl}
+                  alt=""
+                  className="exercise-icon-cell__gif exercise-icon-cell__gif--loading"
+                  loading="lazy"
+                  onLoad={() => {
+                    markExerciseMediaLoaded(mediaUrl);
+                    forceGifRefresh((current) => current + 1);
+                  }}
+                  onError={() => {
+                    clearExerciseMediaUrl(exerciseSlug);
+                    setMediaState({ slug: exerciseSlug, url: null, resolved: true });
+                    forceGifRefresh((current) => current + 1);
+                  }}
+                />
+              ) : null}
+              <Image
+                key={`${exerciseSlug}-${activeIconPath}`}
+                src={activeIconPath}
+                alt=""
+                className="exercise-icon-cell__icon"
+                width={40}
+                height={40}
+                onError={() => {
+                  setCandidateIndex((current) => {
+                    if (current >= iconCandidates.length - 1) {
+                      return current;
+                    }
 
-                  return current + 1;
-                });
-              }}
-            />
+                    return current + 1;
+                  });
+                }}
+              />
+            </>
           ) : (
             <span className="exercise-icon-cell__fallback">
               <span />

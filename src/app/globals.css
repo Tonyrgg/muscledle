@@ -747,6 +747,14 @@ input {
   display: block;
 }
 
+.exercise-icon-cell__gif--loading {
+  visibility: hidden;
+}
+
+.exercise-icon-cell__gif--ready {
+  visibility: visible;
+}
+
 .exercise-icon-cell__fallback {
   display: flex;
   flex-direction: column;
@@ -758,6 +766,10 @@ input {
   width: 1.8rem;
   height: 0.16rem;
   background: var(--accent);
+}
+
+.exercise-icon-cell__fallback--loading {
+  opacity: 0.8;
 }
 
 .exercise-icon-cell__overlay {
