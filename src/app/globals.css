@@ -33,7 +33,6 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
-  padding-bottom: 7.75rem;
 }
 
 button,
@@ -912,14 +911,11 @@ input {
 }
 
 .game-footer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
+  position: static;
+  width: 100%;
+  margin-top: 0.75rem;
   border-top: 1px solid #2b2b2b;
   background: rgba(23, 23, 23, 0.96);
-  backdrop-filter: blur(4px);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -1087,10 +1083,6 @@ input {
 }
 
 @media (max-width: 768px) {
-  body {
-    padding-bottom: 8.6rem;
-  }
-
   .game-shell {
     gap: 1rem;
   }

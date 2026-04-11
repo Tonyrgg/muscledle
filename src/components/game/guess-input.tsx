@@ -67,8 +67,8 @@ function scoreExercise(query: string, exercise: LiveExerciseSuggestion): number 
   if (name.includes(query)) return 120;
 
   if (aliases.some((alias) => alias === query)) return 110;
-  if (aliases.some((alias) => alias.startsWith(query))) return 95;
-  if (aliases.some((alias) => alias.includes(query))) return 80;
+  if (query.length >= 2 && aliases.some((alias) => alias.startsWith(query))) return 95;
+  if (query.length >= 3 && aliases.some((alias) => alias.includes(query))) return 80;
 
   // Keep typo tolerance strict to avoid unrelated suggestions (e.g. "ww" -> random exercises).
   if (query.length >= 4 && name[0] === query[0]) {
