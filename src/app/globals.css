@@ -943,6 +943,7 @@ input {
   text-transform: uppercase;
   cursor: pointer;
   padding: 0;
+  text-decoration: none;
 }
 
 .game-footer__link:hover,
@@ -993,6 +994,149 @@ input {
 
 .yesterday-exercise__name {
   color: var(--accent);
+}
+
+.archive-page {
+  min-height: 100vh;
+  padding: 1rem 0.75rem 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.archive-shell {
+  width: min(100%, 1120px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.archive-hero {
+  border: 1px solid #3a3a3a;
+  background: #1c1c1c;
+  padding: 0.9rem;
+}
+
+.archive-hero__kicker {
+  margin: 0;
+  font-size: 0.58rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.archive-hero__title {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.archive-hero__stats {
+  margin: 0.4rem 0 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #d0d0d0;
+}
+
+.archive-hero__back {
+  margin-top: 0.72rem;
+  display: inline-block;
+  border: 1px solid var(--border);
+  color: #d8d8d8;
+  text-decoration: none;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.5rem;
+}
+
+.archive-hero__back:hover,
+.archive-hero__back:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.archive-panel {
+  border: 1px solid #3a3a3a;
+  background: #1b1b1b;
+  padding: 0.72rem;
+}
+
+.archive-toolbar {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.archive-toolbar__search,
+.archive-toolbar__select {
+  border: 1px solid var(--border);
+  background: #202020;
+  color: var(--text-primary);
+  min-height: 2.35rem;
+  padding: 0 0.65rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.archive-toolbar__search:focus-visible,
+.archive-toolbar__select:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.archive-meta {
+  margin: 0.55rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.archive-table-scroll {
+  margin-top: 0.55rem;
+  overflow-x: auto;
+}
+
+.archive-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+}
+
+.archive-table th,
+.archive-table td {
+  border: 1px solid #333;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+}
+
+.archive-table th {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.archive-table__name,
+.archive-table__slug {
+  margin: 0;
+}
+
+.archive-table__name {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.archive-table__slug {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
 }
 
 .marathon-transition {
@@ -1143,6 +1287,10 @@ input {
   }
 
   .victory-panel__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-toolbar {
     grid-template-columns: 1fr;
   }
 }

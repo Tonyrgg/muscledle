@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
@@ -665,7 +666,7 @@ export function GameShell({ initialState }: GameShellProps) {
         <nav className="game-footer__links" aria-label="Footer links">
           <button type="button" className="game-footer__link">HOW TO PLAY</button>
           <button type="button" className="game-footer__link">STATS</button>
-          <button type="button" className="game-footer__link">ARCHIVE</button>
+          <Link href="/archive" className="game-footer__link">ARCHIVE</Link>
           <button type="button" className="game-footer__link">PRIVACY</button>
         </nav>
         <p className="game-footer__copy">(C) 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
