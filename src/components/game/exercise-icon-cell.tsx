@@ -47,7 +47,8 @@ export function ExerciseIconCell({
       ? mediaState.url
       : (getCachedExerciseMediaUrl(exerciseSlug) ?? null);
   const [, forceGifRefresh] = useState(0);
-  const isGifLoaded = Boolean(mediaUrl) && isExerciseMediaLoaded(mediaUrl);
+  const isGifLoaded = mediaUrl !== null && isExerciseMediaLoaded(mediaUrl);
+  const showGifReady = mediaUrl !== null && isGifLoaded;
 
   useEffect(() => {
     if (mediaState.resolved) {
@@ -125,7 +126,7 @@ export function ExerciseIconCell({
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {mediaUrl && isGifLoaded ? (
+          {showGifReady ? (
             <img
               src={mediaUrl}
               alt=""
@@ -141,50 +142,55 @@ export function ExerciseIconCell({
                 forceGifRefresh((current) => current + 1);
               }}
             />
-          ) : activeIconPath ? (
-            <>
-              {mediaUrl ? (
-                <img
-                  src={mediaUrl}
+          ) : null}
+
+          {!showGifReady && mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt=""
+              className="exercise-icon-cell__gif exercise-icon-cell__gif--loading"
+              loading="lazy"
+              onLoad={() => {
+                markExerciseMediaLoaded(mediaUrl);
+                forceGifRefresh((current) => current + 1);
+              }}
+              onError={() => {
+                clearExerciseMediaUrl(exerciseSlug);
+                setMediaState({ slug: exerciseSlug, url: null, resolved: true });
+                forceGifRefresh((current) => current + 1);
+              }}
+            />
+          ) : null}
+
+          {!showGifReady ? (
+            <span className="exercise-icon-cell__foreground">
+              {activeIconPath ? (
+                <Image
+                  key={`${exerciseSlug}-${activeIconPath}`}
+                  src={activeIconPath}
                   alt=""
-                  className="exercise-icon-cell__gif exercise-icon-cell__gif--loading"
-                  loading="lazy"
-                  onLoad={() => {
-                    markExerciseMediaLoaded(mediaUrl);
-                    forceGifRefresh((current) => current + 1);
-                  }}
+                  className="exercise-icon-cell__icon"
+                  width={40}
+                  height={40}
                   onError={() => {
-                    clearExerciseMediaUrl(exerciseSlug);
-                    setMediaState({ slug: exerciseSlug, url: null, resolved: true });
-                    forceGifRefresh((current) => current + 1);
+                    setCandidateIndex((current) => {
+                      if (current >= iconCandidates.length - 1) {
+                        return current;
+                      }
+
+                      return current + 1;
+                    });
                   }}
                 />
-              ) : null}
-              <Image
-                key={`${exerciseSlug}-${activeIconPath}`}
-                src={activeIconPath}
-                alt=""
-                className="exercise-icon-cell__icon"
-                width={40}
-                height={40}
-                onError={() => {
-                  setCandidateIndex((current) => {
-                    if (current >= iconCandidates.length - 1) {
-                      return current;
-                    }
-
-                    return current + 1;
-                  });
-                }}
-              />
-            </>
-          ) : (
-            <span className="exercise-icon-cell__fallback">
-              <span />
-              <span />
-              <span />
+              ) : (
+                <span className="exercise-icon-cell__fallback">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+              )}
             </span>
-          )}
+          ) : null}
         </span>
 
         <span className="exercise-icon-cell__overlay">{exerciseName}</span>
