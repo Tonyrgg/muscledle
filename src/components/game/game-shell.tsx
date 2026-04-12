@@ -677,7 +677,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
   const isMarathonStarted = infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
-    mode === "daily" && (!isDailyWon || dailyVictoryPhase === "revealing");
+    mode === "daily" && (!isDailyWon || dailyVictoryPhase !== "complete");
   const shouldShowVictoryPanel = mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
   const shouldShowDailyCelebration = mode === "daily" && isDailyWon && dailyVictoryPhase === "celebrating";
 
