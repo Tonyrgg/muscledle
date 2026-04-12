@@ -159,6 +159,49 @@ export function buildExerciseDbProxyGifUrl(exerciseId: string, resolution = getP
   return `/api/exercises/media-gif?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${safeResolution}`;
 }
 
+export async function fetchExerciseDbGifById(
+  exerciseId: string,
+  resolution = getPreferredResolution(),
+): Promise<{ ok: boolean; status: number; contentType?: string; bytes?: Uint8Array; error?: string }> {
+  const { baseUrl, host, key } = getProviderConfig();
+
+  if (!key) {
+    return { ok: false, status: 500, error: "missing_exercisedb_api_key" };
+  }
+
+  const safeResolution = ALLOWED_RESOLUTIONS.has(resolution) ? resolution : "360";
+  const url = `${baseUrl}/image?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${safeResolution}`;
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-rapidapi-key": key,
+        "x-rapidapi-host": host,
+      },
+      cache: "no-store",
+    });
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok) {
+      return { ok: false, status: response.status, contentType, error: "provider_image_fetch_failed" };
+    }
+
+    if (!contentType.toLowerCase().includes("image/gif")) {
+      return { ok: false, status: response.status, contentType, error: "provider_image_not_gif" };
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return { ok: true, status: response.status, contentType, bytes: new Uint8Array(arrayBuffer) };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      error: error instanceof Error ? error.message : "provider_image_fetch_error",
+    };
+  }
+}
+
 export async function probeExerciseDbGifById(
   exerciseId: string,
   resolution = getPreferredResolution(),
