@@ -52,6 +52,7 @@ type DailyVictoryPhase = "idle" | "revealing" | "celebrating" | "complete";
 
 const FEEDBACK_REVEAL_DURATION_MS = 1700;
 const DAILY_CELEBRATION_DURATION_MS = 1200;
+const DAILY_CONFETTI_SETTLE_MS = 3200;
 
 function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
@@ -151,6 +152,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const [dailyVictoryPhase, setDailyVictoryPhase] = useState<DailyVictoryPhase>(
     initialState?.status === "won" ? "complete" : "idle",
   );
+  const [showDailyCelebration, setShowDailyCelebration] = useState(false);
   const [dailyCelebrationSeed, setDailyCelebrationSeed] = useState(0);
   const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(false);
@@ -169,6 +171,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const marathonNextTimeoutRef = useRef<number | null>(null);
   const dailyRevealTimeoutRef = useRef<number | null>(null);
   const dailyCelebrationTimeoutRef = useRef<number | null>(null);
+  const dailyConfettiSettleTimeoutRef = useRef<number | null>(null);
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
@@ -241,6 +244,9 @@ export function GameShell({ initialState }: GameShellProps) {
       if (dailyCelebrationTimeoutRef.current !== null) {
         window.clearTimeout(dailyCelebrationTimeoutRef.current);
       }
+      if (dailyConfettiSettleTimeoutRef.current !== null) {
+        window.clearTimeout(dailyConfettiSettleTimeoutRef.current);
+      }
 
       if (marathonSolvedTimeoutRef.current !== null) {
         window.clearTimeout(marathonSolvedTimeoutRef.current);
@@ -254,6 +260,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
   useEffect(() => {
     if (mode !== "daily") {
+      setShowDailyCelebration(false);
       return;
     }
 
@@ -273,6 +280,7 @@ export function GameShell({ initialState }: GameShellProps) {
     }
 
     if (dailyVictoryPhase === "celebrating") {
+      setShowDailyCelebration(true);
       dailyCelebrationTimeoutRef.current = window.setTimeout(() => {
         setDailyVictoryPhase("complete");
         dailyCelebrationTimeoutRef.current = null;
@@ -285,7 +293,21 @@ export function GameShell({ initialState }: GameShellProps) {
         }
       };
     }
-  }, [dailyVictoryPhase, mode]);
+
+    if (dailyVictoryPhase === "complete" && showDailyCelebration) {
+      dailyConfettiSettleTimeoutRef.current = window.setTimeout(() => {
+        setShowDailyCelebration(false);
+        dailyConfettiSettleTimeoutRef.current = null;
+      }, DAILY_CONFETTI_SETTLE_MS);
+
+      return () => {
+        if (dailyConfettiSettleTimeoutRef.current !== null) {
+          window.clearTimeout(dailyConfettiSettleTimeoutRef.current);
+          dailyConfettiSettleTimeoutRef.current = null;
+        }
+      };
+    }
+  }, [dailyVictoryPhase, mode, showDailyCelebration]);
 
   useEffect(() => {
     if (!footerModal) return;
@@ -363,6 +385,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setRevealingAttemptId(null);
 
     if (nextMode !== "daily") {
+      setShowDailyCelebration(false);
       if (dailyRevealTimeoutRef.current !== null) {
         window.clearTimeout(dailyRevealTimeoutRef.current);
         dailyRevealTimeoutRef.current = null;
@@ -371,6 +394,11 @@ export function GameShell({ initialState }: GameShellProps) {
       if (dailyCelebrationTimeoutRef.current !== null) {
         window.clearTimeout(dailyCelebrationTimeoutRef.current);
         dailyCelebrationTimeoutRef.current = null;
+      }
+
+      if (dailyConfettiSettleTimeoutRef.current !== null) {
+        window.clearTimeout(dailyConfettiSettleTimeoutRef.current);
+        dailyConfettiSettleTimeoutRef.current = null;
       }
     }
   }, []);
@@ -679,7 +707,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const shouldShowDailyPrompt =
     mode === "daily" && (!isDailyWon || dailyVictoryPhase !== "complete");
   const shouldShowVictoryPanel = mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
-  const shouldShowDailyCelebration = mode === "daily" && isDailyWon && dailyVictoryPhase === "celebrating";
+  const shouldShowDailyCelebration = mode === "daily" && isDailyWon && showDailyCelebration;
 
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
   const infiniteAttemptsLeft = infiniteState ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed) : 0;
