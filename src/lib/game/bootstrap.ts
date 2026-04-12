@@ -113,7 +113,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     throw new AuthRequiredError();
   }
 
-  await resolveDailySelection(gameDate);
+  const dailySelection = await resolveDailySelection(gameDate);
   const yesterdaySelection = await resolveYesterdaySelection(gameDate);
 
   const game = await ensureUserDailyGame(user.id, gameDate);
@@ -172,6 +172,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     return {
       gameDate,
       yesterdayExerciseName: yesterdaySelection.exerciseName,
+      dailySecretExerciseId: dailySelection.exerciseId,
       status: game.status,
       guessCount: game.guess_count,
       attempts,
@@ -200,6 +201,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   return {
     gameDate,
     yesterdayExerciseName: yesterdaySelection.exerciseName,
+    dailySecretExerciseId: dailySelection.exerciseId,
     status: game.status,
     guessCount: game.guess_count,
     attempts,

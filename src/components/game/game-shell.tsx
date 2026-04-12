@@ -121,6 +121,30 @@ function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExercis
   };
 }
 
+function buildDailyAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
+  const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
+  const correct = guess.id === target.id;
+
+  return {
+    id: `daily-local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    guessExerciseId: guess.id,
+    guessSlug: guess.slug,
+    guessName: guess.name,
+    guessMuscleGroup: guess.muscle_group,
+    values: {
+      muscle: guess.muscle.join(" / "),
+      equipment: guess.equipment.join(" / "),
+      movement: guess.movement.join(" / "),
+      pattern: guess.pattern.join(" / "),
+      reps: guess.reps.join(" / "),
+      goal: guess.goal.join(" / "),
+      ego: guess.ego.join(" / "),
+    },
+    feedback,
+    isCorrect: correct,
+  };
+}
+
 export function GameShell({ initialState }: GameShellProps) {
   const [mode, setMode] = useState<GameMode>("daily");
   const [gameState, setGameState] = useState<PublicTodayGameState | null>(initialState);
@@ -145,6 +169,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const marathonNextTimeoutRef = useRef<number | null>(null);
   const dailyRevealTimeoutRef = useRef<number | null>(null);
   const dailyCelebrationTimeoutRef = useRef<number | null>(null);
+  const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
 
@@ -412,35 +437,89 @@ export function GameShell({ initialState }: GameShellProps) {
       return;
     }
 
-    setIsSubmitting(true);
+    const guessed = exerciseById.get(exerciseId);
+    const targetExerciseId = gameState.dailySecretExerciseId;
+    const target = targetExerciseId ? exerciseById.get(targetExerciseId) : null;
 
-    try {
-      const updated = await submitGuessRequest(exerciseId);
-      await preloadExerciseMedia(updated.attempt.guessSlug);
-      setRevealingAttemptId(updated.attempt.id);
-      if (updated.status === "won") {
-        setDailyVictoryPhase("revealing");
-      }
-      setGameState((current) => {
-        if (!current || current.gameDate !== updated.gameDate) {
-          return current;
+    // Fallback path for legacy sessions missing client-side secret or local exercise cache.
+    if (!guessed || !target) {
+      setIsSubmitting(true);
+
+      try {
+        const updated = await submitGuessRequest(exerciseId);
+        void preloadExerciseMedia(updated.attempt.guessSlug);
+        setRevealingAttemptId(updated.attempt.id);
+        if (updated.status === "won") {
+          setDailyVictoryPhase("revealing");
         }
+        setGameState((current) => {
+          if (!current || current.gameDate !== updated.gameDate) {
+            return current;
+          }
 
-        return {
-          ...current,
-          status: updated.status,
-          guessCount: updated.guessCount,
-          attempts: [updated.attempt, ...current.attempts],
-        };
-      });
-      setQuery("");
-      setSelectedExerciseId(null);
-    } catch (error) {
-      pushToast(error instanceof Error ? error.message : "Failed to submit guess.");
-    } finally {
-      setIsSubmitting(false);
+          return {
+            ...current,
+            status: updated.status,
+            guessCount: updated.guessCount,
+            attempts: [updated.attempt, ...current.attempts],
+          };
+        });
+        setQuery("");
+        setSelectedExerciseId(null);
+      } catch (error) {
+        pushToast(error instanceof Error ? error.message : "Failed to submit guess.");
+      } finally {
+        setIsSubmitting(false);
+      }
+
+      return;
     }
-  }, [attemptedExerciseIds, gameState, pushToast, selectedExerciseId]);
+
+    const localAttempt = buildDailyAttempt(guessed, target);
+    const nextGuessCount = gameState.guessCount + 1;
+    const nextStatus: PublicTodayGameState["status"] = localAttempt.isCorrect ? "won" : "in_progress";
+
+    void preloadExerciseMedia(localAttempt.guessSlug);
+    setRevealingAttemptId(localAttempt.id);
+    if (nextStatus === "won") {
+      setDailyVictoryPhase("revealing");
+    }
+
+    setGameState((current) => {
+      if (!current || current.gameDate !== gameState.gameDate) {
+        return current;
+      }
+
+      return {
+        ...current,
+        status: nextStatus,
+        guessCount: nextGuessCount,
+        attempts: [localAttempt, ...current.attempts],
+      };
+    });
+    setQuery("");
+    setSelectedExerciseId(null);
+
+    dailySyncQueueRef.current = dailySyncQueueRef.current
+      .then(async () => {
+        const synced = await submitGuessRequest(exerciseId);
+
+        setGameState((current) => {
+          if (!current || current.gameDate !== synced.gameDate) {
+            return current;
+          }
+
+          return {
+            ...current,
+            status: synced.status,
+            guessCount: Math.max(current.guessCount, synced.guessCount),
+          };
+        });
+      })
+      .catch((error) => {
+        pushToast(error instanceof Error ? error.message : "Failed to sync guess.");
+      });
+  }, [attemptedExerciseIds, exerciseById, gameState, pushToast, selectedExerciseId]);
 
   const handleSubmitInfinite = useCallback(async (overrideExerciseId?: string) => {
     const exerciseId = overrideExerciseId ?? selectedExerciseId;
