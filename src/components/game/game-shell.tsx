@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
+import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
 import {
@@ -47,6 +48,10 @@ type MarathonTransitionState = {
 };
 
 type FooterModal = "how-to-play" | "privacy" | null;
+type DailyVictoryPhase = "idle" | "revealing" | "celebrating" | "complete";
+
+const FEEDBACK_REVEAL_DURATION_MS = 1700;
+const DAILY_CELEBRATION_DURATION_MS = 1200;
 
 function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
@@ -119,6 +124,10 @@ function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExercis
 export function GameShell({ initialState }: GameShellProps) {
   const [mode, setMode] = useState<GameMode>("daily");
   const [gameState, setGameState] = useState<PublicTodayGameState | null>(initialState);
+  const [dailyVictoryPhase, setDailyVictoryPhase] = useState<DailyVictoryPhase>(
+    initialState?.status === "won" ? "complete" : "idle",
+  );
+  const [dailyCelebrationSeed, setDailyCelebrationSeed] = useState(0);
   const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(null);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,6 +143,8 @@ export function GameShell({ initialState }: GameShellProps) {
   const revealTimeoutRef = useRef<number | null>(null);
   const marathonSolvedTimeoutRef = useRef<number | null>(null);
   const marathonNextTimeoutRef = useRef<number | null>(null);
+  const dailyRevealTimeoutRef = useRef<number | null>(null);
+  const dailyCelebrationTimeoutRef = useRef<number | null>(null);
 
   const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
 
@@ -198,6 +209,14 @@ export function GameShell({ initialState }: GameShellProps) {
 
   useEffect(() => {
     return () => {
+      if (dailyRevealTimeoutRef.current !== null) {
+        window.clearTimeout(dailyRevealTimeoutRef.current);
+      }
+
+      if (dailyCelebrationTimeoutRef.current !== null) {
+        window.clearTimeout(dailyCelebrationTimeoutRef.current);
+      }
+
       if (marathonSolvedTimeoutRef.current !== null) {
         window.clearTimeout(marathonSolvedTimeoutRef.current);
       }
@@ -207,6 +226,41 @@ export function GameShell({ initialState }: GameShellProps) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (mode !== "daily") {
+      return;
+    }
+
+    if (dailyVictoryPhase === "revealing") {
+      dailyRevealTimeoutRef.current = window.setTimeout(() => {
+        setDailyVictoryPhase("celebrating");
+        setDailyCelebrationSeed((current) => current + 1);
+        dailyRevealTimeoutRef.current = null;
+      }, FEEDBACK_REVEAL_DURATION_MS);
+
+      return () => {
+        if (dailyRevealTimeoutRef.current !== null) {
+          window.clearTimeout(dailyRevealTimeoutRef.current);
+          dailyRevealTimeoutRef.current = null;
+        }
+      };
+    }
+
+    if (dailyVictoryPhase === "celebrating") {
+      dailyCelebrationTimeoutRef.current = window.setTimeout(() => {
+        setDailyVictoryPhase("complete");
+        dailyCelebrationTimeoutRef.current = null;
+      }, DAILY_CELEBRATION_DURATION_MS);
+
+      return () => {
+        if (dailyCelebrationTimeoutRef.current !== null) {
+          window.clearTimeout(dailyCelebrationTimeoutRef.current);
+          dailyCelebrationTimeoutRef.current = null;
+        }
+      };
+    }
+  }, [dailyVictoryPhase, mode]);
 
   useEffect(() => {
     if (!footerModal) return;
@@ -282,6 +336,18 @@ export function GameShell({ initialState }: GameShellProps) {
     setQuery("");
     setSelectedExerciseId(null);
     setRevealingAttemptId(null);
+
+    if (nextMode !== "daily") {
+      if (dailyRevealTimeoutRef.current !== null) {
+        window.clearTimeout(dailyRevealTimeoutRef.current);
+        dailyRevealTimeoutRef.current = null;
+      }
+
+      if (dailyCelebrationTimeoutRef.current !== null) {
+        window.clearTimeout(dailyCelebrationTimeoutRef.current);
+        dailyCelebrationTimeoutRef.current = null;
+      }
+    }
   }, []);
 
   const startMarathonRun = useCallback(() => {
@@ -352,6 +418,9 @@ export function GameShell({ initialState }: GameShellProps) {
       const updated = await submitGuessRequest(exerciseId);
       await preloadExerciseMedia(updated.attempt.guessSlug);
       setRevealingAttemptId(updated.attempt.id);
+      if (updated.status === "won") {
+        setDailyVictoryPhase("revealing");
+      }
       setGameState((current) => {
         if (!current || current.gameDate !== updated.gameDate) {
           return current;
@@ -528,6 +597,10 @@ export function GameShell({ initialState }: GameShellProps) {
   const isDailyWon = gameState?.status === "won";
   const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
   const isMarathonStarted = infiniteState !== null && infiniteState.status !== "not_started";
+  const shouldShowDailyPrompt =
+    mode === "daily" && (!isDailyWon || dailyVictoryPhase === "revealing");
+  const shouldShowVictoryPanel = mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
+  const shouldShowDailyCelebration = mode === "daily" && isDailyWon && dailyVictoryPhase === "celebrating";
 
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
   const infiniteAttemptsLeft = infiniteState ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed) : 0;
@@ -579,7 +652,7 @@ export function GameShell({ initialState }: GameShellProps) {
               </button>
             </div>
 
-            {mode === "daily" && !isDailyWon ? (
+            {shouldShowDailyPrompt ? (
               <div className="game-prompt-panel" role="status" aria-live="polite">
                 <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
                 {(!gameState || gameState.guessCount === 0) ? (
@@ -652,7 +725,7 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {mode === "daily" && isDailyWon ? (
+          {shouldShowVictoryPanel ? (
             <section className="game-win-zone" aria-label="Victory summary">
               <VictoryPanel
                 gameDate={gameState?.gameDate ?? ""}
@@ -815,6 +888,12 @@ export function GameShell({ initialState }: GameShellProps) {
       ) : null}
 
       {toast ? <div className="game-toast">{toast.message}</div> : null}
+      {shouldShowDailyCelebration ? (
+        <DailyCelebration
+          key={`daily-celebration-${dailyCelebrationSeed}`}
+          durationMs={DAILY_CELEBRATION_DURATION_MS}
+        />
+      ) : null}
     </>
   );
 }
