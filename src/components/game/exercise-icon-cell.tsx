@@ -1,18 +1,11 @@
-'use client';
+"use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ExerciseMediaPreview } from "@/components/exercises/exercise-media-preview";
+import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import { getExerciseIconCandidates } from "@/lib/exercises/icons";
-import {
-  clearExerciseMediaUrl,
-  getCachedExerciseMediaUrl,
-  hasResolvedExerciseMedia,
-  isExerciseMediaLoaded,
-  markExerciseMediaLoaded,
-  resolveExerciseMediaUrl,
-} from "@/lib/game/exercise-media-client";
+import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
+import type { ExerciseMedia } from "@/types/media";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
@@ -20,56 +13,49 @@ type ExerciseIconCellProps = {
   exerciseMuscleGroup: string | null;
 };
 
-export function ExerciseIconCell({
-  exerciseSlug,
-  exerciseName,
-  exerciseMuscleGroup,
-}: ExerciseIconCellProps) {
-  const [candidateIndex, setCandidateIndex] = useState(0);
+function buildFallbackIconMedia(slug: string, name: string, muscleGroup: string | null): ExerciseMedia[] {
+  const iconPath =
+    getExerciseIconCandidates({
+      slug,
+      name,
+      muscle_group: muscleGroup,
+    })[0] ?? "/muscle-icons/full-body.svg";
+
+  return [
+    {
+      id: `fallback-icon-${slug}`,
+      exerciseId: slug,
+      mediaKind: "icon",
+      source: "local",
+      sourceId: slug,
+      url: iconPath,
+      thumbnailUrl: null,
+      posterUrl: null,
+      mimeType: "image/svg+xml",
+      width: null,
+      height: null,
+      durationSeconds: null,
+      isPrimary: true,
+      sortOrder: 0,
+      isActive: true,
+      attributionText: null,
+      attributionUrl: null,
+      license: null,
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(0).toISOString(),
+    },
+  ];
+}
+
+export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [mediaState, setMediaState] = useState<{ slug: string; url: string | null; resolved: boolean }>(() => ({
-    slug: exerciseSlug,
-    url: getCachedExerciseMediaUrl(exerciseSlug) ?? null,
-    resolved: hasResolvedExerciseMedia(exerciseSlug),
-  }));
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-
-  const iconCandidates = useMemo(
-    () => getExerciseIconCandidates({ slug: exerciseSlug, muscle_group: exerciseMuscleGroup }),
-    [exerciseMuscleGroup, exerciseSlug],
+  const fallbackMedia = useMemo(
+    () => buildFallbackIconMedia(exerciseSlug, exerciseName, exerciseMuscleGroup),
+    [exerciseMuscleGroup, exerciseName, exerciseSlug],
   );
-
-  const safeCandidateIndex = Math.min(candidateIndex, Math.max(0, iconCandidates.length - 1));
-  const activeIconPath = iconCandidates[safeCandidateIndex] ?? "";
-  const mediaUrl =
-    mediaState.slug === exerciseSlug
-      ? mediaState.url
-      : (getCachedExerciseMediaUrl(exerciseSlug) ?? null);
-  const [, forceGifRefresh] = useState(0);
-  const isGifLoaded = mediaUrl !== null && isExerciseMediaLoaded(mediaUrl);
-  const showGifReady = mediaUrl !== null && isGifLoaded;
-
-  useEffect(() => {
-    if (mediaState.resolved) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadExerciseMedia() {
-      const nextUrl = await resolveExerciseMediaUrl(exerciseSlug);
-      if (active) {
-        setMediaState({ slug: exerciseSlug, url: nextUrl, resolved: true });
-      }
-    }
-
-    void loadExerciseMedia();
-
-    return () => {
-      active = false;
-    };
-  }, [exerciseSlug, mediaState.resolved]);
+  const { media, loading } = useExerciseMediaAssets(exerciseSlug, fallbackMedia);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -126,71 +112,12 @@ export function ExerciseIconCell({
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {showGifReady ? (
-            <img
-              src={mediaUrl}
-              alt=""
-              className="exercise-icon-cell__gif exercise-icon-cell__gif--ready"
-              loading="lazy"
-              onLoad={() => {
-                markExerciseMediaLoaded(mediaUrl);
-                forceGifRefresh((current) => current + 1);
-              }}
-              onError={() => {
-                clearExerciseMediaUrl(exerciseSlug);
-                setMediaState({ slug: exerciseSlug, url: null, resolved: true });
-                forceGifRefresh((current) => current + 1);
-              }}
-            />
-          ) : null}
-
-          {!showGifReady && mediaUrl ? (
-            <img
-              src={mediaUrl}
-              alt=""
-              className="exercise-icon-cell__gif exercise-icon-cell__gif--loading"
-              loading="lazy"
-              onLoad={() => {
-                markExerciseMediaLoaded(mediaUrl);
-                forceGifRefresh((current) => current + 1);
-              }}
-              onError={() => {
-                clearExerciseMediaUrl(exerciseSlug);
-                setMediaState({ slug: exerciseSlug, url: null, resolved: true });
-                forceGifRefresh((current) => current + 1);
-              }}
-            />
-          ) : null}
-
-          {!showGifReady ? (
-            <span className="exercise-icon-cell__foreground">
-              {activeIconPath ? (
-                <Image
-                  key={`${exerciseSlug}-${activeIconPath}`}
-                  src={activeIconPath}
-                  alt=""
-                  className="exercise-icon-cell__icon"
-                  width={40}
-                  height={40}
-                  onError={() => {
-                    setCandidateIndex((current) => {
-                      if (current >= iconCandidates.length - 1) {
-                        return current;
-                      }
-
-                      return current + 1;
-                    });
-                  }}
-                />
-              ) : (
-                <span className="exercise-icon-cell__fallback">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              )}
-            </span>
-          ) : null}
+          <ExerciseMediaView
+            media={media}
+            context="list"
+            alt={exerciseName}
+            className={loading ? "exercise-icon-cell__gif exercise-icon-cell__gif--loading" : "exercise-icon-cell__gif exercise-icon-cell__gif--ready"}
+          />
         </span>
 
         <span className="exercise-icon-cell__overlay">{exerciseName}</span>
@@ -217,7 +144,12 @@ export function ExerciseIconCell({
                   </button>
                 </div>
 
-                <ExerciseMediaPreview exerciseSlug={exerciseSlug} exerciseName={exerciseName} />
+                <ExerciseMediaView
+                  media={media}
+                  context="modal"
+                  alt={`Demo ${exerciseName}`}
+                  className="exercise-media-preview__media"
+                />
               </div>
             </div>,
             document.body,
