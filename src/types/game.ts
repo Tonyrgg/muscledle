@@ -54,3 +54,20 @@ export type PublicGameStats = {
   maxStreak: number;
   guessHistory: PublicGameStatsPoint[];
 };
+
+export type PublicMarathonState = {
+  status: "not_started" | "in_progress" | "won" | "lost";
+  score: number;
+  currentIndex: number;
+  attempts: PublicGameAttempt[];
+  maxAttemptsPerRound: number;
+  exerciseOrderIds: string[];
+  runSeed: number | null;
+};
+
+export type SubmitMarathonGuessResponse = {
+  state: PublicMarathonState;
+  attempt: PublicGameAttempt;
+  pointsEarned: number;
+  acceptedFamilyMatch: boolean;
+};

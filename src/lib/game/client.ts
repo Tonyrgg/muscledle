@@ -1,4 +1,10 @@
-import type { PublicGameStats, PublicTodayGameState, SubmitGuessResponse } from "@/types/game";
+import type {
+  PublicGameStats,
+  PublicMarathonState,
+  PublicTodayGameState,
+  SubmitGuessResponse,
+  SubmitMarathonGuessResponse,
+} from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
 import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps } from "@/types/exercise";
 
@@ -126,4 +132,54 @@ export async function fetchGameStats(): Promise<PublicGameStats> {
   });
 
   return parseOrThrow<PublicGameStats>(response, `Failed to load stats (${response.status}).`);
+}
+
+export async function fetchMarathonState(): Promise<PublicMarathonState> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/marathon", {
+    method: "GET",
+    cache: "no-store",
+    headers: authHeaders,
+  });
+
+  return parseOrThrow<PublicMarathonState>(response, `Failed to load marathon state (${response.status}).`);
+}
+
+export async function startMarathonRunRequest(): Promise<PublicMarathonState> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/marathon/start", {
+    method: "POST",
+    cache: "no-store",
+    headers: authHeaders,
+  });
+
+  return parseOrThrow<PublicMarathonState>(response, `Failed to start marathon run (${response.status}).`);
+}
+
+export async function submitMarathonGuessRequest(guessExerciseId: string): Promise<SubmitMarathonGuessResponse> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/marathon/guess", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeaders,
+    },
+    body: JSON.stringify({ guessExerciseId }),
+  });
+
+  return parseOrThrow<SubmitMarathonGuessResponse>(
+    response,
+    `Failed to submit marathon guess (${response.status}).`,
+  );
+}
+
+export async function resetMarathonRunRequest(): Promise<PublicMarathonState> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/marathon/reset", {
+    method: "POST",
+    cache: "no-store",
+    headers: authHeaders,
+  });
+
+  return parseOrThrow<PublicMarathonState>(response, `Failed to reset marathon run (${response.status}).`);
 }
