@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -84,7 +84,9 @@ function createInfiniteGameState(): InfiniteGameState {
   };
 }
 
-function createShuffledExerciseOrder(exercises: LiveExerciseSuggestion[]): string[] {
+function createShuffledExerciseOrder(
+  exercises: LiveExerciseSuggestion[],
+): string[] {
   const ids = exercises.map((exercise) => exercise.id);
 
   for (let i = ids.length - 1; i > 0; i -= 1) {
@@ -97,8 +99,14 @@ function createShuffledExerciseOrder(exercises: LiveExerciseSuggestion[]): strin
   return ids;
 }
 
-function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
-  const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
+function buildInfiniteAttempt(
+  guess: LiveExerciseSuggestion,
+  target: LiveExerciseSuggestion,
+): PublicGameAttempt {
+  const feedback = evaluateGuess(
+    toExerciseModel(guess),
+    toExerciseModel(target),
+  );
   const correct = isCorrectGuess(feedback);
 
   return {
@@ -121,8 +129,14 @@ function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExercis
   };
 }
 
-function buildDailyAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
-  const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
+function buildDailyAttempt(
+  guess: LiveExerciseSuggestion,
+  target: LiveExerciseSuggestion,
+): PublicGameAttempt {
+  const feedback = evaluateGuess(
+    toExerciseModel(guess),
+    toExerciseModel(target),
+  );
   const correct = isCorrectGuess(feedback);
 
   return {
@@ -147,22 +161,31 @@ function buildDailyAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSu
 
 export function GameShell({ initialState }: GameShellProps) {
   const [mode, setMode] = useState<GameMode>("daily");
-  const [gameState, setGameState] = useState<PublicTodayGameState | null>(initialState);
+  const [gameState, setGameState] = useState<PublicTodayGameState | null>(
+    initialState,
+  );
   const [dailyVictoryPhase, setDailyVictoryPhase] = useState<DailyVictoryPhase>(
     initialState?.status === "won" ? "complete" : "idle",
   );
   const [showDailyCelebration, setShowDailyCelebration] = useState(false);
   const [dailyCelebrationSeed, setDailyCelebrationSeed] = useState(0);
-  const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(null);
+  const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(
+    null,
+  );
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exercises, setExercises] = useState<LiveExerciseSuggestion[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(false);
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
+    null,
+  );
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState | null>(null);
-  const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(null);
-  const [marathonTransition, setMarathonTransition] = useState<MarathonTransitionState | null>(null);
+  const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(
+    null,
+  );
+  const [marathonTransition, setMarathonTransition] =
+    useState<MarathonTransitionState | null>(null);
   const [footerModal, setFooterModal] = useState<FooterModal>(null);
   const toastIdRef = useRef(0);
   const revealTimeoutRef = useRef<number | null>(null);
@@ -173,7 +196,10 @@ export function GameShell({ initialState }: GameShellProps) {
   const dailyConfettiSettleTimeoutRef = useRef<number | null>(null);
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const exerciseById = useMemo(() => new Map(exercises.map((exercise) => [exercise.id, exercise])), [exercises]);
+  const exerciseById = useMemo(
+    () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
+    [exercises],
+  );
 
   const activeInfiniteTarget = useMemo(() => {
     if (!infiniteState || infiniteState.status === "not_started") {
@@ -189,7 +215,10 @@ export function GameShell({ initialState }: GameShellProps) {
   }, [exerciseById, infiniteState]);
 
   const activeAttempts = useMemo(
-    () => (mode === "daily" ? gameState?.attempts ?? [] : infiniteState?.attempts ?? []),
+    () =>
+      mode === "daily"
+        ? (gameState?.attempts ?? [])
+        : (infiniteState?.attempts ?? []),
     [gameState?.attempts, infiniteState?.attempts, mode],
   );
 
@@ -199,7 +228,8 @@ export function GameShell({ initialState }: GameShellProps) {
   );
 
   const selectableExercises = useMemo(
-    () => exercises.filter((exercise) => !attemptedExerciseIds.has(exercise.id)),
+    () =>
+      exercises.filter((exercise) => !attemptedExerciseIds.has(exercise.id)),
     [attemptedExerciseIds, exercises],
   );
 
@@ -339,7 +369,9 @@ export function GameShell({ initialState }: GameShellProps) {
       setExercises(result);
       setInfiniteState(createInfiniteGameState());
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : "Failed to load exercises.");
+      pushToast(
+        error instanceof Error ? error.message : "Failed to load exercises.",
+      );
     } finally {
       setLoadingExercises(false);
     }
@@ -352,7 +384,9 @@ export function GameShell({ initialState }: GameShellProps) {
       const state = await fetchTodayGameState();
       setGameState(state);
     } catch (error) {
-      pushToast(error instanceof Error ? error.message : "Failed to load game state.");
+      pushToast(
+        error instanceof Error ? error.message : "Failed to load game state.",
+      );
     } finally {
       setIsLoadingState(false);
     }
@@ -441,255 +475,286 @@ export function GameShell({ initialState }: GameShellProps) {
     setSelectedExerciseId(null);
   }, []);
 
-  const handleSelectExercise = useCallback((exercise: LiveExerciseSuggestion) => {
-    setQuery(exercise.name);
-    setSelectedExerciseId(exercise.id);
-  }, []);
+  const handleSelectExercise = useCallback(
+    (exercise: LiveExerciseSuggestion) => {
+      setQuery(exercise.name);
+      setSelectedExerciseId(exercise.id);
+    },
+    [],
+  );
 
-  const handleSubmitDaily = useCallback(async (overrideExerciseId?: string) => {
-    const exerciseId = overrideExerciseId ?? selectedExerciseId;
+  const handleSubmitDaily = useCallback(
+    async (overrideExerciseId?: string) => {
+      const exerciseId = overrideExerciseId ?? selectedExerciseId;
 
-    if (!exerciseId) {
-      pushToast("Select an exercise from the dropdown first.");
-      return;
-    }
+      if (!exerciseId) {
+        pushToast("Select an exercise from the dropdown first.");
+        return;
+      }
 
-    if (attemptedExerciseIds.has(exerciseId)) {
-      pushToast("You already guessed this exercise.");
-      setSelectedExerciseId(null);
-      return;
-    }
-
-    if (!gameState || gameState.status !== "in_progress") {
-      return;
-    }
-
-    const guessed = exerciseById.get(exerciseId);
-    const targetExerciseId = gameState.dailySecretExerciseId;
-    const target = targetExerciseId ? exerciseById.get(targetExerciseId) : null;
-
-    // Fallback path for legacy sessions missing client-side secret or local exercise cache.
-    if (!guessed || !target) {
-      setIsSubmitting(true);
-
-      try {
-        const updated = await submitGuessRequest(exerciseId);
-        void preloadExerciseMedia(updated.attempt.guessSlug);
-        if (
-          updated.attempt.isCorrect &&
-          gameState.dailySecretExerciseId &&
-          updated.attempt.guessExerciseId !== gameState.dailySecretExerciseId
-        ) {
-          pushToast("Correct family match. Variant accepted as solved.");
-        }
-        setRevealingAttemptId(updated.attempt.id);
-        if (updated.status === "won") {
-          setDailyVictoryPhase("revealing");
-        }
-        setGameState((current) => {
-          if (!current || current.gameDate !== updated.gameDate) {
-            return current;
-          }
-
-          return {
-            ...current,
-            status: updated.status,
-            guessCount: updated.guessCount,
-            attempts: [updated.attempt, ...current.attempts],
-          };
-        });
-        setQuery("");
+      if (attemptedExerciseIds.has(exerciseId)) {
+        pushToast("You already guessed this exercise.");
         setSelectedExerciseId(null);
-      } catch (error) {
-        pushToast(error instanceof Error ? error.message : "Failed to submit guess.");
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
 
-      return;
-    }
-
-    const localAttempt = buildDailyAttempt(guessed, target);
-    if (localAttempt.isCorrect && guessed.id !== target.id) {
-      pushToast("Correct family match. Variant accepted as solved.");
-    }
-    const nextGuessCount = gameState.guessCount + 1;
-    const nextStatus: PublicTodayGameState["status"] = localAttempt.isCorrect ? "won" : "in_progress";
-
-    void preloadExerciseMedia(localAttempt.guessSlug);
-    setRevealingAttemptId(localAttempt.id);
-    if (nextStatus === "won") {
-      setDailyVictoryPhase("revealing");
-    }
-
-    setGameState((current) => {
-      if (!current || current.gameDate !== gameState.gameDate) {
-        return current;
+      if (!gameState || gameState.status !== "in_progress") {
+        return;
       }
 
-      return {
-        ...current,
-        status: nextStatus,
-        guessCount: nextGuessCount,
-        attempts: [localAttempt, ...current.attempts],
-      };
-    });
-    setQuery("");
-    setSelectedExerciseId(null);
+      const guessed = exerciseById.get(exerciseId);
+      const targetExerciseId = gameState.dailySecretExerciseId;
+      const target = targetExerciseId
+        ? exerciseById.get(targetExerciseId)
+        : null;
 
-    dailySyncQueueRef.current = dailySyncQueueRef.current
-      .then(async () => {
-        const synced = await submitGuessRequest(exerciseId);
+      // Fallback path for legacy sessions missing client-side secret or local exercise cache.
+      if (!guessed || !target) {
+        setIsSubmitting(true);
 
-        setGameState((current) => {
-          if (!current || current.gameDate !== synced.gameDate) {
-            return current;
+        try {
+          const updated = await submitGuessRequest(exerciseId);
+          void preloadExerciseMedia(updated.attempt.guessSlug);
+          if (
+            updated.attempt.isCorrect &&
+            gameState.dailySecretExerciseId &&
+            updated.attempt.guessExerciseId !== gameState.dailySecretExerciseId
+          ) {
+            pushToast("Correct family match. Variant accepted as solved.");
           }
+          setRevealingAttemptId(updated.attempt.id);
+          if (updated.status === "won") {
+            setDailyVictoryPhase("revealing");
+          }
+          setGameState((current) => {
+            if (!current || current.gameDate !== updated.gameDate) {
+              return current;
+            }
 
-          return {
-            ...current,
-            status: synced.status,
-            guessCount: Math.max(current.guessCount, synced.guessCount),
-          };
-        });
-      })
-      .catch((error) => {
-        pushToast(error instanceof Error ? error.message : "Failed to sync guess.");
+            return {
+              ...current,
+              status: updated.status,
+              guessCount: updated.guessCount,
+              attempts: [updated.attempt, ...current.attempts],
+            };
+          });
+          setQuery("");
+          setSelectedExerciseId(null);
+        } catch (error) {
+          pushToast(
+            error instanceof Error ? error.message : "Failed to submit guess.",
+          );
+        } finally {
+          setIsSubmitting(false);
+        }
+
+        return;
+      }
+
+      const localAttempt = buildDailyAttempt(guessed, target);
+      if (localAttempt.isCorrect && guessed.id !== target.id) {
+        pushToast("Correct family match. Variant accepted as solved.");
+      }
+      const nextGuessCount = gameState.guessCount + 1;
+      const nextStatus: PublicTodayGameState["status"] = localAttempt.isCorrect
+        ? "won"
+        : "in_progress";
+
+      void preloadExerciseMedia(localAttempt.guessSlug);
+      setRevealingAttemptId(localAttempt.id);
+      if (nextStatus === "won") {
+        setDailyVictoryPhase("revealing");
+      }
+
+      setGameState((current) => {
+        if (!current || current.gameDate !== gameState.gameDate) {
+          return current;
+        }
+
+        return {
+          ...current,
+          status: nextStatus,
+          guessCount: nextGuessCount,
+          attempts: [localAttempt, ...current.attempts],
+        };
       });
-  }, [attemptedExerciseIds, exerciseById, gameState, pushToast, selectedExerciseId]);
-
-  const handleSubmitInfinite = useCallback(async (overrideExerciseId?: string) => {
-    const exerciseId = overrideExerciseId ?? selectedExerciseId;
-
-    if (!exerciseId) {
-      pushToast("Select an exercise from the dropdown first.");
-      return;
-    }
-
-    if (!infiniteState || infiniteState.status !== "in_progress") {
-      return;
-    }
-
-    if (marathonTransition) {
-      return;
-    }
-
-    if (!activeInfiniteTarget) {
-      pushToast("No target exercise available.");
-      return;
-    }
-
-    if (attemptedExerciseIds.has(exerciseId)) {
-      pushToast("You already guessed this exercise in this round.");
-      setSelectedExerciseId(null);
-      return;
-    }
-
-    const guessed = exerciseById.get(exerciseId);
-
-    if (!guessed) {
-      pushToast("Selected exercise is not available.");
-      return;
-    }
-
-    const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
-    if (attempt.isCorrect && guessed.id !== activeInfiniteTarget.id) {
-      pushToast("Correct family match. Variant accepted as solved.");
-    }
-    const attempts = [attempt, ...infiniteState.attempts];
-    const attemptsUsed = attempts.length;
-
-    setIsSubmitting(true);
-
-    try {
-      await preloadExerciseMedia(attempt.guessSlug);
-      setRevealingAttemptId(attempt.id);
       setQuery("");
       setSelectedExerciseId(null);
 
-      if (attempt.isCorrect) {
-        const pointsEarned = Math.max(1, infiniteState.maxAttemptsPerRound - attemptsUsed + 1);
-        const nextScore = infiniteState.score + pointsEarned;
-        const nextIndex = infiniteState.currentIndex + 1;
+      dailySyncQueueRef.current = dailySyncQueueRef.current
+        .then(async () => {
+          const synced = await submitGuessRequest(exerciseId);
 
-        if (nextIndex >= infiniteState.exerciseOrderIds.length) {
-          setInfiniteState({
-            ...infiniteState,
-            score: nextScore,
-            currentIndex: nextIndex,
-            attempts,
-            status: "completed",
+          setGameState((current) => {
+            if (!current || current.gameDate !== synced.gameDate) {
+              return current;
+            }
+
+            return {
+              ...current,
+              status: synced.status,
+              guessCount: Math.max(current.guessCount, synced.guessCount),
+            };
           });
-          pushToast(`Perfect run completed. Final score: ${nextScore}.`);
-          return;
-        }
-
-        setMarathonTransition({
-          phase: "solved",
-          exerciseName: activeInfiniteTarget.name,
-          score: nextScore,
+        })
+        .catch((error) => {
+          pushToast(
+            error instanceof Error ? error.message : "Failed to sync guess.",
+          );
         });
+    },
+    [
+      attemptedExerciseIds,
+      exerciseById,
+      gameState,
+      pushToast,
+      selectedExerciseId,
+    ],
+  );
 
-        marathonSolvedTimeoutRef.current = window.setTimeout(() => {
-          setMarathonTransition({
-            phase: "next",
-            exerciseName: activeInfiniteTarget.name,
-            score: nextScore,
-          });
-          marathonSolvedTimeoutRef.current = null;
+  const handleSubmitInfinite = useCallback(
+    async (overrideExerciseId?: string) => {
+      const exerciseId = overrideExerciseId ?? selectedExerciseId;
 
-          marathonNextTimeoutRef.current = window.setTimeout(() => {
+      if (!exerciseId) {
+        pushToast("Select an exercise from the dropdown first.");
+        return;
+      }
+
+      if (!infiniteState || infiniteState.status !== "in_progress") {
+        return;
+      }
+
+      if (marathonTransition) {
+        return;
+      }
+
+      if (!activeInfiniteTarget) {
+        pushToast("No target exercise available.");
+        return;
+      }
+
+      if (attemptedExerciseIds.has(exerciseId)) {
+        pushToast("You already guessed this exercise in this round.");
+        setSelectedExerciseId(null);
+        return;
+      }
+
+      const guessed = exerciseById.get(exerciseId);
+
+      if (!guessed) {
+        pushToast("Selected exercise is not available.");
+        return;
+      }
+
+      const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
+      if (attempt.isCorrect && guessed.id !== activeInfiniteTarget.id) {
+        pushToast("Correct family match. Variant accepted as solved.");
+      }
+      const attempts = [attempt, ...infiniteState.attempts];
+      const attemptsUsed = attempts.length;
+
+      setIsSubmitting(true);
+
+      try {
+        await preloadExerciseMedia(attempt.guessSlug);
+        setRevealingAttemptId(attempt.id);
+        setQuery("");
+        setSelectedExerciseId(null);
+
+        if (attempt.isCorrect) {
+          const pointsEarned = Math.max(
+            1,
+            infiniteState.maxAttemptsPerRound - attemptsUsed + 1,
+          );
+          const nextScore = infiniteState.score + pointsEarned;
+          const nextIndex = infiniteState.currentIndex + 1;
+
+          if (nextIndex >= infiniteState.exerciseOrderIds.length) {
             setInfiniteState({
               ...infiniteState,
               score: nextScore,
               currentIndex: nextIndex,
-              attempts: [],
+              attempts,
+              status: "completed",
             });
-            setMarathonTransition(null);
-            marathonNextTimeoutRef.current = null;
-          }, 1500);
-        }, 2200);
+            pushToast(`Perfect run completed. Final score: ${nextScore}.`);
+            return;
+          }
 
-        return;
-      }
+          setMarathonTransition({
+            phase: "solved",
+            exerciseName: activeInfiniteTarget.name,
+            score: nextScore,
+          });
 
-      if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
+          marathonSolvedTimeoutRef.current = window.setTimeout(() => {
+            setMarathonTransition({
+              phase: "next",
+              exerciseName: activeInfiniteTarget.name,
+              score: nextScore,
+            });
+            marathonSolvedTimeoutRef.current = null;
+
+            marathonNextTimeoutRef.current = window.setTimeout(() => {
+              setInfiniteState({
+                ...infiniteState,
+                score: nextScore,
+                currentIndex: nextIndex,
+                attempts: [],
+              });
+              setMarathonTransition(null);
+              marathonNextTimeoutRef.current = null;
+            }, 1500);
+          }, 2200);
+
+          return;
+        }
+
+        if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
+          setInfiniteState({
+            ...infiniteState,
+            attempts,
+            status: "lost",
+          });
+          pushToast(
+            `Run over. You used all ${infiniteState.maxAttemptsPerRound} attempts.`,
+          );
+          return;
+        }
+
         setInfiniteState({
           ...infiniteState,
           attempts,
-          status: "lost",
         });
-        pushToast(`Run over. You used all ${infiniteState.maxAttemptsPerRound} attempts.`);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [
+      activeInfiniteTarget,
+      attemptedExerciseIds,
+      exerciseById,
+      infiniteState,
+      marathonTransition,
+      pushToast,
+      selectedExerciseId,
+    ],
+  );
+
+  const handleSubmit = useCallback(
+    async (exercise?: LiveExerciseSuggestion) => {
+      const overrideExerciseId = exercise?.id;
+
+      if (mode === "daily") {
+        await handleSubmitDaily(overrideExerciseId);
         return;
       }
 
-      setInfiniteState({
-        ...infiniteState,
-        attempts,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [
-    activeInfiniteTarget,
-    attemptedExerciseIds,
-    exerciseById,
-    infiniteState,
-    marathonTransition,
-    pushToast,
-    selectedExerciseId,
-  ]);
-
-  const handleSubmit = useCallback(async (exercise?: LiveExerciseSuggestion) => {
-    const overrideExerciseId = exercise?.id;
-
-    if (mode === "daily") {
-      await handleSubmitDaily(overrideExerciseId);
-      return;
-    }
-
-    await handleSubmitInfinite(overrideExerciseId);
-  }, [handleSubmitDaily, handleSubmitInfinite, mode]);
+      await handleSubmitInfinite(overrideExerciseId);
+    },
+    [handleSubmitDaily, handleSubmitInfinite, mode],
+  );
 
   const restartInfiniteMode = useCallback(() => {
     if (exercises.length === 0) {
@@ -714,15 +779,21 @@ export function GameShell({ initialState }: GameShellProps) {
   }, [exercises.length]);
 
   const isDailyWon = gameState?.status === "won";
-  const winningAttempt = gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
-  const isMarathonStarted = infiniteState !== null && infiniteState.status !== "not_started";
+  const winningAttempt =
+    gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
+  const isMarathonStarted =
+    infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
     mode === "daily" && (!isDailyWon || dailyVictoryPhase !== "complete");
-  const shouldShowVictoryPanel = mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
-  const shouldShowDailyCelebration = mode === "daily" && isDailyWon && showDailyCelebration;
+  const shouldShowVictoryPanel =
+    mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
+  const shouldShowDailyCelebration =
+    mode === "daily" && isDailyWon && showDailyCelebration;
 
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
-  const infiniteAttemptsLeft = infiniteState ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed) : 0;
+  const infiniteAttemptsLeft = infiniteState
+    ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed)
+    : 0;
   const infiniteTotal =
     infiniteState && infiniteState.exerciseOrderIds.length > 0
       ? infiniteState.exerciseOrderIds.length
@@ -732,12 +803,20 @@ export function GameShell({ initialState }: GameShellProps) {
       ? Math.min(infiniteTotal, infiniteState.currentIndex + 1)
       : (infiniteState?.currentIndex ?? 0);
   const marathonProgressPct =
-    infiniteTotal > 0 ? Math.min(100, Math.max(0, Math.round((infiniteSolvedRounds / infiniteTotal) * 100))) : 0;
+    infiniteTotal > 0
+      ? Math.min(
+          100,
+          Math.max(0, Math.round((infiniteSolvedRounds / infiniteTotal) * 100)),
+        )
+      : 0;
 
   const disabled =
     mode === "daily"
       ? !gameState || gameState.status !== "in_progress" || isSubmitting
-      : !infiniteState || infiniteState.status !== "in_progress" || marathonTransition !== null || isSubmitting;
+      : !infiniteState ||
+        infiniteState.status !== "in_progress" ||
+        marathonTransition !== null ||
+        isSubmitting;
 
   return (
     <>
@@ -772,16 +851,28 @@ export function GameShell({ initialState }: GameShellProps) {
             </div>
 
             {shouldShowDailyPrompt ? (
-              <div className="game-prompt-panel" role="status" aria-live="polite">
-                <h2 className="game-prompt-panel__title">Guess today&apos;s Muscledle exercise.</h2>
-                {(!gameState || gameState.guessCount === 0) ? (
-                  <p className="game-prompt-panel__subtitle">Type any exercise name to begin.</p>
+              <div
+                className="game-prompt-panel"
+                role="status"
+                aria-live="polite"
+              >
+                <h2 className="game-prompt-panel__title">
+                  Guess today&apos;s Muscledle exercise.
+                </h2>
+                {!gameState || gameState.guessCount === 0 ? (
+                  <p className="game-prompt-panel__subtitle">
+                    Type any exercise name to begin.
+                  </p>
                 ) : null}
               </div>
             ) : null}
 
             {mode === "infinite" ? (
-              <div className="game-prompt-panel game-prompt-panel--infinite" role="status" aria-live="polite">
+              <div
+                className="game-prompt-panel game-prompt-panel--infinite"
+                role="status"
+                aria-live="polite"
+              >
                 <p className="marathon-hud__kicker">
                   {infiniteState?.status === "completed"
                     ? "Run Complete"
@@ -798,13 +889,21 @@ export function GameShell({ initialState }: GameShellProps) {
                       ? "Marathon over"
                       : infiniteState?.status === "not_started"
                         ? "Marathon ready"
-                      : "Marathon mode"}
+                        : "Marathon mode"}
                 </h2>
-                <div className="marathon-hud__bar-wrap" aria-label="Marathon progress">
+                <div
+                  className="marathon-hud__bar-wrap"
+                  aria-label="Marathon progress"
+                >
                   <div className="marathon-hud__bar">
-                    <span className="marathon-hud__bar-fill" style={{ width: `${marathonProgressPct}%` }} />
+                    <span
+                      className="marathon-hud__bar-fill"
+                      style={{ width: `${marathonProgressPct}%` }}
+                    />
                   </div>
-                  <p className="marathon-hud__bar-label">{marathonProgressPct}% complete</p>
+                  <p className="marathon-hud__bar-label">
+                    {marathonProgressPct}% complete
+                  </p>
                 </div>
                 {infiniteState?.status !== "not_started" ? (
                   <div className="marathon-hud__stats">
@@ -818,7 +917,8 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                 ) : null}
-                {infiniteState?.status === "lost" || infiniteState?.status === "completed" ? (
+                {infiniteState?.status === "lost" ||
+                infiniteState?.status === "completed" ? (
                   <button
                     type="button"
                     className="exercise-media-modal__close game-prompt-panel__restart"
@@ -832,7 +932,10 @@ export function GameShell({ initialState }: GameShellProps) {
           </header>
 
           {mode === "infinite" && !isMarathonStarted ? (
-            <section className="marathon-start-zone" aria-label="Start marathon">
+            <section
+              className="marathon-start-zone"
+              aria-label="Start marathon"
+            >
               <button
                 type="button"
                 className="exercise-media-modal__close marathon-start-zone__button"
@@ -855,7 +958,8 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {(mode === "daily" && !isDailyWon) || (mode === "infinite" && isMarathonStarted) ? (
+          {(mode === "daily" && !isDailyWon) ||
+          (mode === "infinite" && isMarathonStarted) ? (
             <section className="game-input-zone" aria-label="Guess input">
               <GuessInput
                 query={query}
@@ -873,12 +977,14 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {(mode === "daily" || isMarathonStarted) ? (
+          {mode === "daily" || isMarathonStarted ? (
             <div className="marathon-stage">
               <section className="game-table-zone" aria-label="Attempts">
                 <AttemptsTable
                   attempts={activeAttempts}
-                  loading={mode === "daily" ? isLoadingState && !gameState : false}
+                  loading={
+                    mode === "daily" ? isLoadingState && !gameState : false
+                  }
                   revealingAttemptId={revealingAttemptId}
                 />
               </section>
@@ -887,14 +993,18 @@ export function GameShell({ initialState }: GameShellProps) {
                 <section className="marathon-transition" aria-live="polite">
                   <div className="marathon-transition__panel">
                     <p className="marathon-transition__kicker">
-                      {marathonTransition.phase === "solved" ? "Correct" : "Next Exercise"}
+                      {marathonTransition.phase === "solved"
+                        ? "Correct"
+                        : "Next Exercise"}
                     </p>
                     <p className="marathon-transition__title">
                       {marathonTransition.phase === "solved"
                         ? marathonTransition.exerciseName
                         : "Preparing next challenge"}
                     </p>
-                    <p className="marathon-transition__score">Score {marathonTransition.score}</p>
+                    <p className="marathon-transition__score">
+                      Score {marathonTransition.score}
+                    </p>
                   </div>
                 </section>
               ) : null}
@@ -902,7 +1012,10 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : null}
 
           {mode === "daily" ? (
-            <section className="yesterday-exercise" aria-label="Yesterday exercise">
+            <section
+              className="yesterday-exercise"
+              aria-label="Yesterday exercise"
+            >
               <p className="yesterday-exercise__text">
                 Yesterday&apos;s exercise was{" "}
                 <span className="yesterday-exercise__name">
@@ -916,24 +1029,51 @@ export function GameShell({ initialState }: GameShellProps) {
 
       <footer className="game-footer" aria-label="Muscledle footer">
         <nav className="game-footer__links" aria-label="Footer links">
-          <button type="button" className="game-footer__link" onClick={() => setFooterModal("how-to-play")}>
+          <button
+            type="button"
+            className="game-footer__link"
+            onClick={() => setFooterModal("how-to-play")}
+          >
             HOW TO PLAY
           </button>
-          <button type="button" className="game-footer__link">STATS</button>
-          <Link href="/archive" className="game-footer__link">ARCHIVE</Link>
-          <button type="button" className="game-footer__link" onClick={() => setFooterModal("privacy")}>
+          <button type="button" className="game-footer__link">
+            STATS
+          </button>
+          <Link href="/archive" className="game-footer__link">
+            ARCHIVE
+          </Link>
+          <button
+            type="button"
+            className="game-footer__link"
+            onClick={() => setFooterModal("privacy")}
+          >
             PRIVACY
           </button>
         </nav>
-        <p className="game-footer__copy">(C) 2024 MUSCLEDLE. ENGINEERED FOR INTENSITY.</p>
+        <p className="game-footer__copy">
+          © 2026 Muscledle. All rights reserved.
+        </p>
       </footer>
 
       {footerModal ? (
-        <section className="info-sheet" aria-label="Information modal" onClick={() => setFooterModal(null)}>
-          <div className="info-sheet__panel" onClick={(event) => event.stopPropagation()}>
+        <section
+          className="info-sheet"
+          aria-label="Information modal"
+          onClick={() => setFooterModal(null)}
+        >
+          <div
+            className="info-sheet__panel"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="info-sheet__head">
-              <h2 className="info-sheet__title">{footerModal === "how-to-play" ? "How To Play" : "Privacy"}</h2>
-              <button type="button" className="exercise-media-modal__close" onClick={() => setFooterModal(null)}>
+              <h2 className="info-sheet__title">
+                {footerModal === "how-to-play" ? "How To Play" : "Privacy"}
+              </h2>
+              <button
+                type="button"
+                className="exercise-media-modal__close"
+                onClick={() => setFooterModal(null)}
+              >
                 Close
               </button>
             </div>
@@ -941,32 +1081,114 @@ export function GameShell({ initialState }: GameShellProps) {
             {footerModal === "how-to-play" ? (
               <div className="info-sheet__body">
                 <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Goal</h3>
-                  <p>Guess today&apos;s exercise in as few attempts as possible.</p>
+                  <h3 className="info-sheet__section-title">How it works</h3>
+                  <p>Guess today&apos;s Muscledle exercise in as few attempts as possible.</p>
+                  <p>Each guess is compared against 7 attributes: Muscle, Equipment, Movement, Pattern, Reps, Goal, Ego.</p>
                 </section>
+
                 <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">How Feedback Works</h3>
-                  <p>
-                    Each row compares your guess with the daily target across seven attributes: muscle, equipment,
-                    movement, pattern, reps, goal, ego.
-                  </p>
-                  <p>
-                    Green means correct. Yellow means partially aligned. Red means wrong for that attribute.
+                  <h3 className="info-sheet__section-title">Color meaning</h3>
+                  <div className="htp-legend">
+                    <p className="htp-legend__item">
+                      <span className="htp-accent htp-accent--green">GREEN</span> exact match for that attribute.
+                    </p>
+                    <p className="htp-legend__item">
+                      <span className="htp-accent htp-accent--yellow">YELLOW</span> at least one shared value, but not a perfect match.
+                    </p>
+                    <p className="htp-legend__item">
+                      <span className="htp-accent htp-accent--red">RED</span> no overlap.
+                    </p>
+                  </div>
+                  <p className="htp-note">
+                    Muscledle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
                   </p>
                 </section>
+
                 <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Game Modes</h3>
+                  <h3 className="info-sheet__section-title">Attributes</h3>
+                  <div className="htp-attributes">
+                    <p>
+                      <strong>Muscle</strong>: primary focus (Chest, Back, Legs, Shoulders, Arms, Core).
+                    </p>
+                    <p>
+                      <strong>Equipment</strong>: dominant tool (Barbell, Dumbbells, Bodyweight, Machine, Cable, Kettlebell).
+                    </p>
+                    <p>
+                      <strong>Movement</strong>: movement type (Push, Pull, Isolation, Core).
+                    </p>
+                    <p>
+                      <strong>Pattern</strong>: movement pattern (Horizontal, Vertical, Squat, Hinge).
+                    </p>
+                    <p>
+                      <strong>Reps</strong>: rep range (1-5, 6-12, 12+).
+                    </p>
+                    <p>
+                      <strong>Goal</strong>: training intent (Strength, Hypertrophy, Endurance, Skill).
+                    </p>
+                    <p>
+                      <strong>Ego</strong>: risk/ego-lift level (Low, Medium, High).
+                    </p>
+                  </div>
+                </section>
+
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Guided example</h3>
                   <p>
-                    Daily: one target per day, reset at midnight Europe/Rome.
+                    Assume the correct answer is <span className="htp-inline htp-inline--target">Barbell Bench Press</span>.
+                    If you guess <span className="htp-inline htp-inline--guess">Dumbbell Bench Press</span>, you would get:
                   </p>
+
+                  <div className="htp-example-row-scroll" aria-label="Example feedback row">
+                    <div className="htp-example-grid" role="presentation">
+                      <span className="htp-example-cell htp-example-cell--green">Chest</span>
+                      <span className="htp-example-cell htp-example-cell--red">Dumbbells</span>
+                      <span className="htp-example-cell htp-example-cell--green">Push</span>
+                      <span className="htp-example-cell htp-example-cell--green">Horizontal</span>
+                      <span className="htp-example-cell htp-example-cell--green">6-12</span>
+                      <span className="htp-example-cell htp-example-cell--yellow">Strength / Hypertrophy</span>
+                      <span className="htp-example-cell htp-example-cell--green">Medium</span>
+                    </div>
+                  </div>
+
+                  <div className="htp-breakdown">
+                    <p>
+                      <strong>Muscle</strong>: <span className="htp-accent htp-accent--green">green</span>, same primary focus.
+                    </p>
+                    <p>
+                      <strong>Equipment</strong>: <span className="htp-accent htp-accent--red">red</span>, different tool.
+                    </p>
+                    <p>
+                      <strong>Goal</strong>: <span className="htp-accent htp-accent--yellow">yellow</span>, partial overlap but not exact.
+                    </p>
+                  </div>
+                </section>
+
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Mini drill</h3>
                   <p>
-                    Marathon: continuous run, one target after another, score based on solved rounds.
+                    If a row is mostly <span className="htp-accent htp-accent--green">green</span> but Equipment is
+                    <span className="htp-accent htp-accent--red"> red</span>, keep the same pattern and change only the tool.
                   </p>
                 </section>
+
                 <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Tips</h3>
-                  <p>Use autocomplete, submit quickly, then adjust based on color patterns.</p>
-                  <p>Open ARCHIVE to inspect exercise coverage and historical data.</p>
+                  <h3 className="info-sheet__section-title">Modes</h3>
+                  <p>
+                    <strong>Daily</strong>: one exercise per day, reset at midnight (Europe/Rome).
+                  </p>
+                  <p>
+                    <strong>Marathon</strong>: continuous run, up to 10 attempts per round, cumulative score.
+                  </p>
+                </section>
+
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Quick tips</h3>
+                  <p>
+                    Start with a common exercise, then narrow down based on your first two color patterns.
+                  </p>
+                  <p>
+                    Use cell tooltips to read fast definitions of shown values.
+                  </p>
                 </section>
               </div>
             ) : (
@@ -974,30 +1196,35 @@ export function GameShell({ initialState }: GameShellProps) {
                 <section className="info-sheet__section">
                   <h3 className="info-sheet__section-title">Data We Store</h3>
                   <p>
-                    We store gameplay data needed to run the game: guesses, feedback, daily game state, and aggregate
-                    stats.
+                    We store gameplay data needed to run the game: guesses,
+                    feedback, daily game state, and aggregate stats.
                   </p>
                 </section>
                 <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Media And Enrichment</h3>
+                  <h3 className="info-sheet__section-title">
+                    Media And Enrichment
+                  </h3>
                   <p>
-                    Exercise GIFs and enrichment metadata are synced server-side and saved in the internal database.
+                    Exercise GIFs and enrichment metadata are synced server-side
+                    and saved in the internal database.
                   </p>
                   <p>
-                    Provider data is used as raw input only. Gameplay remains based on Muscledle internal fields.
+                    Provider data is used as raw input only. Gameplay remains
+                    based on Muscledle internal fields.
                   </p>
                 </section>
                 <section className="info-sheet__section">
                   <h3 className="info-sheet__section-title">Authentication</h3>
                   <p>
-                    Sessions use Supabase auth. Anonymous sessions may be used to enable gameplay before account linking.
+                    Sessions use Supabase auth. Anonymous sessions may be used
+                    to enable gameplay before account linking.
                   </p>
                 </section>
                 <section className="info-sheet__section">
                   <h3 className="info-sheet__section-title">Contact</h3>
                   <p>
-                    For data requests or deletion, contact the project admin and provide your user identifier if
-                    available.
+                    For data requests or deletion, contact the project admin and
+                    provide your user identifier if available.
                   </p>
                 </section>
               </div>

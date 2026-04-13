@@ -1253,6 +1253,115 @@ input {
   line-height: 1.5;
 }
 
+.htp-legend {
+  margin-top: 0.4rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.htp-legend__item {
+  margin: 0;
+}
+
+.htp-accent {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.htp-accent--green {
+  color: var(--feedback-green);
+}
+
+.htp-accent--yellow {
+  color: var(--feedback-yellow);
+}
+
+.htp-accent--red {
+  color: var(--feedback-red);
+}
+
+.htp-note {
+  margin-top: 0.45rem;
+  color: #9eb0c5;
+  font-size: 0.76rem;
+  letter-spacing: 0.03em;
+}
+
+.htp-attributes {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.htp-attributes strong {
+  color: #f3f6fb;
+}
+
+.htp-inline {
+  font-weight: 800;
+}
+
+.htp-inline--target {
+  color: #56d7ff;
+}
+
+.htp-inline--guess {
+  color: #ffb46f;
+}
+
+.htp-example-grid {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.htp-example-row-scroll {
+  margin-top: 0.7rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.2rem;
+}
+
+.htp-example-row-scroll .htp-example-grid {
+  margin-top: 0;
+  min-width: 760px;
+}
+
+.htp-example-cell {
+  min-height: 3.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem;
+  color: #f8f8f8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.htp-example-cell--green {
+  background: var(--feedback-green);
+}
+
+.htp-example-cell--yellow {
+  background: var(--feedback-yellow);
+}
+
+.htp-example-cell--red {
+  background: var(--feedback-red);
+}
+
+.htp-breakdown {
+  margin-top: 0.58rem;
+  display: grid;
+  gap: 0.1rem;
+}
+
 .archive-page {
   min-height: 100vh;
   padding: 1rem 0.75rem 2rem;
@@ -1583,6 +1692,10 @@ input {
   .info-sheet__head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .htp-example-row-scroll .htp-example-grid {
+    min-width: 700px;
   }
 }
 
