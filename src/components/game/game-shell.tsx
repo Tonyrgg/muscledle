@@ -14,7 +14,7 @@ import {
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
-import { evaluateGuess } from "@/lib/exercises/evaluate";
+import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
 import type { PublicGameAttempt, PublicTodayGameState } from "@/types/game";
 
@@ -99,8 +99,7 @@ function createShuffledExerciseOrder(exercises: LiveExerciseSuggestion[]): strin
 
 function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
   const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
-  // In infinite mode the win condition must be the exact exercise, not just matching attributes.
-  const correct = guess.id === target.id;
+  const correct = isCorrectGuess(feedback);
 
   return {
     id: `inf-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -124,7 +123,7 @@ function buildInfiniteAttempt(guess: LiveExerciseSuggestion, target: LiveExercis
 
 function buildDailyAttempt(guess: LiveExerciseSuggestion, target: LiveExerciseSuggestion): PublicGameAttempt {
   const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
-  const correct = guess.id === target.id;
+  const correct = isCorrectGuess(feedback);
 
   return {
     id: `daily-local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -476,6 +475,13 @@ export function GameShell({ initialState }: GameShellProps) {
       try {
         const updated = await submitGuessRequest(exerciseId);
         void preloadExerciseMedia(updated.attempt.guessSlug);
+        if (
+          updated.attempt.isCorrect &&
+          gameState.dailySecretExerciseId &&
+          updated.attempt.guessExerciseId !== gameState.dailySecretExerciseId
+        ) {
+          pushToast("Correct family match. Variant accepted as solved.");
+        }
         setRevealingAttemptId(updated.attempt.id);
         if (updated.status === "won") {
           setDailyVictoryPhase("revealing");
@@ -504,6 +510,9 @@ export function GameShell({ initialState }: GameShellProps) {
     }
 
     const localAttempt = buildDailyAttempt(guessed, target);
+    if (localAttempt.isCorrect && guessed.id !== target.id) {
+      pushToast("Correct family match. Variant accepted as solved.");
+    }
     const nextGuessCount = gameState.guessCount + 1;
     const nextStatus: PublicTodayGameState["status"] = localAttempt.isCorrect ? "won" : "in_progress";
 
@@ -584,6 +593,9 @@ export function GameShell({ initialState }: GameShellProps) {
     }
 
     const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
+    if (attempt.isCorrect && guessed.id !== activeInfiniteTarget.id) {
+      pushToast("Correct family match. Variant accepted as solved.");
+    }
     const attempts = [attempt, ...infiniteState.attempts];
     const attemptsUsed = attempts.length;
 
