@@ -369,8 +369,12 @@ export function GameShell({ initialState }: GameShellProps) {
   }, [footerModal]);
 
   const loadStats = useCallback(
-    async (options?: { silent?: boolean }) => {
-      if (statsStatus === "loading" || statsStatus === "success") {
+    async (options?: { silent?: boolean; force?: boolean }) => {
+      if (statsStatus === "loading") {
+        return;
+      }
+
+      if (statsStatus === "success" && !options?.force) {
         return;
       }
 
@@ -393,6 +397,13 @@ export function GameShell({ initialState }: GameShellProps) {
     },
     [pushToast, statsStatus],
   );
+
+  const refreshStatsAfterDailySubmit = useCallback(() => {
+    setStatsStatus("idle");
+    if (footerModal === "stats") {
+      void loadStats({ silent: true, force: true });
+    }
+  }, [footerModal, loadStats]);
 
   useEffect(() => {
     if (footerModal !== "stats" || statsStatus !== "idle") {
@@ -586,6 +597,7 @@ export function GameShell({ initialState }: GameShellProps) {
           });
           setQuery("");
           setSelectedExerciseId(null);
+          refreshStatsAfterDailySubmit();
         } catch (error) {
           pushToast(
             error instanceof Error ? error.message : "Failed to submit guess.",
@@ -642,6 +654,7 @@ export function GameShell({ initialState }: GameShellProps) {
               guessCount: Math.max(current.guessCount, synced.guessCount),
             };
           });
+          refreshStatsAfterDailySubmit();
         })
         .catch((error) => {
           pushToast(
@@ -654,6 +667,7 @@ export function GameShell({ initialState }: GameShellProps) {
       exerciseById,
       gameState,
       pushToast,
+      refreshStatsAfterDailySubmit,
       selectedExerciseId,
     ],
   );
