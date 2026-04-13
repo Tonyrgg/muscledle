@@ -71,18 +71,25 @@ export function VictoryPanel({
   acceptedFamilyMatch,
 }: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
-  const [countdown, setCountdown] = useState(() => formatCountdown(getMsUntilNextRomeMidnight(new Date())));
+  const [countdown, setCountdown] = useState("00:00:00");
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(winningAttempt?.guessSlug ? null : "Demo unavailable");
   const [copied, setCopied] = useState<string | null>(null);
   const winningSlug = winningAttempt?.guessSlug ?? "";
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const updateCountdown = () => {
       setCountdown(formatCountdown(getMsUntilNextRomeMidnight(new Date())));
-    }, 1000);
+    };
 
-    return () => window.clearInterval(timer);
+    const kickoff = window.setTimeout(updateCountdown, 0);
+
+    const timer = window.setInterval(updateCountdown, 1000);
+
+    return () => {
+      window.clearTimeout(kickoff);
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {

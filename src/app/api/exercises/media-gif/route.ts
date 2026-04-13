@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_RESOLUTIONS = new Set(["180", "360", "720", "1080"]);
+const FALLBACK_GIF_BASE64 = "R0lGODlhAQABAIABAP///wAAACwAAAAAAQABAAACAkQBADs=";
+
+function fallbackGifResponse(reason: string) {
+  const body = Buffer.from(FALLBACK_GIF_BASE64, "base64");
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/gif",
+      "Cache-Control": "public, max-age=300",
+      "X-Media-Fallback": reason,
+    },
+  });
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -19,7 +32,7 @@ export async function GET(request: Request) {
   const key = process.env.EXERCISEDB_API_KEY;
 
   if (!key) {
-    return NextResponse.json({ error: "Missing EXERCISEDB_API_KEY" }, { status: 500 });
+    return fallbackGifResponse("missing_api_key");
   }
 
   const providerUrl = `${baseUrl}/image?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${resolution}`;
@@ -35,15 +48,8 @@ export async function GET(request: Request) {
     });
 
     if (!upstream.ok || !upstream.body) {
-      const text = await upstream.text().catch(() => "");
-      return NextResponse.json(
-        {
-          error: "ExerciseDB image fetch failed",
-          status: upstream.status,
-          details: text.slice(0, 200),
-        },
-        { status: 502 },
-      );
+      await upstream.body?.cancel().catch(() => undefined);
+      return fallbackGifResponse(`upstream_${upstream.status}`);
     }
 
     return new Response(upstream.body, {
@@ -55,6 +61,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("GET /api/exercises/media-gif failed", error);
-    return NextResponse.json({ error: "Failed to stream gif" }, { status: 500 });
+    return fallbackGifResponse("fetch_error");
   }
 }
