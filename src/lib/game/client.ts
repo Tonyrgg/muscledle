@@ -183,3 +183,14 @@ export async function resetMarathonRunRequest(): Promise<PublicMarathonState> {
 
   return parseOrThrow<PublicMarathonState>(response, `Failed to reset marathon run (${response.status}).`);
 }
+
+export async function surrenderMarathonRunRequest(): Promise<PublicMarathonState> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/marathon/surrender", {
+    method: "POST",
+    cache: "no-store",
+    headers: authHeaders,
+  });
+
+  return parseOrThrow<PublicMarathonState>(response, `Failed to surrender marathon run (${response.status}).`);
+}

@@ -15,6 +15,7 @@ type MarathonRunRow = {
   max_attempts_per_round: number;
   exercise_order_ids: string[];
   run_seed: number | null;
+  updated_at: string;
 };
 
 type MarathonAttemptRow = {
@@ -120,7 +121,7 @@ async function getActiveRun(userId: string): Promise<MarathonRunRow | null> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("marathon_runs")
-    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed")
+    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed, updated_at")
     .eq("user_id", userId)
     .eq("status", "in_progress")
     .maybeSingle<MarathonRunRow>();
@@ -130,6 +131,44 @@ async function getActiveRun(userId: string): Promise<MarathonRunRow | null> {
   }
 
   return data ?? null;
+}
+
+function getInactivityThresholdMs(): number {
+  const raw = Number(process.env.MARATHON_INACTIVITY_HOURS ?? "24");
+  const hours = Number.isFinite(raw) && raw > 0 ? raw : 24;
+  return Math.floor(hours * 60 * 60 * 1000);
+}
+
+async function closeRunAsLost(runId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("marathon_runs")
+    .update({
+      status: "lost",
+      finished_at: new Date().toISOString(),
+    })
+    .eq("id", runId)
+    .eq("status", "in_progress");
+
+  if (error) {
+    throw new Error(`Failed to close stale marathon run: ${error.message}`);
+  }
+}
+
+async function getActiveRunWithExpiry(userId: string): Promise<MarathonRunRow | null> {
+  const run = await getActiveRun(userId);
+  if (!run) return null;
+
+  const inactivityLimitMs = getInactivityThresholdMs();
+  const updatedAtMs = new Date(run.updated_at).getTime();
+  if (!Number.isFinite(updatedAtMs)) return run;
+
+  if (Date.now() - updatedAtMs > inactivityLimitMs) {
+    await closeRunAsLost(run.id);
+    return null;
+  }
+
+  return run;
 }
 
 async function getRoundAttempts(runId: string, roundIndex: number): Promise<MarathonAttemptRow[]> {
@@ -191,7 +230,7 @@ async function getAuthenticatedUserId(): Promise<string> {
 
 export async function getMarathonState(): Promise<PublicMarathonState> {
   const userId = await getAuthenticatedUserId();
-  const run = await getActiveRun(userId);
+  const run = await getActiveRunWithExpiry(userId);
 
   if (!run) {
     return toPublicState(null, []);
@@ -238,7 +277,7 @@ export async function startMarathonRun(): Promise<PublicMarathonState> {
       started_at: new Date().toISOString(),
       finished_at: null,
     })
-    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed")
+    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed, updated_at")
     .single<MarathonRunRow>();
 
   if (createError || !created) {
@@ -277,7 +316,7 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
   const userId = await getAuthenticatedUserId();
   const admin = createAdminClient();
 
-  const run = await getActiveRun(userId);
+  const run = await getActiveRunWithExpiry(userId);
   if (!run) {
     throw new GameConflictError("No active marathon run. Start a run first.");
   }
@@ -350,7 +389,7 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
       finished_at: nextStatus === "in_progress" ? null : new Date().toISOString(),
     })
     .eq("id", run.id)
-    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed")
+    .select("id, user_id, status, score, current_index, max_attempts_per_round, exercise_order_ids, run_seed, updated_at")
     .single<MarathonRunRow>();
 
   if (runUpdateError || !updatedRun) {
@@ -387,4 +426,22 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
     pointsEarned,
     acceptedFamilyMatch: correct && insertedAttempt.guess_exercise_id !== targetExerciseId,
   };
+}
+
+export async function surrenderMarathonRun(): Promise<PublicMarathonState> {
+  const userId = await getAuthenticatedUserId();
+  const run = await getActiveRunWithExpiry(userId);
+  if (!run) {
+    return toPublicState(null, []);
+  }
+
+  await closeRunAsLost(run.id);
+
+  void trackEvent({
+    userId,
+    eventName: "marathon_surrendered",
+    payload: { runId: run.id },
+  });
+
+  return toPublicState(null, []);
 }

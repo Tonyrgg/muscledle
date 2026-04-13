@@ -15,6 +15,7 @@ import {
   fetchTodayGameState,
   resetMarathonRunRequest,
   startMarathonRunRequest,
+  surrenderMarathonRunRequest,
   submitMarathonGuessRequest,
   submitGuessRequest,
   type LiveExerciseSuggestion,
@@ -795,6 +796,39 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, [exercises.length, pushToast]);
 
+  const surrenderInfiniteMode = useCallback(async () => {
+    if (!infiniteState || infiniteState.status !== "in_progress") {
+      return;
+    }
+
+    if (marathonSolvedTimeoutRef.current !== null) {
+      window.clearTimeout(marathonSolvedTimeoutRef.current);
+      marathonSolvedTimeoutRef.current = null;
+    }
+
+    if (marathonNextTimeoutRef.current !== null) {
+      window.clearTimeout(marathonNextTimeoutRef.current);
+      marathonNextTimeoutRef.current = null;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const state = await surrenderMarathonRunRequest();
+      setInfiniteState(toInfiniteStateFromPublic(state));
+      setMarathonTransition(null);
+      setQuery("");
+      setSelectedExerciseId(null);
+      setRevealingAttemptId(null);
+      pushToast("Marathon surrendered.");
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : "Failed to surrender marathon run.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [infiniteState, pushToast]);
+
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
     gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
@@ -1036,6 +1070,18 @@ export function GameShell({ initialState }: GameShellProps) {
                     onClick={restartInfiniteMode}
                   >
                     Restart Run
+                  </button>
+                ) : null}
+                {infiniteState?.status === "in_progress" ? (
+                  <button
+                    type="button"
+                    className="exercise-media-modal__close game-prompt-panel__restart"
+                    onClick={() => {
+                      void surrenderInfiniteMode();
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    Surrender
                   </button>
                 ) : null}
               </div>
