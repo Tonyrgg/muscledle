@@ -1310,10 +1310,11 @@ input {
 }
 
 .htp-example-grid {
-  margin-top: 0.7rem;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 0.38rem;
+  width: 100%;
+  min-width: 734px;
 }
 
 .htp-example-row-scroll {
@@ -1325,23 +1326,43 @@ input {
 
 .htp-example-row-scroll .htp-example-grid {
   margin-top: 0;
-  min-width: 760px;
 }
 
 .htp-example-cell {
-  min-height: 3.6rem;
+  aspect-ratio: 1 / 1;
   border: 1px solid rgba(255, 255, 255, 0.14);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem;
+  padding: 0.38rem;
   color: #f8f8f8;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.18;
+}
+
+.htp-example-cell--exercise {
+  background: #1f262f;
+  border-color: #4a5565;
+}
+
+.htp-example-exercise-icon {
+  width: 55px;
+  height: 55px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.32));
+}
+
+.htp-example-exercise-label {
+  margin-top: 0.25rem;
+  color: #dbe7f7;
+  font-size: 0.65rem;
+  letter-spacing: 0.07em;
+  line-height: 1.15;
 }
 
 .htp-example-cell--green {
@@ -1695,7 +1716,7 @@ input {
   }
 
   .htp-example-row-scroll .htp-example-grid {
-    min-width: 700px;
+    min-width: 654px;
   }
 }
 

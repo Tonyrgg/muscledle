@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
@@ -1140,6 +1141,16 @@ export function GameShell({ initialState }: GameShellProps) {
 
                   <div className="htp-example-row-scroll" aria-label="Example feedback row">
                     <div className="htp-example-grid" role="presentation">
+                      <span className="htp-example-cell htp-example-cell--exercise" aria-label="Guessed exercise icon">
+                        <Image
+                          src="/exercises/dumbbell-bench-press.svg"
+                          alt=""
+                          width={42}
+                          height={42}
+                          className="htp-example-exercise-icon"
+                        />
+                        <span className="htp-example-exercise-label">Dumbbell Bench Press</span>
+                      </span>
                       <span className="htp-example-cell htp-example-cell--green">Chest</span>
                       <span className="htp-example-cell htp-example-cell--red">Dumbbells</span>
                       <span className="htp-example-cell htp-example-cell--green">Push</span>
