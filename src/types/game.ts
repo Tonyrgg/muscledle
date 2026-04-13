@@ -36,3 +36,21 @@ export type SubmitGuessResponse = {
   guessCount: number;
   attempt: PublicGameAttempt;
 };
+
+export type PublicGameStatsPoint = {
+  gameDate: string;
+  guessCount: number;
+  status: "in_progress" | "won" | "lost";
+};
+
+export type PublicGameStats = {
+  gamesPlayed: number;
+  gamesWon: number;
+  winRate: number;
+  averageGuesses: number;
+  oneShots: number;
+  oneShotRate: number;
+  currentStreak: number;
+  maxStreak: number;
+  guessHistory: PublicGameStatsPoint[];
+};

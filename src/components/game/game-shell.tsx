@@ -9,6 +9,7 @@ import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
 import {
+  fetchGameStats,
   fetchLiveExercises,
   fetchTodayGameState,
   submitGuessRequest,
@@ -17,7 +18,11 @@ import {
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
-import type { PublicGameAttempt, PublicTodayGameState } from "@/types/game";
+import type {
+  PublicGameAttempt,
+  PublicGameStats,
+  PublicTodayGameState,
+} from "@/types/game";
 
 type GameShellProps = {
   initialState: PublicTodayGameState | null;
@@ -48,7 +53,7 @@ type MarathonTransitionState = {
   score: number;
 };
 
-type FooterModal = "how-to-play" | "privacy" | null;
+type FooterModal = "how-to-play" | "stats" | "privacy" | null;
 type DailyVictoryPhase = "idle" | "revealing" | "celebrating" | "complete";
 
 const FEEDBACK_REVEAL_DURATION_MS = 1700;
@@ -182,6 +187,11 @@ export function GameShell({ initialState }: GameShellProps) {
   );
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState | null>(null);
+  const [stats, setStats] = useState<PublicGameStats | null>(null);
+  const [statsStatus, setStatsStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [revealingAttemptId, setRevealingAttemptId] = useState<string | null>(
     null,
   );
@@ -358,6 +368,40 @@ export function GameShell({ initialState }: GameShellProps) {
     };
   }, [footerModal]);
 
+  const loadStats = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (statsStatus === "loading" || statsStatus === "success") {
+        return;
+      }
+
+      setStatsStatus("loading");
+      setStatsError(null);
+
+      try {
+        const payload = await fetchGameStats();
+        setStats(payload);
+        setStatsStatus("success");
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load stats.";
+        setStatsError(message);
+        setStatsStatus("error");
+        if (!options?.silent) {
+          pushToast(message);
+        }
+      }
+    },
+    [pushToast, statsStatus],
+  );
+
+  useEffect(() => {
+    if (footerModal !== "stats" || statsStatus !== "idle") {
+      return;
+    }
+
+    void loadStats();
+  }, [footerModal, loadStats, statsStatus]);
+
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
       return;
@@ -395,11 +439,12 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const handleAuthReady = useCallback(() => {
     void loadExercises();
+    void loadStats({ silent: true });
 
     if (!gameState) {
       void loadTodayState();
     }
-  }, [gameState, loadExercises, loadTodayState]);
+  }, [gameState, loadExercises, loadStats, loadTodayState]);
 
   const handleModeChange = useCallback((nextMode: GameMode) => {
     if (marathonSolvedTimeoutRef.current !== null) {
@@ -819,6 +864,96 @@ export function GameShell({ initialState }: GameShellProps) {
         marathonTransition !== null ||
         isSubmitting;
 
+  const statsChart = useMemo(() => {
+    if (!stats || stats.guessHistory.length === 0) {
+      return null;
+    }
+
+    const series = stats.guessHistory;
+    const width = 760;
+    const height = 260;
+    const margin = { top: 16, right: 18, bottom: 34, left: 34 };
+    const plotLeft = margin.left;
+    const plotTop = margin.top;
+    const plotRight = width - margin.right;
+    const plotBottom = height - margin.bottom;
+    const plotWidth = plotRight - plotLeft;
+    const plotHeight = plotBottom - plotTop;
+
+    const values = series.map((point) => point.guessCount);
+    const rawMin = Math.min(...values);
+    const rawMax = Math.max(...values);
+    const paddedMin = Math.max(0, Math.floor(rawMin - 1));
+    const paddedMax = Math.ceil(rawMax + 1);
+    const range = Math.max(1, paddedMax - paddedMin);
+
+    let tickStep = 1;
+    const maxTicks = 8;
+    while (Math.floor(range / tickStep) + 1 > maxTicks) {
+      tickStep *= 2;
+    }
+
+    const yMin = Math.floor(paddedMin / tickStep) * tickStep;
+    const yMax = Math.ceil(paddedMax / tickStep) * tickStep;
+    const ySpan = Math.max(1, yMax - yMin);
+    const yTicks: Array<{ value: number; y: number }> = [];
+
+    for (let value = yMax; value >= yMin; value -= tickStep) {
+      const y = plotBottom - ((value - yMin) / ySpan) * plotHeight;
+      yTicks.push({ value, y });
+    }
+
+    const dots = series.map((point, index) => {
+      const x =
+        series.length === 1
+          ? plotLeft + plotWidth / 2
+          : plotLeft + (index / (series.length - 1)) * plotWidth;
+      const y = plotBottom - ((point.guessCount - yMin) / ySpan) * plotHeight;
+      return { x, y, label: point.gameDate, value: point.guessCount };
+    });
+
+    function toSmoothPath(points: Array<{ x: number; y: number }>): string {
+      if (points.length === 0) return "";
+      if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+      let path = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 0; i < points.length - 1; i += 1) {
+        const p0 = points[i - 1] ?? points[i];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2] ?? p2;
+
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+        path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+      }
+
+      return path;
+    }
+
+    const linePath = toSmoothPath(dots);
+    const xTicks = dots.map((dot) => ({
+      x: dot.x,
+      label: dot.label.slice(5),
+    }));
+
+    return {
+      width,
+      height,
+      plotLeft,
+      plotRight,
+      plotTop,
+      plotBottom,
+      yTicks,
+      xTicks,
+      dots,
+      linePath,
+    };
+  }, [stats]);
+
   return (
     <>
       <main className="game-page">
@@ -1037,7 +1172,11 @@ export function GameShell({ initialState }: GameShellProps) {
           >
             HOW TO PLAY
           </button>
-          <button type="button" className="game-footer__link">
+          <button
+            type="button"
+            className="game-footer__link"
+            onClick={() => setFooterModal("stats")}
+          >
             STATS
           </button>
           <Link href="/archive" className="game-footer__link">
@@ -1068,7 +1207,11 @@ export function GameShell({ initialState }: GameShellProps) {
           >
             <div className="info-sheet__head">
               <h2 className="info-sheet__title">
-                {footerModal === "how-to-play" ? "How To Play" : "Privacy"}
+                {footerModal === "how-to-play"
+                  ? "How To Play"
+                  : footerModal === "stats"
+                    ? "Statistics"
+                    : "Privacy"}
               </h2>
               <button
                 type="button"
@@ -1201,6 +1344,182 @@ export function GameShell({ initialState }: GameShellProps) {
                     Use cell tooltips to read fast definitions of shown values.
                   </p>
                 </section>
+              </div>
+            ) : footerModal === "stats" ? (
+              <div className="info-sheet__body">
+                {statsStatus === "loading" ? (
+                  <section className="info-sheet__section">
+                    <p>Loading stats...</p>
+                  </section>
+                ) : stats ? (
+                  <>
+                    <section className="info-sheet__section">
+                      <div className="stats-sheet__kpis">
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">Games</span>
+                          <strong>{stats.gamesPlayed}</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">Won</span>
+                          <strong>{stats.gamesWon}</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            Win Rate
+                          </span>
+                          <strong>{stats.winRate}%</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            Avg Guesses
+                          </span>
+                          <strong>{stats.averageGuesses}</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            One Shots
+                          </span>
+                          <strong>{stats.oneShots}</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            One Shot %
+                          </span>
+                          <strong>{stats.oneShotRate}%</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            Current Streak
+                          </span>
+                          <strong>{stats.currentStreak}</strong>
+                        </div>
+                        <div className="stats-sheet__kpi">
+                          <span className="stats-sheet__kpi-label">
+                            Max Streak
+                          </span>
+                          <strong>{stats.maxStreak}</strong>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className="info-sheet__section">
+                      <h3 className="info-sheet__section-title">
+                        Guesses Per Game
+                      </h3>
+                      {statsChart ? (
+                        <div className="stats-sheet__chart-wrap">
+                          <svg
+                            viewBox={`0 0 ${statsChart.width} ${statsChart.height}`}
+                            className="stats-sheet__chart"
+                            aria-label="Guesses per game chart"
+                          >
+                            {statsChart.xTicks.map((tick) => (
+                              <line
+                                key={`x-grid-${tick.label}-${tick.x}`}
+                                x1={tick.x}
+                                y1={statsChart.plotTop}
+                                x2={tick.x}
+                                y2={statsChart.plotBottom}
+                                className="stats-sheet__grid-line stats-sheet__grid-line--x"
+                              />
+                            ))}
+                            {statsChart.yTicks.map((tick) => (
+                              <line
+                                key={`y-grid-${tick.value}-${tick.y}`}
+                                x1={statsChart.plotLeft}
+                                y1={tick.y}
+                                x2={statsChart.plotRight}
+                                y2={tick.y}
+                                className="stats-sheet__grid-line stats-sheet__grid-line--y"
+                              />
+                            ))}
+
+                            <line
+                              x1={statsChart.plotLeft}
+                              y1={statsChart.plotBottom}
+                              x2={statsChart.plotRight}
+                              y2={statsChart.plotBottom}
+                              className="stats-sheet__axis-line"
+                            />
+                            <line
+                              x1={statsChart.plotLeft}
+                              y1={statsChart.plotTop}
+                              x2={statsChart.plotLeft}
+                              y2={statsChart.plotBottom}
+                              className="stats-sheet__axis-line"
+                            />
+
+                            <path d={statsChart.linePath} className="stats-sheet__line" />
+
+                            {statsChart.dots.map((dot) => (
+                              <circle
+                                key={dot.label}
+                                cx={dot.x}
+                                cy={dot.y}
+                                r="2.6"
+                                className="stats-sheet__dot"
+                              >
+                                <title>{`${dot.label}: ${dot.value} guesses`}</title>
+                              </circle>
+                            ))}
+
+                            {statsChart.yTicks.map((tick) => (
+                              <text
+                                key={`y-label-${tick.value}-${tick.y}`}
+                                x={statsChart.plotLeft - 10}
+                                y={tick.y + 3}
+                                textAnchor="end"
+                                className="stats-sheet__tick-label stats-sheet__tick-label--y"
+                              >
+                                {tick.value}
+                              </text>
+                            ))}
+
+                            {statsChart.xTicks.map((tick, index) => (
+                              <text
+                                key={`x-label-${tick.label}-${tick.x}`}
+                                x={tick.x}
+                                y={statsChart.height - 8}
+                                textAnchor={
+                                  index === 0
+                                    ? "start"
+                                    : index === statsChart.xTicks.length - 1
+                                      ? "end"
+                                      : "middle"
+                                }
+                                className="stats-sheet__tick-label stats-sheet__tick-label--x"
+                              >
+                                {tick.label}
+                              </text>
+                            ))}
+                          </svg>
+                        </div>
+                      ) : (
+                        <p className="stats-sheet__empty">
+                          No played games yet. Complete at least one daily game
+                          to see your chart.
+                        </p>
+                      )}
+                    </section>
+                  </>
+                ) : statsStatus === "error" ? (
+                  <section className="info-sheet__section">
+                    <p>{statsError ?? "Stats are currently unavailable."}</p>
+                    <button
+                      type="button"
+                      className="exercise-media-modal__close stats-sheet__retry"
+                      onClick={() => {
+                        void loadStats();
+                      }}
+                    >
+                      Retry
+                    </button>
+                  </section>
+                ) : (
+                  <section className="info-sheet__section">
+                    <p>Stats are currently unavailable.</p>
+                  </section>
+                )}
               </div>
             ) : (
               <div className="info-sheet__body">

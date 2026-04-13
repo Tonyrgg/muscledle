@@ -15,6 +15,11 @@ const oswald = Oswald({
 export const metadata: Metadata = {
   title: "Muscledle",
   description: "Muscledle - exercise guessing game",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

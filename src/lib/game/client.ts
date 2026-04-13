@@ -1,4 +1,4 @@
-import type { PublicTodayGameState, SubmitGuessResponse } from "@/types/game";
+import type { PublicGameStats, PublicTodayGameState, SubmitGuessResponse } from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
 import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps } from "@/types/exercise";
 
@@ -115,4 +115,15 @@ export async function fetchLiveExercises(): Promise<LiveExerciseSuggestion[]> {
     response,
     `Failed to load live exercises (${response.status}).`,
   );
+}
+
+export async function fetchGameStats(): Promise<PublicGameStats> {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch("/api/game/stats", {
+    method: "GET",
+    cache: "no-store",
+    headers: authHeaders,
+  });
+
+  return parseOrThrow<PublicGameStats>(response, `Failed to load stats (${response.status}).`);
 }

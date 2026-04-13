@@ -1253,6 +1253,102 @@ input {
   line-height: 1.5;
 }
 
+.stats-sheet__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.stats-sheet__kpi {
+  border: 1px solid #3f4a59;
+  background: rgba(22, 30, 40, 0.6);
+  padding: 0.6rem 0.55rem;
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+  text-align: center;
+}
+
+.stats-sheet__kpi-label {
+  color: #aebad0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.stats-sheet__kpi strong {
+  color: #f5f8ff;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.stats-sheet__chart-wrap {
+  margin-top: 0.3rem;
+  border: 1px solid #2f3744;
+  background: linear-gradient(180deg, #1d1f24 0%, #1b1d22 100%);
+  border-radius: 0.35rem;
+  padding: 0.5rem;
+}
+
+.stats-sheet__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 760 / 260;
+}
+
+.stats-sheet__line {
+  fill: none;
+  stroke: #c9ccd1;
+  stroke-width: 2.4;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stats-sheet__dot {
+  fill: #f1f3f7;
+  stroke: #cfd4dc;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.stats-sheet__axis-line {
+  stroke: rgba(120, 129, 142, 0.6);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.stats-sheet__grid-line {
+  stroke: rgba(74, 80, 90, 0.55);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.stats-sheet__grid-line--x {
+  opacity: 0.22;
+}
+
+.stats-sheet__grid-line--y {
+  opacity: 0.35;
+}
+
+.stats-sheet__tick-label {
+  fill: #8f95a0;
+  font-family: var(--font-body), "Roboto Condensed", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.stats-sheet__empty {
+  color: #a7b5c8;
+}
+
+.stats-sheet__retry {
+  margin-top: 0.6rem;
+}
+
 .htp-legend {
   margin-top: 0.4rem;
   display: grid;
@@ -1713,6 +1809,14 @@ input {
   .info-sheet__head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .stats-sheet__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-sheet__tick-label {
+    font-size: 10px;
   }
 
   .htp-example-row-scroll .htp-example-grid {
