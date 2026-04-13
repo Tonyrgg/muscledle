@@ -9,6 +9,7 @@ type VictoryPanelProps = {
   guessCount: number;
   winningAttempt: PublicGameAttempt | null;
   attempts: PublicGameAttempt[];
+  acceptedFamilyMatch: boolean;
 };
 
 type ExerciseMediaResponse = {
@@ -62,7 +63,13 @@ function feedbackToEmoji(color: FeedbackColor): string {
   return "\u{1F7E5}";
 }
 
-export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }: VictoryPanelProps) {
+export function VictoryPanel({
+  gameDate,
+  guessCount,
+  winningAttempt,
+  attempts,
+  acceptedFamilyMatch,
+}: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
   const [countdown, setCountdown] = useState(() => formatCountdown(getMsUntilNextRomeMidnight(new Date())));
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
@@ -202,6 +209,11 @@ export function VictoryPanel({ gameDate, guessCount, winningAttempt, attempts }:
             <p className="victory-panel__stat-line">
               Attempts: <span>{guessCount}</span>
             </p>
+            {acceptedFamilyMatch ? (
+              <p className="victory-panel__family-match">
+                Family match accepted. Variant solved this daily.
+              </p>
+            ) : null}
             <p className="victory-panel__stat-label">Next exercise in</p>
             <p className="victory-panel__countdown">{countdown}</p>
             <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>

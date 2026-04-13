@@ -396,6 +396,19 @@ input {
   color: var(--accent);
 }
 
+.victory-panel__family-match {
+  margin: 0.45rem auto 0;
+  width: fit-content;
+  border: 1px solid rgba(249, 115, 22, 0.42);
+  background: rgba(249, 115, 22, 0.08);
+  padding: 0.28rem 0.5rem;
+  color: #ffb678;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .victory-panel__stat-label {
   margin: 0.65rem 0 0;
   color: var(--text-muted);
@@ -1666,6 +1679,19 @@ input {
   margin: 0.55rem 0 0;
   color: #e0e0e0;
   font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.marathon-transition__note {
+  margin: 0.6rem auto 0;
+  width: fit-content;
+  border: 1px solid rgba(249, 115, 22, 0.42);
+  background: rgba(249, 115, 22, 0.08);
+  padding: 0.32rem 0.56rem;
+  color: #ffb678;
+  font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;

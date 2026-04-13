@@ -51,6 +51,7 @@ type MarathonTransitionState = {
   phase: "solved" | "next";
   exerciseName: string;
   score: number;
+  acceptedFamilyMatch: boolean;
 };
 
 type FooterModal = "how-to-play" | "stats" | "privacy" | null;
@@ -572,13 +573,6 @@ export function GameShell({ initialState }: GameShellProps) {
         try {
           const updated = await submitGuessRequest(exerciseId);
           void preloadExerciseMedia(updated.attempt.guessSlug);
-          if (
-            updated.attempt.isCorrect &&
-            gameState.dailySecretExerciseId &&
-            updated.attempt.guessExerciseId !== gameState.dailySecretExerciseId
-          ) {
-            pushToast("Correct family match. Variant accepted as solved.");
-          }
           setRevealingAttemptId(updated.attempt.id);
           if (updated.status === "won") {
             setDailyVictoryPhase("revealing");
@@ -610,9 +604,6 @@ export function GameShell({ initialState }: GameShellProps) {
       }
 
       const localAttempt = buildDailyAttempt(guessed, target);
-      if (localAttempt.isCorrect && guessed.id !== target.id) {
-        pushToast("Correct family match. Variant accepted as solved.");
-      }
       const nextGuessCount = gameState.guessCount + 1;
       const nextStatus: PublicTodayGameState["status"] = localAttempt.isCorrect
         ? "won"
@@ -708,9 +699,8 @@ export function GameShell({ initialState }: GameShellProps) {
       }
 
       const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
-      if (attempt.isCorrect && guessed.id !== activeInfiniteTarget.id) {
-        pushToast("Correct family match. Variant accepted as solved.");
-      }
+      const acceptedFamilyMatch =
+        attempt.isCorrect && guessed.id !== activeInfiniteTarget.id;
       const attempts = [attempt, ...infiniteState.attempts];
       const attemptsUsed = attempts.length;
 
@@ -746,6 +736,7 @@ export function GameShell({ initialState }: GameShellProps) {
             phase: "solved",
             exerciseName: activeInfiniteTarget.name,
             score: nextScore,
+            acceptedFamilyMatch,
           });
 
           marathonSolvedTimeoutRef.current = window.setTimeout(() => {
@@ -753,6 +744,7 @@ export function GameShell({ initialState }: GameShellProps) {
               phase: "next",
               exerciseName: activeInfiniteTarget.name,
               score: nextScore,
+              acceptedFamilyMatch,
             });
             marathonSolvedTimeoutRef.current = null;
 
@@ -841,6 +833,10 @@ export function GameShell({ initialState }: GameShellProps) {
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
     gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
+  const acceptedDailyFamilyMatch =
+    !!gameState?.dailySecretExerciseId &&
+    !!winningAttempt &&
+    winningAttempt.guessExerciseId !== gameState.dailySecretExerciseId;
   const isMarathonStarted =
     infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
@@ -1104,6 +1100,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 guessCount={gameState?.guessCount ?? 0}
                 winningAttempt={winningAttempt}
                 attempts={gameState?.attempts ?? []}
+                acceptedFamilyMatch={acceptedDailyFamilyMatch}
               />
             </section>
           ) : null}
@@ -1150,8 +1147,14 @@ export function GameShell({ initialState }: GameShellProps) {
                     <p className="marathon-transition__title">
                       {marathonTransition.phase === "solved"
                         ? marathonTransition.exerciseName
-                        : "Preparing next challenge"}
+                        : "Preparing next excercise"}
                     </p>
+                    {marathonTransition.phase === "solved" &&
+                    marathonTransition.acceptedFamilyMatch ? (
+                      <p className="marathon-transition__note">
+                        Family match accepted. Variant solved this round.
+                      </p>
+                    ) : null}
                     <p className="marathon-transition__score">
                       Score {marathonTransition.score}
                     </p>
