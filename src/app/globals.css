@@ -1693,6 +1693,10 @@ input {
   gap: 0.9rem;
 }
 
+.archive-shell--cards {
+  width: min(100%, 1180px);
+}
+
 .archive-hero {
   border: 1px solid #3a3a3a;
   background: #1c1c1c;
@@ -1750,7 +1754,7 @@ input {
 .archive-toolbar {
   display: grid;
   gap: 0.5rem;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(240px, 1fr) repeat(4, minmax(150px, auto));
 }
 
 .archive-toolbar__search,
@@ -1786,7 +1790,7 @@ input {
 
 .archive-table {
   width: 100%;
-  min-width: 780px;
+  min-width: 1420px;
   border-collapse: collapse;
 }
 
@@ -1820,6 +1824,136 @@ input {
   color: var(--text-muted);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
+}
+
+.archive-table__sub {
+  margin: 0.25rem 0 0;
+  color: #b1b1b1;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+}
+
+.archive-table__props-cell {
+  min-width: 220px;
+}
+
+.archive-table__props-line {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.archive-table__props-line + .archive-table__props-line {
+  margin-top: 0.18rem;
+}
+
+.archive-badge {
+  display: inline-block;
+  padding: 0.16rem 0.34rem;
+  border: 1px solid #4a4a4a;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.archive-badge--ok {
+  border-color: rgba(43, 191, 90, 0.65);
+  color: #73d996;
+}
+
+.archive-badge--warn {
+  border-color: rgba(249, 115, 22, 0.52);
+  color: #ffb37f;
+}
+
+.archive-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.72rem;
+  margin-top: 0.6rem;
+}
+
+.archive-card {
+  border: 1px solid #3b3b3b;
+  background: linear-gradient(180deg, #202020 0%, #1a1a1a 100%);
+  padding: 0.66rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  min-height: 145px;
+}
+
+.archive-card__media-wrap {
+  width: 74px;
+  height: 74px;
+  border: 1px solid #444;
+  background: #181818;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-card__media {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.archive-card__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.archive-card__group {
+  margin: 0;
+  color: #a8a8a8;
+  font-size: 0.52rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.archive-card__name {
+  margin: 0;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.archive-card__slug {
+  margin: 0;
+  color: #919191;
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.archive-card__info {
+  margin: 0.15rem 0 0;
+  color: #d2d2d2;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  line-height: 1.28;
+}
+
+.archive-card__chips {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.26rem;
+}
+
+.archive-card__chip {
+  border: 1px solid #4a4a4a;
+  background: #232323;
+  color: #ececec;
+  padding: 0.15rem 0.28rem;
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .marathon-transition {
