@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
+import type { LiveExerciseSuggestion } from "@/lib/game/client";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import type { FeedbackColor } from "@/types/exercise";
 import type { PublicGameAttempt } from "@/types/game";
@@ -14,6 +16,7 @@ type VictoryPanelProps = {
   winningAttempt: PublicGameAttempt | null;
   attempts: PublicGameAttempt[];
   acceptedFamilyMatch: boolean;
+  targetExercise: LiveExerciseSuggestion | null;
 };
 
 function getMsUntilNextRomeMidnight(now: Date): number {
@@ -66,8 +69,10 @@ export function VictoryPanel({
   winningAttempt,
   attempts,
   acceptedFamilyMatch,
+  targetExercise,
 }: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
+  const [learningOpen, setLearningOpen] = useState(false);
   const [countdown, setCountdown] = useState("00:00:00");
   const [copied, setCopied] = useState<string | null>(null);
   const winningSlug = winningAttempt?.guessSlug ?? "";
@@ -150,6 +155,11 @@ export function VictoryPanel({
     return [header, body, footer].filter(Boolean).join("\n");
   }, [emojiRows, gameDate, guessCount]);
 
+  const insights = useMemo(
+    () => buildPostGameInsights(targetExercise),
+    [targetExercise],
+  );
+
   const copyText = async () => {
     const value = shareText;
     try {
@@ -211,6 +221,65 @@ export function VictoryPanel({
             <p className="victory-panel__countdown">{countdown}</p>
             <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>
           </div>
+
+          <section
+            className="victory-panel__learning"
+            aria-label="Post-game learning card"
+            role="button"
+            tabIndex={0}
+            aria-expanded={learningOpen}
+            onClick={() => setLearningOpen((current) => !current)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setLearningOpen((current) => !current);
+              }
+            }}
+          >
+            <div
+              className="victory-panel__learning-toggle"
+            >
+              <span className="victory-panel__learning-kicker">Coach Notes</span>
+              <span className={`victory-panel__learning-chevron ${learningOpen ? "victory-panel__learning-chevron--open" : ""}`} aria-hidden />
+            </div>
+
+            {learningOpen ? (
+              <div className="victory-panel__learning-body">
+                <p className="victory-panel__learning-head">Why use it</p>
+                <p className="victory-panel__learning-line">{insights.whyUse}</p>
+
+                <p className="victory-panel__learning-head">Execution cues</p>
+                <ul className="victory-panel__learning-list">
+                  {insights.cues.map((cue) => (
+                    <li key={cue}>{cue}</li>
+                  ))}
+                </ul>
+
+                <p className="victory-panel__learning-head">Common mistakes</p>
+                <ul className="victory-panel__learning-list">
+                  {insights.mistakes.map((mistake) => (
+                    <li key={mistake}>{mistake}</li>
+                  ))}
+                </ul>
+
+                <p className="victory-panel__learning-head">Regression / progression</p>
+                <p className="victory-panel__learning-line">
+                  Easier: {insights.variants.easier}
+                </p>
+                <p className="victory-panel__learning-line">
+                  Harder: {insights.variants.harder}
+                </p>
+
+                <p className="victory-panel__learning-head">Suggested dose</p>
+                <p className="victory-panel__learning-line">
+                  Hypertrophy: {insights.dose.hypertrophy}
+                </p>
+                <p className="victory-panel__learning-line">
+                  Strength/skill: {insights.dose.strengthOrSkill}
+                </p>
+              </div>
+            ) : null}
+          </section>
 
           <div className="victory-panel__share-card">
             <div className="victory-panel__actions">

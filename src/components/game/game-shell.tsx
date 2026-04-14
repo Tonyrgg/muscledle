@@ -1123,6 +1123,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 winningAttempt={winningAttempt}
                 attempts={gameState?.attempts ?? []}
                 acceptedFamilyMatch={acceptedDailyFamilyMatch}
+                targetExercise={dailyTargetExercise}
               />
             </section>
           ) : null}
