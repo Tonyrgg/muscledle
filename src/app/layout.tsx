@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 
@@ -12,7 +12,7 @@ const oswald = Oswald({
   subsets: ["latin"],
 });
 
-const META_TITLE = "Liftle \u2014 Guess the exercise";
+const META_TITLE = "Liftdle \u2014 Guess the exercise";
 const META_DESCRIPTION = "Daily fitness guessing game. Can you identify the exercise?";
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: META_DESCRIPTION,
   openGraph: {
     title: META_TITLE,
-    siteName: "Liftle",
+    siteName: "Liftdle",
     description: META_DESCRIPTION,
     type: "website",
   },
@@ -30,10 +30,17 @@ export const metadata: Metadata = {
     description: META_DESCRIPTION,
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
-    apple: "/icon.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
@@ -43,13 +50,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}>
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1"
-        />
-      </head>
       <body className="min-h-full bg-background text-on-background font-body">{children}</body>
     </html>
   );
 }
+

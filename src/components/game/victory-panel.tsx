@@ -16,7 +16,6 @@ type VictoryPanelProps = {
   guessCount: number;
   winningAttempt: PublicGameAttempt | null;
   attempts: PublicGameAttempt[];
-  acceptedFamilyMatch: boolean;
   targetExercise: LiveExerciseSuggestion | null;
 };
 
@@ -69,7 +68,6 @@ export function VictoryPanel({
   guessCount,
   winningAttempt,
   attempts,
-  acceptedFamilyMatch,
   targetExercise,
 }: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
@@ -150,9 +148,9 @@ export function VictoryPanel({
   );
 
   const shareText = useMemo(() => {
-    const header = `I solved today's #Liftle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
+    const header = `I solved today's #Liftdle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
     const body = emojiRows.join("\n");
-    const footer = "https://liftle.local";
+    const footer = "https://Liftdle.local";
     return [header, body, footer].filter(Boolean).join("\n");
   }, [emojiRows, gameDate, guessCount]);
 
@@ -214,11 +212,6 @@ export function VictoryPanel({
             <p className="victory-panel__stat-line">
               Attempts: <span>{guessCount}</span>
             </p>
-            {acceptedFamilyMatch ? (
-              <p className="victory-panel__family-match">
-                Family match accepted. Variant solved this daily.
-              </p>
-            ) : null}
             <p className="victory-panel__stat-label">Next exercise in</p>
             <p className="victory-panel__countdown">{countdown}</p>
             <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>
@@ -308,3 +301,4 @@ export function VictoryPanel({
     </section>
   );
 }
+

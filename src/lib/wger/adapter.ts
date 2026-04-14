@@ -86,7 +86,7 @@ function pickPreferredTranslation(payload: WgerExercisePayload) {
   );
 }
 
-export function mapWgerExerciseToLiftle(payload: WgerExercisePayload): MappedWgerExercise {
+export function mapWgerExerciseToLiftdle(payload: WgerExercisePayload): MappedWgerExercise {
   const preferredTranslation = pickPreferredTranslation(payload);
   const fallbackName = `Wger Exercise ${payload.id}`;
   const name = safeTrim(preferredTranslation?.name) || safeTrim(payload.name) || fallbackName;
@@ -167,3 +167,4 @@ export function mapWgerExerciseToLiftle(payload: WgerExercisePayload): MappedWge
     media: [...videoMedia, ...imageMedia],
   };
 }
+

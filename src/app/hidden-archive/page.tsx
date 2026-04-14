@@ -7,8 +7,8 @@ import { listExerciseArchive } from "@/lib/exercise-archive/service";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Liftle Hidden Archive",
-  description: "Private operational archive for Liftle exercise analytics and media quality.",
+  title: "Liftdle Hidden Archive",
+  description: "Private operational archive for Liftdle exercise analytics and media quality.",
   robots: {
     index: false,
     follow: false,
@@ -35,7 +35,7 @@ export default async function HiddenArchivePage() {
       <section className="archive-shell">
         <header className="archive-hero">
           <Logo className="archive-hero__logo" />
-          <p className="archive-hero__kicker">Liftle Backoffice</p>
+          <p className="archive-hero__kicker">Liftdle Backoffice</p>
           <h1 className="archive-hero__title">Hidden Exercise Archive</h1>
           <p className="archive-hero__stats">
             LIVE {live} - GIF MATCHED {matched} - ENRICHED {enriched}
@@ -50,3 +50,4 @@ export default async function HiddenArchivePage() {
     </main>
   );
 }
+

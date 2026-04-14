@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -842,10 +842,6 @@ export function GameShell({ initialState }: GameShellProps) {
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
     gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
-  const acceptedDailyFamilyMatch =
-    !!gameState?.dailySecretExerciseId &&
-    !!winningAttempt &&
-    winningAttempt.guessExerciseId !== gameState.dailySecretExerciseId;
   const isMarathonStarted =
     infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
@@ -1011,7 +1007,7 @@ export function GameShell({ initialState }: GameShellProps) {
       <main className="game-page">
         <AnonymousAuthBootstrap onReady={handleAuthReady} />
 
-        <section className="game-shell" aria-label="Liftle gameplay">
+        <section className="game-shell" aria-label="Liftdle gameplay">
           <header className="game-hero">
             <Logo withTagline />
             <div className="mode-switch" aria-label="Game mode switch">
@@ -1157,7 +1153,6 @@ export function GameShell({ initialState }: GameShellProps) {
                 guessCount={gameState?.guessCount ?? 0}
                 winningAttempt={winningAttempt}
                 attempts={gameState?.attempts ?? []}
-                acceptedFamilyMatch={acceptedDailyFamilyMatch}
                 targetExercise={dailyTargetExercise}
               />
             </section>
@@ -1238,7 +1233,7 @@ export function GameShell({ initialState }: GameShellProps) {
         </section>
       </main>
 
-      <footer className="game-footer" aria-label="Liftle footer">
+      <footer className="game-footer" aria-label="Liftdle footer">
         <nav className="game-footer__links" aria-label="Footer links">
           <button
             type="button"
@@ -1266,7 +1261,7 @@ export function GameShell({ initialState }: GameShellProps) {
           </button>
         </nav>
         <p className="game-footer__copy">
-          © 2026 Liftle. All rights reserved.
+        © 2026 Liftdle. All rights reserved.
         </p>
       </footer>
 
@@ -1319,7 +1314,7 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                   <p className="htp-note">
-                    Liftle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
+                    Liftdle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
                   </p>
                 </section>
 
@@ -1616,7 +1611,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   </p>
                   <p>
                     Provider data is used as raw input only. Gameplay remains
-                    based on Liftle internal fields.
+                    based on Liftdle internal fields.
                   </p>
                 </section>
                 <section className="info-sheet__section">
@@ -1649,3 +1644,4 @@ export function GameShell({ initialState }: GameShellProps) {
     </>
   );
 }
+
