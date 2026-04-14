@@ -786,6 +786,7 @@ input {
   background: #1c1c1c;
   max-height: 18rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }

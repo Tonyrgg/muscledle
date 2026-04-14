@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, useId, useMemo, useState } from "react";
+import { type KeyboardEvent, type WheelEvent, useId, useMemo, useState } from "react";
 import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -160,6 +160,19 @@ export function GuessInput({
     }
   };
 
+  const handleDropdownWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const container = event.currentTarget;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const atTop = scrollTop <= 0;
+    const atBottom = scrollTop + clientHeight >= scrollHeight - 1;
+    const scrollingUp = event.deltaY < 0;
+    const scrollingDown = event.deltaY > 0;
+
+    if ((atTop && scrollingUp) || (atBottom && scrollingDown)) {
+      event.preventDefault();
+    }
+  };
+
   return (
     <div className="guess-input">
       <div className="guess-input__row">
@@ -191,7 +204,7 @@ export function GuessInput({
           />
 
           {showDropdown ? (
-            <div id={listId} role="listbox" className="guess-input__dropdown">
+            <div id={listId} role="listbox" className="guess-input__dropdown" onWheel={handleDropdownWheel}>
               {loadingExercises ? (
                 <p className="guess-input__empty">LOADING EXERCISES...</p>
               ) : suggestions.length === 0 ? (
