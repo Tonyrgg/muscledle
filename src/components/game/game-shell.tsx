@@ -184,6 +184,8 @@ export function GameShell({ initialState }: GameShellProps) {
   const dailyCelebrationTimeoutRef = useRef<number | null>(null);
   const dailyConfettiSettleTimeoutRef = useRef<number | null>(null);
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const victoryPanelRef = useRef<HTMLElement | null>(null);
+  const lastVictoryScrollKeyRef = useRef<string | null>(null);
 
   const exerciseById = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
@@ -852,6 +854,39 @@ export function GameShell({ initialState }: GameShellProps) {
   const shouldShowDailyCelebration =
     mode === "daily" && isDailyWon && showDailyCelebration;
 
+  useEffect(() => {
+    if (!shouldShowVictoryPanel || !gameState?.gameDate) {
+      return;
+    }
+
+    const scrollKey = `${gameState.gameDate}:${gameState.guessCount}:${gameState.status}`;
+    if (lastVictoryScrollKeyRef.current === scrollKey) {
+      return;
+    }
+
+    const panel = victoryPanelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    lastVictoryScrollKeyRef.current = scrollKey;
+
+    const timer = window.setTimeout(() => {
+      panel.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    gameState?.gameDate,
+    gameState?.guessCount,
+    gameState?.status,
+    shouldShowVictoryPanel,
+  ]);
+
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
   const infiniteAttemptsLeft = infiniteState
     ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed)
@@ -1116,7 +1151,11 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : null}
 
           {shouldShowVictoryPanel ? (
-            <section className="game-win-zone" aria-label="Victory summary">
+            <section
+              ref={victoryPanelRef}
+              className="game-win-zone"
+              aria-label="Victory summary"
+            >
               <VictoryPanel
                 gameDate={gameState?.gameDate ?? ""}
                 guessCount={gameState?.guessCount ?? 0}

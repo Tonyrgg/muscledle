@@ -657,8 +657,8 @@ input {
 
 .victory-panel__learning-body {
   margin-top: 0.62rem;
-  padding-left: 0.45rem;
-  padding-right: 0.45rem;
+  padding-left: 0.8rem;
+  padding-right: 0.8rem;
 }
 
 .victory-panel__learning-line {
@@ -668,6 +668,7 @@ input {
   font-weight: 600;
   letter-spacing: 0.03em;
   line-height: 1.4;
+  padding-left: 0.7rem;
 }
 
 .victory-panel__learning-head {
@@ -681,7 +682,7 @@ input {
 
 .victory-panel__learning-list {
   margin: 0.42rem 0 0;
-  padding-left: 1.35rem;
+  padding-left: 2.1rem;
   color: #dbdbdb;
   font-size: 0.86rem;
   line-height: 1.42;
