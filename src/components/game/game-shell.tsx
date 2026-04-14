@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Logo } from "@/components/brand/logo";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
 import { DailyHints } from "@/components/game/daily-hints";
@@ -1010,14 +1011,9 @@ export function GameShell({ initialState }: GameShellProps) {
       <main className="game-page">
         <AnonymousAuthBootstrap onReady={handleAuthReady} />
 
-        <section className="game-shell" aria-label="Muscledle gameplay">
+        <section className="game-shell" aria-label="Liftle gameplay">
           <header className="game-hero">
-            <h1 className="game-hero__title">
-              <span className="game-hero__title-main">MUSCLE</span>
-              <span className="game-hero__title-accent">DLE</span>
-            </h1>
-            <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
-
+            <Logo withTagline />
             <div className="mode-switch" aria-label="Game mode switch">
               <button
                 type="button"
@@ -1044,11 +1040,11 @@ export function GameShell({ initialState }: GameShellProps) {
                 aria-live="polite"
               >
                 <h2 className="game-prompt-panel__title">
-                  Guess today&apos;s Muscledle exercise.
+                  Guess the exercise.
                 </h2>
                 {!gameState || gameState.guessCount === 0 ? (
                   <p className="game-prompt-panel__subtitle">
-                    Type any exercise name to begin.
+                    Play Now
                   </p>
                 ) : null}
                 <DailyHints
@@ -1145,7 +1141,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 onClick={startMarathonRun}
                 disabled={loadingExercises || exercises.length === 0}
               >
-                Start
+                Play Now
               </button>
             </section>
           ) : null}
@@ -1242,14 +1238,14 @@ export function GameShell({ initialState }: GameShellProps) {
         </section>
       </main>
 
-      <footer className="game-footer" aria-label="Muscledle footer">
+      <footer className="game-footer" aria-label="Liftle footer">
         <nav className="game-footer__links" aria-label="Footer links">
           <button
             type="button"
             className="game-footer__link"
             onClick={() => setFooterModal("how-to-play")}
           >
-            HOW TO PLAY
+            HOW IT WORKS
           </button>
           <button
             type="button"
@@ -1270,7 +1266,7 @@ export function GameShell({ initialState }: GameShellProps) {
           </button>
         </nav>
         <p className="game-footer__copy">
-          © 2026 Muscledle. All rights reserved.
+          © 2026 Liftle. All rights reserved.
         </p>
       </footer>
 
@@ -1305,7 +1301,7 @@ export function GameShell({ initialState }: GameShellProps) {
               <div className="info-sheet__body">
                 <section className="info-sheet__section">
                   <h3 className="info-sheet__section-title">How it works</h3>
-                  <p>Guess today&apos;s Muscledle exercise in as few attempts as possible.</p>
+                  <p>Guess the exercise.</p>
                   <p>Each guess is compared against 7 attributes: Muscle, Equipment, Movement, Pattern, Reps, Goal, Ego.</p>
                 </section>
 
@@ -1323,7 +1319,7 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                   <p className="htp-note">
-                    Muscledle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
+                    Liftle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
                   </p>
                 </section>
 
@@ -1409,6 +1405,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   <p>
                     <strong>Daily</strong>: one exercise per day, reset at midnight (Europe/Rome).
                   </p>
+                  <p>New exercise every day.</p>
                   <p>
                     <strong>Marathon</strong>: continuous run, up to 10 attempts per round, cumulative score.
                   </p>
@@ -1619,7 +1616,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   </p>
                   <p>
                     Provider data is used as raw input only. Gameplay remains
-                    based on Muscledle internal fields.
+                    based on Liftle internal fields.
                   </p>
                 </section>
                 <section className="info-sheet__section">

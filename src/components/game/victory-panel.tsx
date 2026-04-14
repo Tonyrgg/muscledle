@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { Logo } from "@/components/brand/logo";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import { getExerciseIconCandidates } from "@/lib/exercises/icons";
 import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
@@ -149,9 +150,9 @@ export function VictoryPanel({
   );
 
   const shareText = useMemo(() => {
-    const header = `I solved today's #Muscledle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
+    const header = `I solved today's #Liftle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
     const body = emojiRows.join("\n");
-    const footer = "https://muscledle.local";
+    const footer = "https://liftle.local";
     return [header, body, footer].filter(Boolean).join("\n");
   }, [emojiRows, gameDate, guessCount]);
 
@@ -175,6 +176,7 @@ export function VictoryPanel({
   return (
     <section className="victory-panel" aria-label="Victory panel">
       <div className="victory-panel__head">
+        <Logo className="victory-panel__logo" />
         <p className="victory-panel__kicker">Victory</p>
         <h3 className="victory-panel__title">You guessed {winningAttempt?.guessName ?? "today's exercise"}</h3>
         <button

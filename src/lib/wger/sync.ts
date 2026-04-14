@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { mapWgerExerciseToMuscledle } from "@/lib/wger/adapter";
+import { mapWgerExerciseToLiftle } from "@/lib/wger/adapter";
 import type { WgerApiPage, WgerExercisePayload } from "@/lib/wger/types";
 
 const DEFAULT_WGER_BASE_URL = "https://wger.de/api/v2";
@@ -44,7 +44,7 @@ async function fetchPage(url: string, token: string | null): Promise<WgerApiPage
 
 async function upsertMappedExercise(payload: WgerExercisePayload): Promise<void> {
   const admin = createAdminClient();
-  const mapped = mapWgerExerciseToMuscledle(payload);
+  const mapped = mapWgerExerciseToLiftle(payload);
 
   const { data: exerciseRow, error: upsertExerciseError } = await admin
     .from("exercises")

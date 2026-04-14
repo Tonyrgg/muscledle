@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 
@@ -12,9 +12,23 @@ const oswald = Oswald({
   subsets: ["latin"],
 });
 
+const META_TITLE = "Liftle \u2014 Guess the exercise";
+const META_DESCRIPTION = "Daily fitness guessing game. Can you identify the exercise?";
+
 export const metadata: Metadata = {
-  title: "Muscledle",
-  description: "Muscledle - exercise guessing game",
+  title: META_TITLE,
+  description: META_DESCRIPTION,
+  openGraph: {
+    title: META_TITLE,
+    siteName: "Liftle",
+    description: META_DESCRIPTION,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: META_TITLE,
+    description: META_DESCRIPTION,
+  },
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",

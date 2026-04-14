@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Logo } from "@/components/brand/logo";
 import { ArchiveTable } from "@/components/archive/archive-table";
 import { listExerciseArchive } from "@/lib/exercise-archive/service";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Hidden Archive",
+  title: "Liftle Hidden Archive",
+  description: "Private operational archive for Liftle exercise analytics and media quality.",
   robots: {
     index: false,
     follow: false,
@@ -32,13 +34,14 @@ export default async function HiddenArchivePage() {
     <main className="archive-page">
       <section className="archive-shell">
         <header className="archive-hero">
-          <p className="archive-hero__kicker">Muscledle Backoffice</p>
+          <Logo className="archive-hero__logo" />
+          <p className="archive-hero__kicker">Liftle Backoffice</p>
           <h1 className="archive-hero__title">Hidden Exercise Archive</h1>
           <p className="archive-hero__stats">
             LIVE {live} - GIF MATCHED {matched} - ENRICHED {enriched}
           </p>
           <Link className="archive-hero__back" href="/">
-            Back To Game
+            Play Now
           </Link>
         </header>
 
@@ -47,4 +50,3 @@ export default async function HiddenArchivePage() {
     </main>
   );
 }
-

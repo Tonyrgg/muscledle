@@ -103,7 +103,7 @@ function computeRotationSelection(gameDate: string, exercises: LiveExerciseRow[]
   const cycleSize = exercises.length;
   const cycleNumber = Math.floor(dayIndex / cycleSize);
   const indexInCycle = ((dayIndex % cycleSize) + cycleSize) % cycleSize;
-  const seedBase = process.env.DAILY_ROTATION_SEED ?? "muscledle-rotation-v1";
+  const seedBase = process.env.DAILY_ROTATION_SEED ?? "liftle-rotation-v1";
   const seed = hashSeed(`${seedBase}:${cycleNumber}:${cycleSize}`);
   const order = shuffledIndexes(cycleSize, seed);
   const chosen = exercises[order[indexInCycle]];

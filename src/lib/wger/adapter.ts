@@ -86,7 +86,7 @@ function pickPreferredTranslation(payload: WgerExercisePayload) {
   );
 }
 
-export function mapWgerExerciseToMuscledle(payload: WgerExercisePayload): MappedWgerExercise {
+export function mapWgerExerciseToLiftle(payload: WgerExercisePayload): MappedWgerExercise {
   const preferredTranslation = pickPreferredTranslation(payload);
   const fallbackName = `Wger Exercise ${payload.id}`;
   const name = safeTrim(preferredTranslation?.name) || safeTrim(payload.name) || fallbackName;
