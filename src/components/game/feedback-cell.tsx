@@ -22,8 +22,10 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
 export function FeedbackCell({ column, color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
+  const normalizedValue = value.trim();
+  const displayValue = normalizedValue.length > 0 ? normalizedValue : "Unknown";
 
-  const tooltipText = useMemo(() => getAttributeDefinition(column, value), [column, value]);
+  const tooltipText = useMemo(() => getAttributeDefinition(column, displayValue), [column, displayValue]);
 
   const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
     const viewportPadding = 12;
@@ -74,13 +76,13 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
     <div
       className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""}`}
       role="cell"
-      aria-label={value}
+      aria-label={displayValue}
       style={style}
       onClick={handleClick}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
-      <span>{value}</span>
+      <span>{displayValue}</span>
       {tooltipOpen && cursorPosition && typeof document !== "undefined"
         ? createPortal(
             <div

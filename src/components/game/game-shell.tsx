@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
+import { DailyHints } from "@/components/game/daily-hints";
 import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
@@ -201,6 +202,12 @@ export function GameShell({ initialState }: GameShellProps) {
 
     return exerciseById.get(targetId) ?? null;
   }, [exerciseById, infiniteState]);
+
+  const dailyTargetExercise = useMemo(() => {
+    const targetId = gameState?.dailySecretExerciseId;
+    if (!targetId) return null;
+    return exerciseById.get(targetId) ?? null;
+  }, [exerciseById, gameState?.dailySecretExerciseId]);
 
   const activeAttempts = useMemo(
     () =>
@@ -1009,6 +1016,10 @@ export function GameShell({ initialState }: GameShellProps) {
                     Type any exercise name to begin.
                   </p>
                 ) : null}
+                <DailyHints
+                  attempts={gameState?.attempts ?? []}
+                  targetExercise={dailyTargetExercise}
+                />
               </div>
             ) : null}
 
