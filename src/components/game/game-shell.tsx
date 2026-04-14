@@ -9,9 +9,14 @@ import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
 import {
+  fetchMarathonState,
   fetchGameStats,
   fetchLiveExercises,
   fetchTodayGameState,
+  resetMarathonRunRequest,
+  startMarathonRunRequest,
+  surrenderMarathonRunRequest,
+  submitMarathonGuessRequest,
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
@@ -21,6 +26,7 @@ import type { Exercise } from "@/types/exercise";
 import type {
   PublicGameAttempt,
   PublicGameStats,
+  PublicMarathonState,
   PublicTodayGameState,
 } from "@/types/game";
 
@@ -91,48 +97,18 @@ function createInfiniteGameState(): InfiniteGameState {
   };
 }
 
-function createShuffledExerciseOrder(
-  exercises: LiveExerciseSuggestion[],
-): string[] {
-  const ids = exercises.map((exercise) => exercise.id);
-
-  for (let i = ids.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const tmp = ids[i];
-    ids[i] = ids[j];
-    ids[j] = tmp;
-  }
-
-  return ids;
-}
-
-function buildInfiniteAttempt(
-  guess: LiveExerciseSuggestion,
-  target: LiveExerciseSuggestion,
-): PublicGameAttempt {
-  const feedback = evaluateGuess(
-    toExerciseModel(guess),
-    toExerciseModel(target),
-  );
-  const correct = isCorrectGuess(feedback);
+function toInfiniteStateFromPublic(state: PublicMarathonState): InfiniteGameState {
+  const status: InfiniteStatus =
+    state.status === "won" ? "completed" : state.status;
 
   return {
-    id: `inf-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    guessExerciseId: guess.id,
-    guessSlug: guess.slug,
-    guessName: guess.name,
-    guessMuscleGroup: guess.muscle_group,
-    values: {
-      muscle: guess.muscle.join(" / "),
-      equipment: guess.equipment.join(" / "),
-      movement: guess.movement.join(" / "),
-      pattern: guess.pattern.join(" / "),
-      reps: guess.reps.join(" / "),
-      goal: guess.goal.join(" / "),
-      ego: guess.ego.join(" / "),
-    },
-    feedback,
-    isCorrect: correct,
+    status,
+    score: state.score,
+    currentIndex: state.currentIndex,
+    attempts: state.attempts,
+    maxAttemptsPerRound: state.maxAttemptsPerRound,
+    exerciseOrderIds: state.exerciseOrderIds,
+    runSeed: state.runSeed,
   };
 }
 
@@ -424,7 +400,6 @@ export function GameShell({ initialState }: GameShellProps) {
     try {
       const result = await fetchLiveExercises();
       setExercises(result);
-      setInfiniteState(createInfiniteGameState());
     } catch (error) {
       pushToast(
         error instanceof Error ? error.message : "Failed to load exercises.",
@@ -433,6 +408,18 @@ export function GameShell({ initialState }: GameShellProps) {
       setLoadingExercises(false);
     }
   }, [exercises.length, pushToast]);
+
+  const loadMarathonState = useCallback(async () => {
+    try {
+      const state = await fetchMarathonState();
+      setInfiniteState(toInfiniteStateFromPublic(state));
+    } catch (error) {
+      setInfiniteState(createInfiniteGameState());
+      pushToast(
+        error instanceof Error ? error.message : "Failed to load marathon state.",
+      );
+    }
+  }, [pushToast]);
 
   const loadTodayState = useCallback(async () => {
     setIsLoadingState(true);
@@ -451,12 +438,13 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const handleAuthReady = useCallback(() => {
     void loadExercises();
+    void loadMarathonState();
     void loadStats({ silent: true });
 
     if (!gameState) {
       void loadTodayState();
     }
-  }, [gameState, loadExercises, loadStats, loadTodayState]);
+  }, [gameState, loadExercises, loadMarathonState, loadStats, loadTodayState]);
 
   const handleModeChange = useCallback((nextMode: GameMode) => {
     if (marathonSolvedTimeoutRef.current !== null) {
@@ -494,7 +482,7 @@ export function GameShell({ initialState }: GameShellProps) {
     }
   }, []);
 
-  const startMarathonRun = useCallback(() => {
+  const startMarathonRun = useCallback(async () => {
     if (exercises.length === 0) {
       pushToast("Exercises are still loading.");
       return;
@@ -510,22 +498,21 @@ export function GameShell({ initialState }: GameShellProps) {
       marathonNextTimeoutRef.current = null;
     }
 
-    const order = createShuffledExerciseOrder(exercises);
-    const seed = Date.now();
-
-    setInfiniteState({
-      status: "in_progress",
-      score: 0,
-      currentIndex: 0,
-      attempts: [],
-      maxAttemptsPerRound: 10,
-      exerciseOrderIds: order,
-      runSeed: seed,
-    });
-    setMarathonTransition(null);
-    setQuery("");
-    setSelectedExerciseId(null);
-    setRevealingAttemptId(null);
+    setIsSubmitting(true);
+    try {
+      const nextState = await startMarathonRunRequest();
+      setInfiniteState(toInfiniteStateFromPublic(nextState));
+      setMarathonTransition(null);
+      setQuery("");
+      setSelectedExerciseId(null);
+      setRevealingAttemptId(null);
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : "Failed to start marathon run.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }, [exercises, pushToast]);
 
   const handleQueryChange = useCallback((value: string) => {
@@ -698,44 +685,30 @@ export function GameShell({ initialState }: GameShellProps) {
         return;
       }
 
-      const attempt = buildInfiniteAttempt(guessed, activeInfiniteTarget);
-      const acceptedFamilyMatch =
-        attempt.isCorrect && guessed.id !== activeInfiniteTarget.id;
-      const attempts = [attempt, ...infiniteState.attempts];
-      const attemptsUsed = attempts.length;
-
       setIsSubmitting(true);
 
       try {
+        const response = await submitMarathonGuessRequest(exerciseId);
+        const attempt = response.attempt;
+        const acceptedFamilyMatch = response.acceptedFamilyMatch;
+        const nextState = toInfiniteStateFromPublic(response.state);
+
         await preloadExerciseMedia(attempt.guessSlug);
         setRevealingAttemptId(attempt.id);
         setQuery("");
         setSelectedExerciseId(null);
+        setInfiniteState(nextState);
 
         if (attempt.isCorrect) {
-          const pointsEarned = Math.max(
-            1,
-            infiniteState.maxAttemptsPerRound - attemptsUsed + 1,
-          );
-          const nextScore = infiniteState.score + pointsEarned;
-          const nextIndex = infiniteState.currentIndex + 1;
-
-          if (nextIndex >= infiniteState.exerciseOrderIds.length) {
-            setInfiniteState({
-              ...infiniteState,
-              score: nextScore,
-              currentIndex: nextIndex,
-              attempts,
-              status: "completed",
-            });
-            pushToast(`Perfect run completed. Final score: ${nextScore}.`);
+          if (nextState.status === "completed") {
+            pushToast(`Perfect run completed. Final score: ${nextState.score}.`);
             return;
           }
 
           setMarathonTransition({
             phase: "solved",
             exerciseName: activeInfiniteTarget.name,
-            score: nextScore,
+            score: nextState.score,
             acceptedFamilyMatch,
           });
 
@@ -743,18 +716,12 @@ export function GameShell({ initialState }: GameShellProps) {
             setMarathonTransition({
               phase: "next",
               exerciseName: activeInfiniteTarget.name,
-              score: nextScore,
+              score: nextState.score,
               acceptedFamilyMatch,
             });
             marathonSolvedTimeoutRef.current = null;
 
             marathonNextTimeoutRef.current = window.setTimeout(() => {
-              setInfiniteState({
-                ...infiniteState,
-                score: nextScore,
-                currentIndex: nextIndex,
-                attempts: [],
-              });
               setMarathonTransition(null);
               marathonNextTimeoutRef.current = null;
             }, 1500);
@@ -763,22 +730,11 @@ export function GameShell({ initialState }: GameShellProps) {
           return;
         }
 
-        if (attemptsUsed >= infiniteState.maxAttemptsPerRound) {
-          setInfiniteState({
-            ...infiniteState,
-            attempts,
-            status: "lost",
-          });
+        if (nextState.status === "lost") {
           pushToast(
             `Run over. You used all ${infiniteState.maxAttemptsPerRound} attempts.`,
           );
-          return;
         }
-
-        setInfiniteState({
-          ...infiniteState,
-          attempts,
-        });
       } finally {
         setIsSubmitting(false);
       }
@@ -808,7 +764,7 @@ export function GameShell({ initialState }: GameShellProps) {
     [handleSubmitDaily, handleSubmitInfinite, mode],
   );
 
-  const restartInfiniteMode = useCallback(() => {
+  const restartInfiniteMode = useCallback(async () => {
     if (exercises.length === 0) {
       return;
     }
@@ -823,12 +779,55 @@ export function GameShell({ initialState }: GameShellProps) {
       marathonNextTimeoutRef.current = null;
     }
 
-    setInfiniteState(createInfiniteGameState());
-    setMarathonTransition(null);
-    setQuery("");
-    setSelectedExerciseId(null);
-    setRevealingAttemptId(null);
-  }, [exercises.length]);
+    setIsSubmitting(true);
+    try {
+      const state = await resetMarathonRunRequest();
+      setInfiniteState(toInfiniteStateFromPublic(state));
+      setMarathonTransition(null);
+      setQuery("");
+      setSelectedExerciseId(null);
+      setRevealingAttemptId(null);
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : "Failed to reset marathon run.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [exercises.length, pushToast]);
+
+  const surrenderInfiniteMode = useCallback(async () => {
+    if (!infiniteState || infiniteState.status !== "in_progress") {
+      return;
+    }
+
+    if (marathonSolvedTimeoutRef.current !== null) {
+      window.clearTimeout(marathonSolvedTimeoutRef.current);
+      marathonSolvedTimeoutRef.current = null;
+    }
+
+    if (marathonNextTimeoutRef.current !== null) {
+      window.clearTimeout(marathonNextTimeoutRef.current);
+      marathonNextTimeoutRef.current = null;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const state = await surrenderMarathonRunRequest();
+      setInfiniteState(toInfiniteStateFromPublic(state));
+      setMarathonTransition(null);
+      setQuery("");
+      setSelectedExerciseId(null);
+      setRevealingAttemptId(null);
+      pushToast("Marathon surrendered.");
+    } catch (error) {
+      pushToast(
+        error instanceof Error ? error.message : "Failed to surrender marathon run.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [infiniteState, pushToast]);
 
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
@@ -1071,6 +1070,18 @@ export function GameShell({ initialState }: GameShellProps) {
                     onClick={restartInfiniteMode}
                   >
                     Restart Run
+                  </button>
+                ) : null}
+                {infiniteState?.status === "in_progress" ? (
+                  <button
+                    type="button"
+                    className="exercise-media-modal__close game-prompt-panel__restart"
+                    onClick={() => {
+                      void surrenderInfiniteMode();
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    Surrender
                   </button>
                 ) : null}
               </div>

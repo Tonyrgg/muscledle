@@ -3,6 +3,18 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const ALLOWED_RESOLUTIONS = new Set(["180", "360", "720", "1080"]);
+const UPSTREAM_TIMEOUT_MS = 4500;
+
+function fallbackGifResponse(reason: string) {
+  return new Response("GIF unavailable", {
+    status: 503,
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "public, max-age=60",
+      "X-Media-Fallback": reason,
+    },
+  });
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -19,10 +31,12 @@ export async function GET(request: Request) {
   const key = process.env.EXERCISEDB_API_KEY;
 
   if (!key) {
-    return NextResponse.json({ error: "Missing EXERCISEDB_API_KEY" }, { status: 500 });
+    return fallbackGifResponse("missing_api_key");
   }
 
   const providerUrl = `${baseUrl}/image?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${resolution}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort("upstream_timeout"), UPSTREAM_TIMEOUT_MS);
 
   try {
     const upstream = await fetch(providerUrl, {
@@ -32,29 +46,39 @@ export async function GET(request: Request) {
         "x-rapidapi-host": host,
       },
       cache: "no-store",
+      signal: controller.signal,
     });
-
-    if (!upstream.ok || !upstream.body) {
-      const text = await upstream.text().catch(() => "");
-      return NextResponse.json(
-        {
-          error: "ExerciseDB image fetch failed",
-          status: upstream.status,
-          details: text.slice(0, 200),
-        },
-        { status: 502 },
-      );
+    if (!upstream.ok) {
+      await upstream.body?.cancel().catch(() => undefined);
+      return fallbackGifResponse(`upstream_${upstream.status}`);
     }
 
-    return new Response(upstream.body, {
+    const contentType = upstream.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("image/gif")) {
+      await upstream.body?.cancel().catch(() => undefined);
+      return fallbackGifResponse("upstream_not_gif");
+    }
+
+    const payload = await upstream.arrayBuffer();
+    if (payload.byteLength === 0) {
+      return fallbackGifResponse("upstream_empty_body");
+    }
+
+    return new Response(payload, {
       status: 200,
       headers: {
-        "Content-Type": upstream.headers.get("content-type") ?? "image/gif",
+        "Content-Type": "image/gif",
+        "Content-Length": String(payload.byteLength),
         "Cache-Control": "public, max-age=86400",
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return fallbackGifResponse("upstream_timeout");
+    }
     console.error("GET /api/exercises/media-gif failed", error);
-    return NextResponse.json({ error: "Failed to stream gif" }, { status: 500 });
+    return fallbackGifResponse("fetch_error");
+  } finally {
+    clearTimeout(timeout);
   }
 }

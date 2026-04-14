@@ -1,8 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from "react";
+import { ExerciseMediaView } from "@/components/media/exercise-media-view";
+import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import type { FeedbackColor } from "@/types/exercise";
 import type { PublicGameAttempt } from "@/types/game";
+import type { ExerciseMedia } from "@/types/media";
 
 type VictoryPanelProps = {
   gameDate: string;
@@ -10,13 +14,6 @@ type VictoryPanelProps = {
   winningAttempt: PublicGameAttempt | null;
   attempts: PublicGameAttempt[];
   acceptedFamilyMatch: boolean;
-};
-
-type ExerciseMediaResponse = {
-  ok: boolean;
-  media?: {
-    mediaUrl: string | null;
-  } | null;
 };
 
 function getMsUntilNextRomeMidnight(now: Date): number {
@@ -71,65 +68,62 @@ export function VictoryPanel({
   acceptedFamilyMatch,
 }: VictoryPanelProps) {
   const [expanded, setExpanded] = useState(true);
-  const [countdown, setCountdown] = useState(() => formatCountdown(getMsUntilNextRomeMidnight(new Date())));
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [mediaError, setMediaError] = useState<string | null>(winningAttempt?.guessSlug ? null : "Demo unavailable");
+  const [countdown, setCountdown] = useState("00:00:00");
   const [copied, setCopied] = useState<string | null>(null);
   const winningSlug = winningAttempt?.guessSlug ?? "";
+  const fallbackMedia = useMemo<ExerciseMedia[]>(() => {
+    if (!winningAttempt?.guessSlug) {
+      return [];
+    }
+
+    const iconPath =
+      getExerciseIconCandidates({
+        slug: winningAttempt.guessSlug,
+        name: winningAttempt.guessName,
+        muscle_group: winningAttempt.guessMuscleGroup,
+      })[0] ?? "/muscle-icons/full-body.svg";
+
+    return [
+      {
+        id: `fallback-victory-icon-${winningAttempt.guessSlug}`,
+        exerciseId: winningAttempt.guessSlug,
+        mediaKind: "icon",
+        source: "local",
+        sourceId: winningAttempt.guessSlug,
+        url: iconPath,
+        thumbnailUrl: null,
+        posterUrl: null,
+        mimeType: "image/svg+xml",
+        width: null,
+        height: null,
+        durationSeconds: null,
+        isPrimary: true,
+        sortOrder: 0,
+        isActive: true,
+        attributionText: null,
+        attributionUrl: null,
+        license: null,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      },
+    ];
+  }, [winningAttempt]);
+  const { media, loading: mediaLoading, error: mediaError } = useExerciseMediaAssets(winningSlug, fallbackMedia);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
+    const updateCountdown = () => {
       setCountdown(formatCountdown(getMsUntilNextRomeMidnight(new Date())));
-    }, 1000);
+    };
 
-    return () => window.clearInterval(timer);
-  }, []);
+    const kickoff = window.setTimeout(updateCountdown, 0);
 
-  useEffect(() => {
-    if (!winningSlug) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadMedia() {
-      setMediaError(null);
-      setMediaUrl(null);
-
-      try {
-        const response = await fetch(`/api/exercises/${encodeURIComponent(winningSlug)}/media`, {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        const payload = (await response.json().catch(() => null)) as ExerciseMediaResponse | null;
-
-        if (!active) return;
-
-        if (!response.ok || !payload?.ok) {
-          setMediaError("Failed to load media");
-          return;
-        }
-
-        const nextUrl = payload.media?.mediaUrl ?? null;
-        if (!nextUrl) {
-          setMediaError("Demo unavailable");
-          return;
-        }
-
-        setMediaUrl(nextUrl);
-      } catch {
-        if (!active) return;
-        setMediaError("Failed to load media");
-      }
-    }
-
-    void loadMedia();
+    const timer = window.setInterval(updateCountdown, 1000);
 
     return () => {
-      active = false;
+      window.clearTimeout(kickoff);
+      window.clearInterval(timer);
     };
-  }, [winningSlug]);
+  }, []);
 
   const orderedAttempts = useMemo(() => [...attempts], [attempts]);
 
@@ -190,18 +184,17 @@ export function VictoryPanel({
       {expanded ? (
         <>
           <div className="victory-panel__media-wrap">
-            {mediaUrl ? (
-              <img
-                src={mediaUrl}
+            {media.length > 0 ? (
+              <ExerciseMediaView
+                media={media}
+                context="victory"
                 alt={`Demo ${winningAttempt?.guessName ?? "exercise"}`}
                 className="victory-panel__media"
-                onError={() => {
-                  setMediaUrl(null);
-                  setMediaError("Demo unavailable");
-                }}
               />
             ) : (
-              <p className="victory-panel__media-fallback">{mediaError ?? "Loading demo..."}</p>
+              <p className="victory-panel__media-fallback">
+                {mediaLoading ? "Loading demo..." : (mediaError ?? "Demo unavailable")}
+              </p>
             )}
           </div>
 

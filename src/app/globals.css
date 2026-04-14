@@ -923,6 +923,17 @@ input {
   background: #202020;
 }
 
+.exercise-media-preview__media {
+  width: min(80vw, 720px);
+  max-width: 100%;
+  height: min(62vh, 460px);
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: #202020;
+  object-fit: contain;
+}
+
 .feedback-cell {
   position: relative;
   display: flex;

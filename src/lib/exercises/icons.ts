@@ -23,6 +23,13 @@ type ExerciseIconSource = Pick<Exercise, "slug"> & {
   name?: string | null;
 };
 
+const KNOWN_EXERCISE_ICON_SLUGS = new Set([
+  "bench-press",
+  "dumbbell-bench-press",
+  "lat-pulldown",
+  "pull-up",
+]);
+
 const INFERRED_MUSCLE_KEYWORDS: Array<{ key: MuscleGroupIconKey; patterns: RegExp[] }> = [
   {
     key: "chest",
@@ -51,7 +58,8 @@ const INFERRED_MUSCLE_KEYWORDS: Array<{ key: MuscleGroupIconKey; patterns: RegEx
 ];
 
 export function getExerciseSpecificIconPath(slug: string): string {
-  return slug ? `/exercises/${slug}.svg` : "";
+  if (!slug) return "";
+  return KNOWN_EXERCISE_ICON_SLUGS.has(slug) ? `/exercises/${slug}.svg` : "";
 }
 
 export function getMuscleGroupIconKey(muscleGroup?: string | null): MuscleGroupIconKey {
