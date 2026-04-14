@@ -10,7 +10,9 @@
     "seed": "tsx scripts/seed.ts",
     "import:exercisedb": "tsx scripts/import-exercisedb-inventory.ts",
     "sync:gifs": "tsx scripts/sync-exercise-gif.ts",
-    "sync:gifs:all": "tsx scripts/sync-exercise-gifs-batch.ts"
+    "sync:gifs:all": "tsx scripts/sync-exercise-gifs-batch.ts",
+    "curate:live:dry": "tsx scripts/curate-live-exercises.ts --dry-run",
+    "curate:live": "tsx scripts/curate-live-exercises.ts --apply"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",
