@@ -193,11 +193,15 @@ input {
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.daily-hints__tile:hover,
-.daily-hints__tile:focus-visible {
+.daily-hints__tile:not(:disabled):hover,
+.daily-hints__tile:not(:disabled):focus-visible {
   transform: translateY(-2px);
-  border-color: #575757;
+  border-color: var(--accent);
   box-shadow: none;
+}
+
+.daily-hints__tile:not(:disabled) {
+  border-color: var(--accent);
 }
 
 .daily-hints__tile:focus-visible {
