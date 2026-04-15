@@ -48,6 +48,7 @@ const COLUMN_ORDER: FeedbackColumnKey[] = [
   "goal",
   "ego",
 ];
+const ATTRIBUTE_HINT_COLUMN_ORDER: FeedbackColumnKey[] = COLUMN_ORDER.filter((key) => key !== "muscle");
 
 const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
   muscle: "Muscle",
@@ -109,7 +110,7 @@ function buildNameHint(name: string): string {
 function buildAttributeHintPlan(attempts: PublicGameAttempt[]): AttributeHintPlan {
   if (attempts.length === 0) return null;
 
-  const stats: ColumnStats[] = COLUMN_ORDER.map((key) => {
+  const stats: ColumnStats[] = ATTRIBUTE_HINT_COLUMN_ORDER.map((key) => {
     let redCount = 0;
     let yellowCount = 0;
     let greenCount = 0;
@@ -144,7 +145,7 @@ function buildAttributeHintPlan(attempts: PublicGameAttempt[]): AttributeHintPla
         right.redCount - left.redCount ||
         right.yellowCount - left.yellowCount ||
         right.nonGreenCount - left.nonGreenCount ||
-        COLUMN_ORDER.indexOf(left.key) - COLUMN_ORDER.indexOf(right.key)
+        ATTRIBUTE_HINT_COLUMN_ORDER.indexOf(left.key) - ATTRIBUTE_HINT_COLUMN_ORDER.indexOf(right.key)
       );
     });
     return { kind: "single", key: unresolved[0].key };
@@ -155,7 +156,7 @@ function buildAttributeHintPlan(attempts: PublicGameAttempt[]): AttributeHintPla
       left.greenCount - right.greenCount ||
       right.redCount - left.redCount ||
       right.yellowCount - left.yellowCount ||
-      COLUMN_ORDER.indexOf(left.key) - COLUMN_ORDER.indexOf(right.key)
+      ATTRIBUTE_HINT_COLUMN_ORDER.indexOf(left.key) - ATTRIBUTE_HINT_COLUMN_ORDER.indexOf(right.key)
     );
   });
 
