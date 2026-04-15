@@ -24,6 +24,7 @@ type HintStatus = {
   threshold: number;
   unlocked: boolean;
   remainingWrong: number;
+  lockCopy: string;
 };
 
 type ColumnStats = {
@@ -105,6 +106,10 @@ function buildNameHint(name: string): string {
 
   const limited = words.slice(0, 2).map(maskWord);
   return words.length > 2 ? `${limited.join(" ")} ...` : limited.join(" ");
+}
+
+function buildRemainingWrongCopy(remainingWrong: number): string {
+  return `In ${remainingWrong} wrong ${remainingWrong === 1 ? "guess" : "guesses"}`;
 }
 
 function buildAttributeHintPlan(attempts: PublicGameAttempt[]): AttributeHintPlan {
@@ -218,20 +223,20 @@ function VisualHint({ targetExercise }: { targetExercise: LiveExerciseSuggestion
     <div className="daily-hints__visual" aria-label="Visual clue">
       {splitIconPaths ? (
         <span className="daily-hints__visual-split">
-          <img
+          <Image
             src={splitIconPaths[0]}
             alt=""
             className="daily-hints__visual-split-part daily-hints__visual-split-part--primary"
-            width={132}
-            height={132}
+            fill
+            sizes="132px"
             loading="lazy"
           />
-          <img
+          <Image
             src={splitIconPaths[1]}
             alt=""
             className="daily-hints__visual-split-part daily-hints__visual-split-part--secondary"
-            width={132}
-            height={132}
+            fill
+            sizes="132px"
             loading="lazy"
           />
           <span className="daily-hints__visual-split-divider" />
@@ -277,6 +282,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
         threshold: 5,
         unlocked: wrongCount >= 5,
         remainingWrong: Math.max(0, 5 - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, 5 - wrongCount)),
       },
       {
         id: "name",
@@ -284,6 +290,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
         threshold: 10,
         unlocked: wrongCount >= 10,
         remainingWrong: Math.max(0, 10 - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, 10 - wrongCount)),
       },
       {
         id: "visual",
@@ -291,6 +298,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
         threshold: 15,
         unlocked: wrongCount >= 15,
         remainingWrong: Math.max(0, 15 - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, 15 - wrongCount)),
       },
     ],
     [wrongCount],
@@ -367,12 +375,12 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
               }}
               disabled={isLocked}
               aria-pressed={isActive}
-              aria-label={`${hint.label} ${hint.unlocked ? "unlocked" : `unlocks in ${hint.remainingWrong} wrong attempts`}`}
+              aria-label={`${hint.label} ${hint.unlocked ? "unlocked" : hint.lockCopy.toLowerCase()}`}
             >
               <HintIcon id={hint.id} />
               <span className="daily-hints__tile-label">{hint.label}</span>
               <span className="daily-hints__tile-meta">
-                {hint.unlocked ? "Unlocked" : `In ${hint.remainingWrong} tries`}
+                {hint.unlocked ? "Unlocked" : hint.lockCopy}
               </span>
             </button>
           );
@@ -384,7 +392,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
           {activeHint === "attribute" ? renderAttributeContent() : null}
 
           {activeHint === "name" ? (
-            <p className="daily-hints__name-mask">{nameHint}</p>
+            <p className="daily-hints__name-mask">{nameHint || "Name clue unavailable"}</p>
           ) : null}
 
           {activeHint === "visual" ? (
