@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Logo } from "@/components/brand/logo";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
 import { DailyHints } from "@/components/game/daily-hints";
@@ -184,6 +185,8 @@ export function GameShell({ initialState }: GameShellProps) {
   const dailyCelebrationTimeoutRef = useRef<number | null>(null);
   const dailyConfettiSettleTimeoutRef = useRef<number | null>(null);
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const victoryPanelRef = useRef<HTMLElement | null>(null);
+  const lastVictoryScrollKeyRef = useRef<string | null>(null);
 
   const exerciseById = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
@@ -839,10 +842,6 @@ export function GameShell({ initialState }: GameShellProps) {
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
     gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
-  const acceptedDailyFamilyMatch =
-    !!gameState?.dailySecretExerciseId &&
-    !!winningAttempt &&
-    winningAttempt.guessExerciseId !== gameState.dailySecretExerciseId;
   const isMarathonStarted =
     infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
@@ -851,6 +850,39 @@ export function GameShell({ initialState }: GameShellProps) {
     mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
   const shouldShowDailyCelebration =
     mode === "daily" && isDailyWon && showDailyCelebration;
+
+  useEffect(() => {
+    if (!shouldShowVictoryPanel || !gameState?.gameDate) {
+      return;
+    }
+
+    const scrollKey = `${gameState.gameDate}:${gameState.guessCount}:${gameState.status}`;
+    if (lastVictoryScrollKeyRef.current === scrollKey) {
+      return;
+    }
+
+    const panel = victoryPanelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    lastVictoryScrollKeyRef.current = scrollKey;
+
+    const timer = window.setTimeout(() => {
+      panel.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    gameState?.gameDate,
+    gameState?.guessCount,
+    gameState?.status,
+    shouldShowVictoryPanel,
+  ]);
 
   const infiniteAttemptsUsed = infiniteState?.attempts.length ?? 0;
   const infiniteAttemptsLeft = infiniteState
@@ -975,14 +1007,9 @@ export function GameShell({ initialState }: GameShellProps) {
       <main className="game-page">
         <AnonymousAuthBootstrap onReady={handleAuthReady} />
 
-        <section className="game-shell" aria-label="Muscledle gameplay">
+        <section className="game-shell" aria-label="Liftdle gameplay">
           <header className="game-hero">
-            <h1 className="game-hero__title">
-              <span className="game-hero__title-main">MUSCLE</span>
-              <span className="game-hero__title-accent">DLE</span>
-            </h1>
-            <p className="game-hero__subtitle">FIND TODAY&apos;S EXERCISE.</p>
-
+            <Logo withTagline />
             <div className="mode-switch" aria-label="Game mode switch">
               <button
                 type="button"
@@ -1009,11 +1036,11 @@ export function GameShell({ initialState }: GameShellProps) {
                 aria-live="polite"
               >
                 <h2 className="game-prompt-panel__title">
-                  Guess today&apos;s Muscledle exercise.
+                  Guess the exercise.
                 </h2>
                 {!gameState || gameState.guessCount === 0 ? (
                   <p className="game-prompt-panel__subtitle">
-                    Type any exercise name to begin.
+                    Play Now
                   </p>
                 ) : null}
                 <DailyHints
@@ -1110,19 +1137,23 @@ export function GameShell({ initialState }: GameShellProps) {
                 onClick={startMarathonRun}
                 disabled={loadingExercises || exercises.length === 0}
               >
-                Start
+                Play Now
               </button>
             </section>
           ) : null}
 
           {shouldShowVictoryPanel ? (
-            <section className="game-win-zone" aria-label="Victory summary">
+            <section
+              ref={victoryPanelRef}
+              className="game-win-zone"
+              aria-label="Victory summary"
+            >
               <VictoryPanel
                 gameDate={gameState?.gameDate ?? ""}
                 guessCount={gameState?.guessCount ?? 0}
                 winningAttempt={winningAttempt}
                 attempts={gameState?.attempts ?? []}
-                acceptedFamilyMatch={acceptedDailyFamilyMatch}
+                targetExercise={dailyTargetExercise}
               />
             </section>
           ) : null}
@@ -1202,14 +1233,14 @@ export function GameShell({ initialState }: GameShellProps) {
         </section>
       </main>
 
-      <footer className="game-footer" aria-label="Muscledle footer">
+      <footer className="game-footer" aria-label="Liftdle footer">
         <nav className="game-footer__links" aria-label="Footer links">
           <button
             type="button"
             className="game-footer__link"
             onClick={() => setFooterModal("how-to-play")}
           >
-            HOW TO PLAY
+            HOW IT WORKS
           </button>
           <button
             type="button"
@@ -1230,7 +1261,7 @@ export function GameShell({ initialState }: GameShellProps) {
           </button>
         </nav>
         <p className="game-footer__copy">
-          © 2026 Muscledle. All rights reserved.
+        © 2026 Liftdle. All rights reserved.
         </p>
       </footer>
 
@@ -1265,7 +1296,7 @@ export function GameShell({ initialState }: GameShellProps) {
               <div className="info-sheet__body">
                 <section className="info-sheet__section">
                   <h3 className="info-sheet__section-title">How it works</h3>
-                  <p>Guess today&apos;s Muscledle exercise in as few attempts as possible.</p>
+                  <p>Guess the exercise.</p>
                   <p>Each guess is compared against 7 attributes: Muscle, Equipment, Movement, Pattern, Reps, Goal, Ego.</p>
                 </section>
 
@@ -1283,7 +1314,7 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                   <p className="htp-note">
-                    Muscledle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
+                    Liftdle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
                   </p>
                 </section>
 
@@ -1369,6 +1400,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   <p>
                     <strong>Daily</strong>: one exercise per day, reset at midnight (Europe/Rome).
                   </p>
+                  <p>New exercise every day.</p>
                   <p>
                     <strong>Marathon</strong>: continuous run, up to 10 attempts per round, cumulative score.
                   </p>
@@ -1579,7 +1611,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   </p>
                   <p>
                     Provider data is used as raw input only. Gameplay remains
-                    based on Muscledle internal fields.
+                    based on Liftdle internal fields.
                   </p>
                 </section>
                 <section className="info-sheet__section">
@@ -1612,3 +1644,4 @@ export function GameShell({ initialState }: GameShellProps) {
     </>
   );
 }
+

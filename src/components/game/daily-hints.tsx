@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
@@ -56,6 +57,12 @@ const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
   reps: "Reps",
   goal: "Goal",
   ego: "Ego",
+};
+
+const HINT_ICON_MAP: Record<HintId, string> = {
+  attribute: "/globe.svg",
+  name: "/file.svg",
+  visual: "/window.svg",
 };
 
 function titleCaseValue(value: string): string {
@@ -208,10 +215,16 @@ function VisualHint({ targetExercise }: { targetExercise: LiveExerciseSuggestion
   );
 }
 
-function PlaceholderIcon({ id }: { id: HintId }) {
+function HintIcon({ id }: { id: HintId }) {
   return (
     <span className={`daily-hints__tile-icon daily-hints__tile-icon--${id}`} aria-hidden>
-      <span className="daily-hints__tile-glyph" />
+      <Image
+        src={HINT_ICON_MAP[id]}
+        alt=""
+        width={20}
+        height={20}
+        className="daily-hints__tile-icon-image"
+      />
     </span>
   );
 }
@@ -323,7 +336,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
               aria-pressed={isActive}
               aria-label={`${hint.label} ${hint.unlocked ? "unlocked" : `unlocks in ${hint.remainingWrong} wrong attempts`}`}
             >
-              <PlaceholderIcon id={hint.id} />
+              <HintIcon id={hint.id} />
               <span className="daily-hints__tile-label">{hint.label}</span>
               <span className="daily-hints__tile-meta">
                 {hint.unlocked ? "Unlocked" : `In ${hint.remainingWrong} wrong`}

@@ -1,5 +1,5 @@
 {
-  "name": "muscledle",
+  "name": "liftdle",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -38,3 +38,5 @@
     "typescript": "^5"
   }
 }
+
+

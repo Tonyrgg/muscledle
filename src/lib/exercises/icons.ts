@@ -9,6 +9,16 @@ export type MuscleGroupIconKey =
   | "core"
   | "full-body";
 
+const MUSCLE_GROUP_ICON_PATH_MAP: Record<MuscleGroupIconKey, string> = {
+  chest: "/muscle-icons/chest-test.png",
+  back: "/muscle-icons/back.svg",
+  shoulders: "/muscle-icons/shoulders.svg",
+  arms: "/muscle-icons/arms.svg",
+  legs: "/muscle-icons/legs.svg",
+  core: "/muscle-icons/core.svg",
+  "full-body": "/muscle-icons/full-body.svg",
+};
+
 const MUSCLE_GROUP_ICON_MAP: Record<string, MuscleGroupIconKey> = {
   chest: "chest",
   back: "back",
@@ -69,7 +79,7 @@ export function getMuscleGroupIconKey(muscleGroup?: string | null): MuscleGroupI
 }
 
 export function getMuscleGroupIconPath(key: MuscleGroupIconKey): string {
-  return `/muscle-icons/${key}.svg`;
+  return MUSCLE_GROUP_ICON_PATH_MAP[key] ?? MUSCLE_GROUP_ICON_PATH_MAP["full-body"];
 }
 
 export function getExerciseIconCandidates(exercise: ExerciseIconSource): string[] {

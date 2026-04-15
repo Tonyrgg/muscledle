@@ -1,9 +1,15 @@
 'use client';
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getAttributeDefinition,
+  type FeedbackColumnKey,
+} from "@/lib/exercises/attribute-definitions";
+import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
 import { getExerciseIconCandidates } from "@/lib/exercises/icons";
 import type { ExerciseArchiveRow } from "@/lib/exercise-archive/types";
+import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
 type ArchiveCardsProps = {
   rows: ExerciseArchiveRow[];
@@ -26,9 +32,68 @@ function buildInfoLine(row: ExerciseArchiveRow): string {
   return `${movement} movement, ${pattern} pattern, typical reps ${reps}, primary goal ${goal}.`;
 }
 
+function sanitizeMediaUrl(value: string | null): string | null {
+  if (!value) return null;
+  const cleaned = value.trim();
+  if (!cleaned || cleaned === "null" || cleaned === "undefined") return null;
+  if (cleaned.startsWith("//")) return `https:${cleaned}`;
+  return cleaned;
+}
+
+function detectMediaKind(url: string | null): "image" | "video" | "unknown" {
+  if (!url) return "unknown";
+  const lower = url.toLowerCase();
+  if (/\.(mp4|webm|ogg)(\?|#|$)/.test(lower)) return "video";
+  if (/\.(gif|png|jpg|jpeg|webp|avif|svg)(\?|#|$)/.test(lower)) return "image";
+  return "unknown";
+}
+
+function formatList(values: string[]): string {
+  if (values.length === 0) return "Not available";
+  return values.map((value) => titleCase(value)).join(" / ");
+}
+
+function buildAttributeValue(values: string[]): string {
+  if (values.length === 0) return "unknown";
+  return values.join(" / ");
+}
+
+function getAttributeDetails(
+  column: FeedbackColumnKey,
+  values: string[],
+): { label: string; summary: string; description: string } {
+  const summary = formatList(values);
+  const description = getAttributeDefinition(column, buildAttributeValue(values));
+  return {
+    label: titleCase(column),
+    summary,
+    description,
+  };
+}
+
+function toLiveExerciseSuggestion(row: ExerciseArchiveRow): LiveExerciseSuggestion {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    aliases: row.aliases,
+    muscle_group: row.muscleGroup as LiveExerciseSuggestion["muscle_group"],
+    muscle: row.muscle as LiveExerciseSuggestion["muscle"],
+    equipment: row.equipment as LiveExerciseSuggestion["equipment"],
+    movement: row.movement as LiveExerciseSuggestion["movement"],
+    pattern: row.pattern as LiveExerciseSuggestion["pattern"],
+    reps: row.reps as LiveExerciseSuggestion["reps"],
+    goal: row.goal as LiveExerciseSuggestion["goal"],
+    ego: row.ego as LiveExerciseSuggestion["ego"],
+  };
+}
+
 export function ArchiveCards({ rows }: ArchiveCardsProps) {
   const [query, setQuery] = useState("");
   const [groupFilter, setGroupFilter] = useState("all");
+  const [selectedRow, setSelectedRow] = useState<ExerciseArchiveRow | null>(null);
+  const [coachNotesOpen, setCoachNotesOpen] = useState(false);
+  const [mediaFailed, setMediaFailed] = useState(false);
 
   const groups = useMemo(() => {
     const values = new Set(rows.map((row) => row.muscleGroup));
@@ -44,6 +109,60 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
       return haystack.includes(normalizedQuery);
     });
   }, [groupFilter, query, rows]);
+
+  const selectedIcon = useMemo(() => {
+    if (!selectedRow) return "/muscle-icons/full-body.svg";
+    return (
+      getExerciseIconCandidates({
+        slug: selectedRow.slug,
+        name: selectedRow.name,
+        muscle_group: selectedRow.muscleGroup,
+      })[0] ?? "/muscle-icons/full-body.svg"
+    );
+  }, [selectedRow]);
+
+  const selectedMediaUrl = useMemo(
+    () => sanitizeMediaUrl(selectedRow?.media.mediaUrl ?? null),
+    [selectedRow?.media.mediaUrl],
+  );
+
+  const selectedMediaKind = useMemo(
+    () => detectMediaKind(selectedMediaUrl),
+    [selectedMediaUrl],
+  );
+
+  const shouldShowFallbackIcon =
+    !selectedMediaUrl || mediaFailed || selectedMediaKind === "unknown";
+
+  const selectedCoachNotes = useMemo(
+    () => buildPostGameInsights(selectedRow ? toLiveExerciseSuggestion(selectedRow) : null),
+    [selectedRow],
+  );
+
+  const openDetails = (row: ExerciseArchiveRow) => {
+    setSelectedRow(row);
+    setCoachNotesOpen(false);
+    setMediaFailed(false);
+  };
+
+  useEffect(() => {
+    if (!selectedRow) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedRow(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [selectedRow]);
 
   return (
     <section className="archive-cards" aria-label="Exercise library cards">
@@ -71,14 +190,28 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
 
       <div className="archive-cards__grid">
         {filtered.map((row) => {
-          const icon = getExerciseIconCandidates({
-            slug: row.slug,
-            name: row.name,
-            muscle_group: row.muscleGroup,
-          })[0] ?? "/muscle-icons/full-body.svg";
+          const icon =
+            getExerciseIconCandidates({
+              slug: row.slug,
+              name: row.name,
+              muscle_group: row.muscleGroup,
+            })[0] ?? "/muscle-icons/full-body.svg";
 
           return (
-            <article key={row.id} className="archive-card">
+            <article
+              key={row.id}
+              className="archive-card archive-card--interactive"
+              onClick={() => openDetails(row)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openDetails(row);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open details for ${row.name}`}
+            >
               <div className="archive-card__media-wrap">
                 <Image src={icon} alt="" width={92} height={92} className="archive-card__media" />
               </div>
@@ -97,6 +230,187 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
           );
         })}
       </div>
+
+      {selectedRow ? (
+        <section
+          className="archive-detail-modal"
+          aria-label="Exercise details modal"
+          onClick={() => setSelectedRow(null)}
+        >
+          <div
+            className="archive-detail-modal__panel"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="archive-detail-title"
+          >
+            <header className="archive-detail-modal__header">
+              <div>
+                <p className="archive-detail-modal__kicker">{titleCase(selectedRow.muscleGroup)} Focus</p>
+                <h2 id="archive-detail-title" className="archive-detail-modal__title">{selectedRow.name}</h2>
+              </div>
+              <button
+                type="button"
+                className="exercise-media-modal__close"
+                onClick={() => setSelectedRow(null)}
+              >
+                Close
+              </button>
+            </header>
+
+            <div className="archive-detail-modal__layout">
+              <section className="archive-detail-modal__media">
+                {shouldShowFallbackIcon ? (
+                  <Image
+                    src={selectedIcon}
+                    alt={`${selectedRow.name} icon`}
+                    width={148}
+                    height={148}
+                    className="archive-detail-modal__fallback-icon"
+                  />
+                ) : selectedMediaKind === "video" ? (
+                  <video
+                    src={selectedMediaUrl ?? undefined}
+                    className="archive-detail-modal__gif"
+                    controls
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    onError={() => setMediaFailed(true)}
+                  />
+                ) : (
+                  <img
+                    src={selectedMediaUrl ?? ""}
+                    alt={`${selectedRow.name} preview`}
+                    className="archive-detail-modal__gif"
+                    loading="lazy"
+                    onError={() => setMediaFailed(true)}
+                  />
+                )}
+              </section>
+
+              <section className="archive-detail-modal__content">
+                <section
+                  className="archive-detail-modal__coach"
+                  aria-label="Coach notes"
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={coachNotesOpen}
+                  onClick={() => setCoachNotesOpen((current) => !current)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setCoachNotesOpen((current) => !current);
+                    }
+                  }}
+                >
+                  <div className="archive-detail-modal__coach-toggle">
+                    <span className="archive-detail-modal__coach-kicker">Coach Notes</span>
+                    <span
+                      className={`archive-detail-modal__coach-chevron ${
+                        coachNotesOpen ? "archive-detail-modal__coach-chevron--open" : ""
+                      }`}
+                      aria-hidden
+                    />
+                  </div>
+
+                  {coachNotesOpen ? (
+                    <div className="archive-detail-modal__coach-body">
+                      <p className="archive-detail-modal__coach-head">Why use it</p>
+                      <p className="archive-detail-modal__coach-line">{selectedCoachNotes.whyUse}</p>
+
+                      <p className="archive-detail-modal__coach-head">Execution cues</p>
+                      <ul className="archive-detail-modal__coach-list">
+                        {selectedCoachNotes.cues.map((cue) => (
+                          <li key={cue}>{cue}</li>
+                        ))}
+                      </ul>
+
+                      <p className="archive-detail-modal__coach-head">Common mistakes</p>
+                      <ul className="archive-detail-modal__coach-list">
+                        {selectedCoachNotes.mistakes.map((mistake) => (
+                          <li key={mistake}>{mistake}</li>
+                        ))}
+                      </ul>
+
+                      <p className="archive-detail-modal__coach-head">Regression / progression</p>
+                      <p className="archive-detail-modal__coach-line">
+                        Easier: {selectedCoachNotes.variants.easier}
+                      </p>
+                      <p className="archive-detail-modal__coach-line">
+                        Harder: {selectedCoachNotes.variants.harder}
+                      </p>
+
+                      <p className="archive-detail-modal__coach-head">Suggested dose</p>
+                      <p className="archive-detail-modal__coach-line">
+                        Hypertrophy: {selectedCoachNotes.dose.hypertrophy}
+                      </p>
+                      <p className="archive-detail-modal__coach-line">
+                        Strength/skill: {selectedCoachNotes.dose.strengthOrSkill}
+                      </p>
+                    </div>
+                  ) : null}
+                </section>
+
+                <div className="archive-detail-modal__chip-groups">
+                  <div className="archive-detail-modal__group">
+                    <h3 className="archive-detail-modal__group-title">Attribute Breakdown</h3>
+                    <div className="archive-detail-modal__detail-list">
+                      {[
+                        getAttributeDetails("muscle", selectedRow.muscle),
+                        getAttributeDetails("equipment", selectedRow.equipment),
+                        getAttributeDetails("movement", selectedRow.movement),
+                        getAttributeDetails("pattern", selectedRow.pattern),
+                        getAttributeDetails("reps", selectedRow.reps),
+                        getAttributeDetails("goal", selectedRow.goal),
+                        getAttributeDetails("ego", selectedRow.ego),
+                      ].map((detail) => (
+                        <article key={detail.label} className="archive-detail-modal__detail-item">
+                          <p className="archive-detail-modal__detail-label">{detail.label}</p>
+                          <p className="archive-detail-modal__detail-summary">{detail.summary}</p>
+                          <p className="archive-detail-modal__detail-description">{detail.description}</p>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="archive-detail-modal__group">
+                    <h3 className="archive-detail-modal__group-title">Aliases</h3>
+                    <div className="archive-detail-modal__chips">
+                      {selectedRow.aliases.length > 0 ? (
+                        selectedRow.aliases.map((alias) => (
+                          <span key={alias} className="archive-detail-modal__chip archive-detail-modal__chip--soft">
+                            {alias}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="archive-detail-modal__chip archive-detail-modal__chip--soft">No aliases</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="archive-detail-modal__group">
+                    <h3 className="archive-detail-modal__group-title">Status & Stats</h3>
+                    <div className="archive-detail-modal__chips">
+                      <span className="archive-detail-modal__chip">Visibility: {selectedRow.isLive ? "Live" : "Offline"}</span>
+                      <span className="archive-detail-modal__chip">
+                        Enrichment: {selectedRow.enrichment.status ?? "missing"}
+                      </span>
+                      <span className="archive-detail-modal__chip">
+                        Accuracy: {selectedRow.stats.accuracy !== null ? `${selectedRow.stats.accuracy}%` : "N/A"}
+                      </span>
+                      <span className="archive-detail-modal__chip">Total guesses: {selectedRow.stats.totalGuesses}</span>
+                      <span className="archive-detail-modal__chip">Unique guessers: {selectedRow.stats.uniqueGuessers}</span>
+                      <span className="archive-detail-modal__chip">Daily targets: {selectedRow.stats.timesAsDailyTarget}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }
