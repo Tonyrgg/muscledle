@@ -574,6 +574,40 @@ input {
   display: block;
 }
 
+.victory-panel__split {
+  position: relative;
+  width: min(100%, 360px);
+  aspect-ratio: 1 / 1;
+}
+
+.victory-panel__split-part {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.victory-panel__split-part--primary {
+  clip-path: polygon(0 100%, 0 0, 100% 0);
+}
+
+.victory-panel__split-part--secondary {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+}
+
+.victory-panel__split-divider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 146%;
+  background: var(--accent);
+  transform: translate(-50%, -50%) rotate(45deg);
+  z-index: 2;
+  pointer-events: none;
+}
+
 .victory-panel__media-fallback {
   margin: 0;
   color: var(--text-muted);

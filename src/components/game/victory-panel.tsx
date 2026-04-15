@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
-import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import { getExerciseIconCandidates, getMuscleGroupIconKey, getMuscleGroupIconPath } from "@/lib/exercises/icons";
 import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
@@ -61,6 +61,14 @@ function feedbackToEmoji(color: FeedbackColor): string {
   if (color === "green") return "\u{1F7E9}";
   if (color === "yellow") return "\u{1F7E8}";
   return "\u{1F7E5}";
+}
+
+function parseMuscleTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split("/")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 export function VictoryPanel({
@@ -130,6 +138,16 @@ export function VictoryPanel({
   }, []);
 
   const orderedAttempts = useMemo(() => [...attempts], [attempts]);
+  const splitIconPaths = useMemo(() => {
+    const tokens = parseMuscleTokens(winningAttempt?.values.muscle ?? null);
+    if (tokens.length < 2) return null;
+
+    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(tokens[0]));
+    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(tokens[1]));
+    if (!first || !second || first === second) return null;
+
+    return [first, second] as const;
+  }, [winningAttempt?.values.muscle]);
 
   const emojiRows = useMemo(
     () =>
@@ -194,7 +212,25 @@ export function VictoryPanel({
       {expanded ? (
         <>
           <div className="victory-panel__media-wrap">
-            {media.length > 0 ? (
+            {splitIconPaths ? (
+              <div className="victory-panel__split" aria-label={`Icone muscolari ${winningAttempt?.guessName ?? "exercise"}`}>
+                <img
+                  src={splitIconPaths[0]}
+                  alt=""
+                  className="victory-panel__split-part victory-panel__split-part--primary"
+                  width={460}
+                  height={460}
+                />
+                <img
+                  src={splitIconPaths[1]}
+                  alt=""
+                  className="victory-panel__split-part victory-panel__split-part--secondary"
+                  width={460}
+                  height={460}
+                />
+                <span className="victory-panel__split-divider" />
+              </div>
+            ) : media.length > 0 ? (
               <ExerciseMediaView
                 media={media}
                 context="victory"
