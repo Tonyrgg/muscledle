@@ -60,6 +60,7 @@ type MarathonTransitionState = {
   exerciseName: string;
   score: number;
   acceptedFamilyMatch: boolean;
+  attemptsSnapshot: PublicGameAttempt[];
 };
 
 type FooterModal = "how-to-play" | "stats" | "privacy" | null;
@@ -275,6 +276,13 @@ export function GameShell({ initialState }: GameShellProps) {
         : (infiniteState?.attempts ?? []),
     [gameState?.attempts, infiniteState?.attempts, mode],
   );
+
+  const displayedAttempts = useMemo(() => {
+    if (mode !== "infinite" || !marathonTransition) {
+      return activeAttempts;
+    }
+    return marathonTransition.attemptsSnapshot;
+  }, [activeAttempts, marathonTransition, mode]);
 
   const attemptedExerciseIds = useMemo(
     () => new Set(activeAttempts.map((attempt) => attempt.guessExerciseId)),
@@ -882,6 +890,8 @@ export function GameShell({ initialState }: GameShellProps) {
         setSelectedExerciseId(null);
         setInfiniteState(nextState);
 
+        const solvedRoundAttempts = [attempt, ...infiniteState.attempts];
+
         if (attempt.isCorrect) {
           if (nextState.status === "completed") {
             pushToast(`Perfect run completed. Final score: ${nextState.score}.`);
@@ -893,6 +903,7 @@ export function GameShell({ initialState }: GameShellProps) {
             exerciseName: activeInfiniteTarget.name,
             score: nextState.score,
             acceptedFamilyMatch,
+            attemptsSnapshot: solvedRoundAttempts,
           });
 
           marathonSolvedTimeoutRef.current = window.setTimeout(() => {
@@ -901,6 +912,7 @@ export function GameShell({ initialState }: GameShellProps) {
               exerciseName: activeInfiniteTarget.name,
               score: nextState.score,
               acceptedFamilyMatch,
+              attemptsSnapshot: solvedRoundAttempts,
             });
             marathonSolvedTimeoutRef.current = null;
 
@@ -1099,6 +1111,7 @@ export function GameShell({ initialState }: GameShellProps) {
     mode === "daily" ||
     (mode === "infinite" &&
       (infiniteState?.status === "in_progress" ||
+        marathonTransition !== null ||
         (activeAttempts.length > 0 && infiniteState?.status !== "not_started")));
 
   const statsChart = useMemo(() => {
@@ -1296,6 +1309,11 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                 ) : null}
+                {infiniteState?.status === "in_progress" && activeInfiniteTarget ? (
+                  <p className="marathon-hud__debug-answer" aria-live="polite">
+                    Test answer: <span>{activeInfiniteTarget.name}</span>
+                  </p>
+                ) : null}
                 {infiniteState?.status === "lost" && activeInfiniteTarget ? (
                   <div className="marathon-hud__failed-exercise-wrap">
                     <p className="marathon-hud__failed-exercise">
@@ -1406,7 +1424,7 @@ export function GameShell({ initialState }: GameShellProps) {
             <div className="marathon-stage">
               <section className="game-table-zone" aria-label="Attempts">
                 <AttemptsTable
-                  attempts={activeAttempts}
+                  attempts={displayedAttempts}
                   loading={
                     mode === "daily" ? isLoadingState && !gameState : false
                   }
@@ -1427,14 +1445,9 @@ export function GameShell({ initialState }: GameShellProps) {
                         ? marathonTransition.exerciseName
                         : "Preparing next excercise"}
                     </p>
-                    {marathonTransition.phase === "solved" &&
-                    marathonTransition.acceptedFamilyMatch ? (
-                      <p className="marathon-transition__note">
-                        Family match accepted. Variant solved this round.
-                      </p>
-                    ) : null}
                     <p className="marathon-transition__score">
-                      Score {marathonTransition.score}
+                      <span className="marathon-transition__score-label">Score</span>
+                      <span className="marathon-transition__score-value">{marathonTransition.score}</span>
                     </p>
                   </div>
                 </section>
