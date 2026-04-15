@@ -15,13 +15,13 @@ import {
   fetchGameStats,
   fetchLiveExercises,
   fetchTodayGameState,
-  resetMarathonRunRequest,
   startMarathonRunRequest,
   surrenderMarathonRunRequest,
   submitMarathonGuessRequest,
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
+import { getMuscleGroupIconKey, getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
@@ -251,6 +251,22 @@ export function GameShell({ initialState }: GameShellProps) {
     if (!targetId) return null;
     return exerciseById.get(targetId) ?? null;
   }, [exerciseById, gameState?.dailySecretExerciseId]);
+
+  const lastInfiniteExerciseSplitIconPaths = useMemo(() => {
+    const muscles = activeInfiniteTarget?.muscle ?? [];
+    if (muscles.length < 2) return null;
+
+    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[0]));
+    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[1]));
+    if (!first || !second || first === second) return null;
+
+    return [first, second] as const;
+  }, [activeInfiniteTarget?.muscle]);
+
+  const lastInfiniteExerciseIconPath = useMemo(() => {
+    if (!activeInfiniteTarget) return "/muscle-icons/core.svg";
+    return getMuscleGroupIconPath(resolveMuscleGroupIconKey(activeInfiniteTarget));
+  }, [activeInfiniteTarget]);
 
   const activeAttempts = useMemo(
     () =>
@@ -948,7 +964,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
     setIsSubmitting(true);
     try {
-      const state = await resetMarathonRunRequest();
+      const state = await startMarathonRunRequest();
       setInfiniteState(toInfiniteStateFromPublic(state));
       setMarathonTransition(null);
       setQuery("");
@@ -979,15 +995,23 @@ export function GameShell({ initialState }: GameShellProps) {
     }
 
     setIsSubmitting(true);
+    const previousState = infiniteState;
+
+    // Keep the defeat recap visible immediately.
+    setInfiniteState({
+      ...previousState,
+      status: "lost",
+    });
+    setMarathonTransition(null);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+
     try {
-      const state = await surrenderMarathonRunRequest();
-      setInfiniteState(toInfiniteStateFromPublic(state));
-      setMarathonTransition(null);
-      setQuery("");
-      setSelectedExerciseId(null);
-      setRevealingAttemptId(null);
+      await surrenderMarathonRunRequest();
       pushToast("Marathon surrendered.");
     } catch (error) {
+      setInfiniteState(previousState);
       pushToast(
         error instanceof Error ? error.message : "Failed to surrender marathon run.",
       );
@@ -999,8 +1023,6 @@ export function GameShell({ initialState }: GameShellProps) {
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
     gameState?.attempts.find((attempt) => attempt.isCorrect) ?? null;
-  const isMarathonStarted =
-    infiniteState !== null && infiniteState.status !== "not_started";
   const shouldShowDailyPrompt =
     mode === "daily" && (!isDailyWon || dailyVictoryPhase !== "complete");
   const shouldShowVictoryPanel =
@@ -1045,6 +1067,8 @@ export function GameShell({ initialState }: GameShellProps) {
   const infiniteAttemptsLeft = infiniteState
     ? Math.max(0, infiniteState.maxAttemptsPerRound - infiniteAttemptsUsed)
     : 0;
+  const displayedInfiniteAttemptsLeft =
+    infiniteState?.status === "lost" ? 0 : infiniteAttemptsLeft;
   const infiniteTotal =
     infiniteState && infiniteState.exerciseOrderIds.length > 0
       ? infiniteState.exerciseOrderIds.length
@@ -1068,6 +1092,14 @@ export function GameShell({ initialState }: GameShellProps) {
         infiniteState.status !== "in_progress" ||
         marathonTransition !== null ||
         isSubmitting;
+
+  const shouldShowInfiniteInput =
+    mode === "infinite" && infiniteState?.status === "in_progress";
+  const shouldShowAttemptsTable =
+    mode === "daily" ||
+    (mode === "infinite" &&
+      (infiniteState?.status === "in_progress" ||
+        (activeAttempts.length > 0 && infiniteState?.status !== "not_started")));
 
   const statsChart = useMemo(() => {
     if (!stats || stats.guessHistory.length === 0) {
@@ -1260,15 +1292,61 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                     <p className="marathon-hud__stat">
                       <span className="marathon-hud__stat-label">Attempts</span>
-                      <strong>{infiniteAttemptsLeft}</strong>
+                      <strong>{displayedInfiniteAttemptsLeft}</strong>
                     </p>
                   </div>
+                ) : null}
+                {infiniteState?.status === "lost" && activeInfiniteTarget ? (
+                  <div className="marathon-hud__failed-exercise-wrap">
+                    <p className="marathon-hud__failed-exercise">
+                      Last exercise: <span>{activeInfiniteTarget.name}</span>
+                    </p>
+                    <div className="marathon-hud__failed-exercise-media" aria-label={`Last exercise muscle ${activeInfiniteTarget.name}`}>
+                      {lastInfiniteExerciseSplitIconPaths ? (
+                        <div className="marathon-hud__failed-exercise-split">
+                          <Image
+                            src={lastInfiniteExerciseSplitIconPaths[0]}
+                            alt=""
+                            fill
+                            sizes="96px"
+                            className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--primary"
+                          />
+                          <Image
+                            src={lastInfiniteExerciseSplitIconPaths[1]}
+                            alt=""
+                            fill
+                            sizes="96px"
+                            className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--secondary"
+                          />
+                          <span className="marathon-hud__failed-exercise-split-divider" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={lastInfiniteExerciseIconPath}
+                          alt=""
+                          fill
+                          sizes="96px"
+                          className="marathon-hud__failed-exercise-icon"
+                        />
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                {infiniteState?.status === "not_started" ? (
+                  <button
+                    type="button"
+                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
+                    onClick={startMarathonRun}
+                    disabled={loadingExercises || exercises.length === 0}
+                  >
+                    Play Now
+                  </button>
                 ) : null}
                 {infiniteState?.status === "lost" ||
                 infiniteState?.status === "completed" ? (
                   <button
                     type="button"
-                    className="exercise-media-modal__close game-prompt-panel__restart"
+                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
                     onClick={restartInfiniteMode}
                   >
                     Restart Run
@@ -1277,7 +1355,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 {infiniteState?.status === "in_progress" ? (
                   <button
                     type="button"
-                    className="exercise-media-modal__close game-prompt-panel__restart"
+                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
                     onClick={() => {
                       void surrenderInfiniteMode();
                     }}
@@ -1289,22 +1367,6 @@ export function GameShell({ initialState }: GameShellProps) {
               </div>
             ) : null}
           </header>
-
-          {mode === "infinite" && !isMarathonStarted ? (
-            <section
-              className="marathon-start-zone"
-              aria-label="Start marathon"
-            >
-              <button
-                type="button"
-                className="exercise-media-modal__close marathon-start-zone__button"
-                onClick={startMarathonRun}
-                disabled={loadingExercises || exercises.length === 0}
-              >
-                Play Now
-              </button>
-            </section>
-          ) : null}
 
           {shouldShowVictoryPanel ? (
             <section
@@ -1322,8 +1384,7 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {(mode === "daily" && !isDailyWon) ||
-          (mode === "infinite" && isMarathonStarted) ? (
+          {(mode === "daily" && !isDailyWon) || shouldShowInfiniteInput ? (
             <section className="game-input-zone" aria-label="Guess input">
               <GuessInput
                 query={query}
@@ -1341,7 +1402,7 @@ export function GameShell({ initialState }: GameShellProps) {
             </section>
           ) : null}
 
-          {mode === "daily" || isMarathonStarted ? (
+          {shouldShowAttemptsTable ? (
             <div className="marathon-stage">
               <section className="game-table-zone" aria-label="Attempts">
                 <AttemptsTable
