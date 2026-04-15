@@ -175,6 +175,9 @@ function applyHighConfidenceOverrides(
     equipment: string[];
     movement: string[];
     pattern: string[];
+    reps: string[];
+    goal: string[];
+    ego: string[];
   },
 ) {
   const source = `${row.slug} ${row.name}`.toLowerCase();
@@ -507,7 +510,6 @@ async function main() {
       updates.push({
         id: row.id,
         slug: row.slug,
-        muscle_group: next.muscle_group,
         ...next,
       });
     }
