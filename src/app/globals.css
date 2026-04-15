@@ -1072,7 +1072,7 @@ input {
   width: 2px;
   height: 148%;
   background: var(--accent);
-  transform: translate(-50%, -50%) rotate(40deg);
+  transform: translate(-50%, -50%) rotate(43deg);
   z-index: 2;
   pointer-events: none;
 }
