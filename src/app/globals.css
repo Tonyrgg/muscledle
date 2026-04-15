@@ -1067,8 +1067,8 @@ input {
 
 .exercise-icon-cell__split-divider {
   position: absolute;
-  left: calc(50% + (var(--split-padding) / 2));
-  top: calc(50% - (var(--split-padding) / 2));
+  left: 50%;
+  top: 50%;
   width: 2px;
   height: 148%;
   background: var(--accent);
@@ -1288,12 +1288,12 @@ input {
 
 .exercise-media-preview__split-divider {
   position: absolute;
-  left: calc(50% + (var(--split-padding) / 2));
-  top: calc(50% - (var(--split-padding) / 2));
+  left: 50%;
+  top: 50%;
   width: 3px;
   height: 100%;
   background: var(--accent);
-  transform: translate(-50%, -49%) rotate(57.5deg);
+  transform: translate(-50%, -50%) rotate(57.5deg);
   z-index: 2;
   pointer-events: none;
 }
