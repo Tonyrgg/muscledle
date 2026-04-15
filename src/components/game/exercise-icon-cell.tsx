@@ -2,10 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ExerciseMediaView } from "@/components/media/exercise-media-view";
-import { getExerciseIconCandidates } from "@/lib/exercises/icons";
-import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
-import type { ExerciseMedia } from "@/types/media";
+import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
@@ -13,49 +10,31 @@ type ExerciseIconCellProps = {
   exerciseMuscleGroup: string | null;
 };
 
-function buildFallbackIconMedia(slug: string, name: string, muscleGroup: string | null): ExerciseMedia[] {
-  const iconPath =
-    getExerciseIconCandidates({
-      slug,
-      name,
-      muscle_group: muscleGroup,
-    })[0] ?? "/muscle-icons/full-body.svg";
+function resolveColumnIconPath(slug: string, name: string, muscleGroup: string | null): string {
+  const resolvedKey = resolveMuscleGroupIconKey({
+    slug,
+    name,
+    muscle_group: muscleGroup,
+  });
 
-  return [
-    {
-      id: `fallback-icon-${slug}`,
-      exerciseId: slug,
-      mediaKind: "icon",
-      source: "local",
-      sourceId: slug,
-      url: iconPath,
-      thumbnailUrl: null,
-      posterUrl: null,
-      mimeType: "image/svg+xml",
-      width: null,
-      height: null,
-      durationSeconds: null,
-      isPrimary: true,
-      sortOrder: 0,
-      isActive: true,
-      attributionText: null,
-      attributionUrl: null,
-      license: null,
-      createdAt: new Date(0).toISOString(),
-      updatedAt: new Date(0).toISOString(),
-    },
+  // Keep a local-only hierarchy: primary anatomical icon + permanent local fallback.
+  // Future providers can be appended here, but are intentionally disabled for now.
+  const candidates = [
+    getMuscleGroupIconPath(resolvedKey),
+    "/muscle-icons/core.svg",
   ];
+
+  return candidates.find(Boolean) ?? "/muscle-icons/core.svg";
 }
 
 export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const fallbackMedia = useMemo(
-    () => buildFallbackIconMedia(exerciseSlug, exerciseName, exerciseMuscleGroup),
+  const iconPath = useMemo(
+    () => resolveColumnIconPath(exerciseSlug, exerciseName, exerciseMuscleGroup),
     [exerciseMuscleGroup, exerciseName, exerciseSlug],
   );
-  const { media, loading } = useExerciseMediaAssets(exerciseSlug, fallbackMedia);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -112,11 +91,13 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          <ExerciseMediaView
-            media={media}
-            context="list"
-            alt={exerciseName}
-            className={loading ? "exercise-icon-cell__gif exercise-icon-cell__gif--loading" : "exercise-icon-cell__gif exercise-icon-cell__gif--ready"}
+          <img
+            src={iconPath}
+            alt=""
+            className="exercise-icon-cell__icon"
+            width={90}
+            height={90}
+            loading="lazy"
           />
         </span>
 
@@ -144,11 +125,12 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
                   </button>
                 </div>
 
-                <ExerciseMediaView
-                  media={media}
-                  context="modal"
+                <img
+                  src={iconPath}
                   alt={`Demo ${exerciseName}`}
                   className="exercise-media-preview__media"
+                  width={720}
+                  height={460}
                 />
               </div>
             </div>,

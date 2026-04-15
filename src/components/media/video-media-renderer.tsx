@@ -15,9 +15,12 @@ function toYoutubeEmbedUrl(sourceId: string): string {
 export function VideoMediaRenderer({ media, context, alt, className }: VideoMediaRendererProps) {
   const fallbackUrl = media.fallbackIconUrl ?? null;
   const initialUrl = media.renderUrl;
+  const blockedProviderProxy = initialUrl.includes("/api/exercises/media-gif");
   const [failedForUrl, setFailedForUrl] = useState<string | null>(null);
   const [loadedForUrl, setLoadedForUrl] = useState<string | null>(null);
-  const currentSrc = failedForUrl === initialUrl && fallbackUrl ? fallbackUrl : initialUrl;
+  const currentSrc = blockedProviderProxy
+    ? (fallbackUrl ?? initialUrl)
+    : (failedForUrl === initialUrl && fallbackUrl ? fallbackUrl : initialUrl);
   const loaded = loadedForUrl === initialUrl;
   const hasMediaGifProxy = useMemo(() => initialUrl.includes("/api/exercises/media-gif"), [initialUrl]);
 
@@ -33,7 +36,7 @@ export function VideoMediaRenderer({ media, context, alt, className }: VideoMedi
     return () => window.clearTimeout(timer);
   }, [context, failedForUrl, fallbackUrl, hasMediaGifProxy, initialUrl, loaded]);
 
-  if (context !== "modal") {
+  if (context !== "modal" || blockedProviderProxy) {
 
     return (
       <img

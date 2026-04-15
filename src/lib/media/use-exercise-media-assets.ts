@@ -12,6 +12,17 @@ type MediaAssetsPayload = {
 const mediaCache = new Map<string, ExerciseMedia[]>();
 const inFlight = new Map<string, Promise<ExerciseMedia[]>>();
 
+function isBlockedProviderProxyUrl(url: string | null): boolean {
+  return typeof url === "string" && url.includes("/api/exercises/media-gif");
+}
+
+function sanitizeMediaAssets(media: ExerciseMedia[]): ExerciseMedia[] {
+  return media.filter((item) => {
+    if (item.mediaKind === "icon") return true;
+    return !isBlockedProviderProxyUrl(item.url);
+  });
+}
+
 async function fetchMediaAssets(slug: string): Promise<ExerciseMedia[]> {
   const cached = mediaCache.get(slug);
   if (cached) return cached;
@@ -30,7 +41,7 @@ async function fetchMediaAssets(slug: string): Promise<ExerciseMedia[]> {
       throw new Error(payload?.error ?? `Failed to load media assets (${response.status}).`);
     }
 
-    const media = payload.media ?? [];
+    const media = sanitizeMediaAssets(payload.media ?? []);
     mediaCache.set(slug, media);
     return media;
   })()
