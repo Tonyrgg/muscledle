@@ -601,7 +601,7 @@ input {
   left: 50%;
   top: 50%;
   width: 3px;
-  height: 146%;
+  height: 120%;
   background: var(--accent);
   transform: translate(-50%, -50%) rotate(45deg);
   z-index: 2;
