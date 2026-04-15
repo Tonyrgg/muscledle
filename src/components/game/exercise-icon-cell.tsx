@@ -2,12 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
+import {
+  getMuscleGroupIconKey,
+  getMuscleGroupIconPath,
+  resolveMuscleGroupIconKey,
+} from "@/lib/exercises/icons";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
   exerciseName: string;
   exerciseMuscleGroup: string | null;
+  exerciseMuscleValues?: string | null;
 };
 
 function resolveColumnIconPath(slug: string, name: string, muscleGroup: string | null): string {
@@ -27,7 +32,20 @@ function resolveColumnIconPath(slug: string, name: string, muscleGroup: string |
   return candidates.find(Boolean) ?? "/muscle-icons/core.svg";
 }
 
-export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGroup }: ExerciseIconCellProps) {
+function parseMuscleTokens(value: string | null | undefined): string[] {
+  if (!value) return [];
+  return value
+    .split("/")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function ExerciseIconCell({
+  exerciseSlug,
+  exerciseName,
+  exerciseMuscleGroup,
+  exerciseMuscleValues = null,
+}: ExerciseIconCellProps) {
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -35,6 +53,16 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
     () => resolveColumnIconPath(exerciseSlug, exerciseName, exerciseMuscleGroup),
     [exerciseMuscleGroup, exerciseName, exerciseSlug],
   );
+  const splitIconPaths = useMemo(() => {
+    const tokens = parseMuscleTokens(exerciseMuscleValues);
+    if (tokens.length < 2) return null;
+
+    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(tokens[0]));
+    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(tokens[1]));
+    if (!first || !second || first === second) return null;
+
+    return [first, second] as const;
+  }, [exerciseMuscleValues]);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -91,14 +119,36 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          <img
-            src={iconPath}
-            alt=""
-            className="exercise-icon-cell__icon"
-            width={90}
-            height={90}
-            loading="lazy"
-          />
+          {splitIconPaths ? (
+            <span className="exercise-icon-cell__split">
+              <img
+                src={splitIconPaths[0]}
+                alt=""
+                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--primary"
+                width={90}
+                height={90}
+                loading="lazy"
+              />
+              <img
+                src={splitIconPaths[1]}
+                alt=""
+                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--secondary"
+                width={90}
+                height={90}
+                loading="lazy"
+              />
+              <span className="exercise-icon-cell__split-divider" />
+            </span>
+          ) : (
+            <img
+              src={iconPath}
+              alt=""
+              className="exercise-icon-cell__icon"
+              width={90}
+              height={90}
+              loading="lazy"
+            />
+          )}
         </span>
 
         <span className="exercise-icon-cell__overlay">{exerciseName}</span>
@@ -125,13 +175,33 @@ export function ExerciseIconCell({ exerciseSlug, exerciseName, exerciseMuscleGro
                   </button>
                 </div>
 
-                <img
-                  src={iconPath}
-                  alt={`Demo ${exerciseName}`}
-                  className="exercise-media-preview__media"
-                  width={720}
-                  height={460}
-                />
+                {splitIconPaths ? (
+                  <div className="exercise-media-preview__split" aria-label={`Icone muscolari ${exerciseName}`}>
+                    <img
+                      src={splitIconPaths[0]}
+                      alt=""
+                      className="exercise-media-preview__split-part exercise-media-preview__split-part--primary"
+                      width={720}
+                      height={460}
+                    />
+                    <img
+                      src={splitIconPaths[1]}
+                      alt=""
+                      className="exercise-media-preview__split-part exercise-media-preview__split-part--secondary"
+                      width={720}
+                      height={460}
+                    />
+                    <span className="exercise-media-preview__split-divider" />
+                  </div>
+                ) : (
+                  <img
+                    src={iconPath}
+                    alt={`Demo ${exerciseName}`}
+                    className="exercise-media-preview__media"
+                    width={720}
+                    height={460}
+                  />
+                )}
               </div>
             </div>,
             document.body,

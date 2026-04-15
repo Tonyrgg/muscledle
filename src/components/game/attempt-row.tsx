@@ -18,6 +18,7 @@ export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
           exerciseName={attempt.guessName}
           exerciseSlug={attempt.guessSlug}
           exerciseMuscleGroup={attempt.guessMuscleGroup}
+          exerciseMuscleValues={attempt.values.muscle}
         />
       </div>
 
