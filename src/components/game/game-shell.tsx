@@ -1038,11 +1038,11 @@ export function GameShell({ initialState }: GameShellProps) {
                 <h2 className="game-prompt-panel__title">
                   Guess the exercise.
                 </h2>
-                {!gameState || gameState.guessCount === 0 ? (
-                  <p className="game-prompt-panel__subtitle">
-                    Play Now
-                  </p>
-                ) : null}
+                <p className="game-prompt-panel__subtitle">
+                  {!gameState || gameState.guessCount === 0
+                    ? "Start with any exercise."
+                    : "Use colors to refine your next guess."}
+                </p>
                 <DailyHints
                   attempts={gameState?.attempts ?? []}
                   targetExercise={dailyTargetExercise}
