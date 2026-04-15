@@ -61,8 +61,8 @@ const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
 
 const HINT_ICON_MAP: Record<HintId, string> = {
   attribute: "/globe.svg",
-  name: "/file.svg",
-  visual: "/window.svg",
+  name: "/hints/name-clue.svg",
+  visual: "/hints/image-clue.svg",
 };
 
 function titleCaseValue(value: string): string {
@@ -339,7 +339,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
               <HintIcon id={hint.id} />
               <span className="daily-hints__tile-label">{hint.label}</span>
               <span className="daily-hints__tile-meta">
-                {hint.unlocked ? "Unlocked" : `In ${hint.remainingWrong} wrong`}
+                {hint.unlocked ? "Unlocked" : `In ${hint.remainingWrong} tries`}
               </span>
             </button>
           );
