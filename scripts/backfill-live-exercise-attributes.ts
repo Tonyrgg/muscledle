@@ -3,12 +3,13 @@ dotenv.config({ path: ".env.local" });
 
 import { createClient } from "@supabase/supabase-js";
 import { mapEgo, mapEquipment, mapGoal, mapMovement, mapMuscle, mapPattern, mapReps } from "../src/lib/exercise-enrichment/normalize";
-import { EGO_VALUES, EQUIPMENT_VALUES, GOAL_VALUES, MOVEMENT_VALUES, MUSCLE_VALUES, PATTERN_VALUES, REPS_VALUES } from "../src/lib/exercises/schema";
+import { EGO_VALUES, EQUIPMENT_VALUES, GOAL_VALUES, MOVEMENT_VALUES, MUSCLE_GROUP_VALUES, MUSCLE_VALUES, PATTERN_VALUES, REPS_VALUES } from "../src/lib/exercises/schema";
 
 type LiveExerciseRow = {
   id: string;
   slug: string;
   name: string;
+  muscle_group: string | null;
   muscle: string[] | null;
   equipment: string[] | null;
   movement: string[] | null;
@@ -38,6 +39,7 @@ type Args = {
 
 const ALLOWED = {
   muscle: new Set(MUSCLE_VALUES),
+  muscleGroup: new Set(MUSCLE_GROUP_VALUES),
   equipment: new Set(EQUIPMENT_VALUES),
   movement: new Set(MOVEMENT_VALUES),
   pattern: new Set(PATTERN_VALUES),
@@ -124,6 +126,118 @@ function normalizeGoalValues(values: string[] | null): string[] {
 function normalizeEgoValues(values: string[] | null): string[] {
   const mapped = (values ?? []).map((value) => normalizeToken(value));
   return uniq(mapped.filter((value): value is (typeof EGO_VALUES)[number] => ALLOWED.ego.has(value as (typeof EGO_VALUES)[number])));
+}
+
+function normalizeMuscleGroupValue(value: string | null): (typeof MUSCLE_GROUP_VALUES)[number] | null {
+  if (!value) return null;
+  const token = normalizeToken(value);
+  return ALLOWED.muscleGroup.has(token as (typeof MUSCLE_GROUP_VALUES)[number])
+    ? (token as (typeof MUSCLE_GROUP_VALUES)[number])
+    : null;
+}
+
+function inferCanonicalMovement(row: Pick<LiveExerciseRow, "slug" | "name">): (typeof MOVEMENT_VALUES)[number] | null {
+  const source = `${row.slug} ${row.name}`.toLowerCase();
+
+  if (/\b(plank|crunch|woodchop|rollout|twist|hollow|leg-raise)\b/.test(source)) return "core";
+  if (/\b(curl|raise|fly|pushdown|kickback|shrug)\b/.test(source)) return "isolation";
+  if (/\b(row|pull-up|chin-up|pulldown|deadlift|rdl|hyperextension|face-pull)\b/.test(source)) return "pull";
+  if (/\b(squat|lunge|press|dip|push-up|step-up|hip-thrust)\b/.test(source)) return "push";
+
+  return null;
+}
+
+function inferCanonicalEquipment(row: Pick<LiveExerciseRow, "slug" | "name">): (typeof EQUIPMENT_VALUES)[number] | null {
+  const source = `${row.slug} ${row.name}`.toLowerCase();
+
+  if (/\bbarbell\b|\bez[-\s]?bar\b/.test(source)) return "barbell";
+  if (/\bdumbbell(s)?\b|\bdb\b/.test(source)) return "dumbbells";
+  if (/\bkettlebell\b/.test(source)) return "kettlebell";
+  if (/\bcable\b/.test(source)) return "cable";
+  if (/\bmachine\b|\bleg[-\s]?press\b|\bsmith\b/.test(source)) return "machine";
+  if (/\bbodyweight\b|\bpull-up\b|\bpush-up\b|\bplank\b|\bdip\b/.test(source)) return "bodyweight";
+
+  return null;
+}
+
+function hasExplicitEquipmentKeyword(row: Pick<LiveExerciseRow, "slug" | "name">): boolean {
+  const source = `${row.slug} ${row.name}`.toLowerCase();
+  return /\b(barbell|ez[-\s]?bar|dumbbell|kettlebell|cable|machine|smith|bodyweight|pull-up|push-up|dip|plank)\b/.test(
+    source,
+  );
+}
+
+function applyHighConfidenceOverrides(
+  row: Pick<LiveExerciseRow, "slug" | "name">,
+  next: {
+    muscle_group: (typeof MUSCLE_GROUP_VALUES)[number];
+    muscle: string[];
+    equipment: string[];
+    movement: string[];
+    pattern: string[];
+  },
+) {
+  const source = `${row.slug} ${row.name}`.toLowerCase();
+
+  if (/\b(chin-up|pull-up)\b/.test(source)) {
+    return {
+      ...next,
+      muscle_group: "back" as const,
+      muscle: ["back", "arms"],
+      equipment: ["bodyweight"],
+      movement: ["pull"],
+      pattern: ["vertical"],
+    };
+  }
+
+  if (/\b(deadlift|rdl)\b/.test(source)) {
+    return {
+      ...next,
+      muscle_group: "legs" as const,
+      movement: ["pull"],
+      pattern: ["hinge"],
+    };
+  }
+
+  if (/\bplank\b/.test(source)) {
+    return {
+      ...next,
+      muscle_group: "core" as const,
+      muscle: ["core"],
+      equipment: ["bodyweight"],
+      movement: ["core"],
+      pattern: ["horizontal"],
+    };
+  }
+
+  if (/\b(russian-twist|twist|woodchop|crunch|rollout)\b/.test(source)) {
+    return {
+      ...next,
+      muscle_group: "core" as const,
+      muscle: ["core"],
+      movement: ["core"],
+    };
+  }
+
+  return next;
+}
+
+function deriveMuscleGroupFromMuscle(
+  muscles: string[],
+  fallback: (typeof MUSCLE_GROUP_VALUES)[number] | null,
+): (typeof MUSCLE_GROUP_VALUES)[number] {
+  const set = new Set(muscles);
+
+  if (fallback && set.has(fallback)) return fallback;
+  if (muscles.length > 1 && fallback) return fallback;
+
+  if (set.has("chest")) return "chest";
+  if (set.has("back")) return "back";
+  if (set.has("legs")) return "legs";
+  if (set.has("shoulders")) return "shoulders";
+  if (set.has("arms")) return "arms";
+  if (set.has("core")) return "core";
+  return fallback ?? "core";
 }
 
 function fromEnrichment(row: LiveExerciseRow, enrichment: EnrichmentRow | undefined) {
@@ -256,7 +370,7 @@ async function main() {
 
   const { data: liveRows, error: liveError } = await supabase
     .from("exercises")
-    .select("id, slug, name, muscle, equipment, movement, pattern, reps, goal, ego")
+    .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
     .eq("is_live", true)
     .returns<LiveExerciseRow[]>();
   if (liveError) throw new Error(`Failed to load live exercises: ${liveError.message}`);
@@ -276,6 +390,7 @@ async function main() {
   const updates: Array<{
     id: string;
     slug: string;
+    muscle_group: (typeof MUSCLE_GROUP_VALUES)[number];
     muscle: string[];
     equipment: string[];
     movement: string[];
@@ -291,6 +406,7 @@ async function main() {
   for (const row of liveRows ?? []) {
     const enrichment = enrichmentBySlug.get(row.slug);
     const existing = {
+      muscleGroup: normalizeMuscleGroupValue(row.muscle_group),
       muscle: normalizeMuscleValues(row.muscle),
       equipment: normalizeEquipmentValues(row.equipment),
       movement: normalizeMovementValues(row.movement),
@@ -303,14 +419,48 @@ async function main() {
     const preferred = fromEnrichment(row, enrichment);
     const inferred = inferFromNameAndRaw(row, enrichment);
 
-    const next = {
+    const canonicalEquipment = inferCanonicalEquipment(row);
+    let next = {
+      muscle_group: existing.muscleGroup ?? "core",
       muscle: mergeValues(existing.muscle, preferred.muscle, inferred.muscle),
-      equipment: mergeValues(existing.equipment, preferred.equipment, inferred.equipment),
+      equipment:
+        existing.equipment.length > 0
+          ? existing.equipment
+          : canonicalEquipment
+            ? [canonicalEquipment]
+            : mergeValues(existing.equipment, preferred.equipment, inferred.equipment),
       movement: mergeValues(existing.movement, preferred.movement, inferred.movement),
       pattern: mergeValues(existing.pattern, preferred.pattern, inferred.pattern),
       reps: mergeValues(existing.reps, preferred.reps, inferred.reps),
       goal: mergeValues(existing.goal, preferred.goal, inferred.goal),
       ego: mergeValues(existing.ego, preferred.ego, inferred.ego),
+    };
+
+    const canonicalMovement = inferCanonicalMovement(row);
+    if (
+      canonicalMovement &&
+      next.movement.length > 0 &&
+      next.movement[0] !== canonicalMovement &&
+      (canonicalMovement === "pull" || canonicalMovement === "core" || canonicalMovement === "isolation")
+    ) {
+      next = {
+        ...next,
+        movement: [canonicalMovement],
+      };
+    }
+
+    if (canonicalEquipment && hasExplicitEquipmentKeyword(row) && next.equipment[0] !== canonicalEquipment) {
+      next = {
+        ...next,
+        equipment: [canonicalEquipment],
+      };
+    }
+
+    next = applyHighConfidenceOverrides(row, next);
+
+    next = {
+      ...next,
+      muscle_group: deriveMuscleGroupFromMuscle(next.muscle, existing.muscleGroup),
     };
 
     const wasInvalid =
@@ -334,6 +484,7 @@ async function main() {
     if (stillInvalid) invalidAfter += 1;
 
     const changed =
+      row.muscle_group !== next.muscle_group ||
       JSON.stringify(row.muscle ?? []) !== JSON.stringify(next.muscle) ||
       JSON.stringify(row.equipment ?? []) !== JSON.stringify(next.equipment) ||
       JSON.stringify(row.movement ?? []) !== JSON.stringify(next.movement) ||
@@ -346,6 +497,7 @@ async function main() {
       updates.push({
         id: row.id,
         slug: row.slug,
+        muscle_group: next.muscle_group,
         ...next,
       });
     }
@@ -359,6 +511,7 @@ async function main() {
     dryRun,
     sample: updates.slice(0, 12).map((row) => ({
       slug: row.slug,
+      muscle_group: row.muscle_group,
       muscle: row.muscle,
       equipment: row.equipment,
       movement: row.movement,
@@ -376,6 +529,7 @@ async function main() {
     const { error } = await supabase
       .from("exercises")
       .update({
+        muscle_group: row.muscle_group,
         muscle: row.muscle,
         equipment: row.equipment,
         movement: row.movement,

@@ -1021,7 +1021,7 @@ input {
   height: 100%;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: 12px;
   color: inherit;
   cursor: pointer;
 }

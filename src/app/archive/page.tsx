@@ -12,8 +12,6 @@ export const metadata: Metadata = {
 
 export default async function ArchivePage() {
   const rows = await listExerciseArchive();
-  const withMedia = rows.filter((row) => row.media.syncStatus === "matched").length;
-  const live = rows.filter((row) => row.isLive).length;
 
   return (
     <main className="archive-page">
