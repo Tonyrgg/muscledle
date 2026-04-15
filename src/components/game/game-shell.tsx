@@ -69,6 +69,44 @@ const FEEDBACK_REVEAL_DURATION_MS = 1700;
 const DAILY_CELEBRATION_DURATION_MS = 1200;
 const DAILY_CONFETTI_SETTLE_MS = 3200;
 
+function getMsUntilNextRomeMidnight(now: Date): number {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(now);
+  const read = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((item) => item.type === type)?.value ?? "0");
+
+  const year = read("year");
+  const month = read("month");
+  const day = read("day");
+  const hour = read("hour");
+  const minute = read("minute");
+  const second = read("second");
+
+  const currentPseudoUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  const nextMidnightPseudoUtc = Date.UTC(year, month - 1, day + 1, 0, 0, 0);
+
+  return Math.max(0, nextMidnightPseudoUtc - currentPseudoUtc);
+}
+
+function getRomeDateKey(now: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
 function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
     id: exercise.id,
@@ -158,6 +196,7 @@ export function GameShell({ initialState }: GameShellProps) {
     null,
   );
   const [isLoadingState, setIsLoadingState] = useState(false);
+  const [isDailyRolloverLoading, setIsDailyRolloverLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [exercises, setExercises] = useState<LiveExerciseSuggestion[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(false);
@@ -187,6 +226,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
   const victoryPanelRef = useRef<HTMLElement | null>(null);
   const lastVictoryScrollKeyRef = useRef<string | null>(null);
+  const currentGameDateRef = useRef<string | null>(initialState?.gameDate ?? null);
 
   const exerciseById = useMemo(
     () => new Map(exercises.map((exercise) => [exercise.id, exercise])),
@@ -437,14 +477,131 @@ export function GameShell({ initialState }: GameShellProps) {
     try {
       const state = await fetchTodayGameState();
       setGameState(state);
+      setDailyVictoryPhase(state.status === "won" ? "complete" : "idle");
+      setShowDailyCelebration(false);
+      return state;
     } catch (error) {
       pushToast(
         error instanceof Error ? error.message : "Failed to load game state.",
       );
+      return null;
     } finally {
       setIsLoadingState(false);
     }
   }, [pushToast]);
+
+  const runDailyRolloverRefresh = useCallback(async () => {
+    const previousGameDate = currentGameDateRef.current;
+    setIsDailyRolloverLoading(true);
+
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+    setShowDailyCelebration(false);
+    setDailyVictoryPhase("idle");
+    setToast(null);
+    setFooterModal(null);
+    setMarathonTransition(null);
+    lastVictoryScrollKeyRef.current = null;
+
+    if (dailyRevealTimeoutRef.current !== null) {
+      window.clearTimeout(dailyRevealTimeoutRef.current);
+      dailyRevealTimeoutRef.current = null;
+    }
+
+    if (dailyCelebrationTimeoutRef.current !== null) {
+      window.clearTimeout(dailyCelebrationTimeoutRef.current);
+      dailyCelebrationTimeoutRef.current = null;
+    }
+
+    if (dailyConfettiSettleTimeoutRef.current !== null) {
+      window.clearTimeout(dailyConfettiSettleTimeoutRef.current);
+      dailyConfettiSettleTimeoutRef.current = null;
+    }
+
+    try {
+      const state = await loadTodayState();
+      return Boolean(state && state.gameDate !== previousGameDate);
+    } finally {
+      setIsDailyRolloverLoading(false);
+    }
+  }, [loadTodayState]);
+
+  useEffect(() => {
+    currentGameDateRef.current = gameState?.gameDate ?? null;
+  }, [gameState?.gameDate]);
+
+  useEffect(() => {
+    let midnightTimer: number | null = null;
+    let backupMidnightTimer: number | null = null;
+    let retryTimer: number | null = null;
+    let rolloverInProgress = false;
+    let lastProcessedRomeDateKey = getRomeDateKey(new Date());
+
+    const clearTimers = () => {
+      if (midnightTimer !== null) {
+        window.clearTimeout(midnightTimer);
+        midnightTimer = null;
+      }
+      if (backupMidnightTimer !== null) {
+        window.clearTimeout(backupMidnightTimer);
+        backupMidnightTimer = null;
+      }
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const attemptRollover = () => {
+      if (rolloverInProgress) return;
+
+      const currentRomeDateKey = getRomeDateKey(new Date());
+      if (currentRomeDateKey === lastProcessedRomeDateKey) {
+        scheduleMidnightRefresh();
+        return;
+      }
+
+      rolloverInProgress = true;
+      void (async () => {
+        try {
+          const changed = await runDailyRolloverRefresh();
+          if (changed) {
+            lastProcessedRomeDateKey = currentRomeDateKey;
+            scheduleMidnightRefresh();
+            return;
+          }
+
+          // Backend/date transition can lag a few seconds: retry with timer, still without polling.
+          retryTimer = window.setTimeout(() => {
+            attemptRollover();
+          }, 5000);
+        } finally {
+          rolloverInProgress = false;
+        }
+      })();
+    };
+
+    function scheduleMidnightRefresh() {
+      clearTimers();
+
+      const msUntilMidnight = getMsUntilNextRomeMidnight(new Date());
+      midnightTimer = window.setTimeout(() => {
+        attemptRollover();
+      }, Math.max(200, msUntilMidnight + 250));
+
+      // Safety one-shot timer in case the primary timer is delayed/throttled.
+      backupMidnightTimer = window.setTimeout(() => {
+        attemptRollover();
+      }, Math.max(5200, msUntilMidnight + 5000));
+    };
+
+    scheduleMidnightRefresh();
+
+    return () => {
+      clearTimers();
+    };
+  }, [runDailyRolloverRefresh]);
 
   const handleAuthReady = useCallback(() => {
     void loadExercises();
@@ -1008,6 +1165,13 @@ export function GameShell({ initialState }: GameShellProps) {
         <AnonymousAuthBootstrap onReady={handleAuthReady} />
 
         <section className="game-shell" aria-label="Liftdle gameplay">
+          {isDailyRolloverLoading ? (
+            <section className="game-rollover-loading" aria-live="polite" aria-label="Loading next daily exercise">
+              <span className="game-rollover-loading__spinner" aria-hidden />
+              <p className="game-rollover-loading__text">Updating daily exercise...</p>
+            </section>
+          ) : (
+            <>
           <header className="game-hero">
             <Logo withTagline />
             <div className="mode-switch" aria-label="Game mode switch">
@@ -1230,6 +1394,8 @@ export function GameShell({ initialState }: GameShellProps) {
               </p>
             </section>
           ) : null}
+            </>
+          )}
         </section>
       </main>
 
@@ -1356,8 +1522,8 @@ export function GameShell({ initialState }: GameShellProps) {
                     <div className="htp-example-grid" role="presentation">
                       <span className="htp-example-cell htp-example-cell--exercise" aria-label="Guessed exercise icon">
                         <Image
-                          src="/exercises/dumbbell-bench-press.svg"
-                          alt=""
+                          src="/muscle-icons/chest.svg"
+                          alt="Dumbbell bench press example icon"
                           width={42}
                           height={42}
                           className="htp-example-exercise-icon"

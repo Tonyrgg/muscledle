@@ -55,6 +55,34 @@ input {
   gap: clamp(1.25rem, 3vw, 3rem);
 }
 
+.game-rollover-loading {
+  width: min(100%, 860px);
+  min-height: 58vh;
+  display: grid;
+  place-items: center;
+  gap: 0.85rem;
+  border: 1px solid #3f3f3f;
+  background: #1e1e1e;
+}
+
+.game-rollover-loading__spinner {
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 3px solid #3e3e3e;
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: rollover-spin 700ms linear infinite;
+}
+
+.game-rollover-loading__text {
+  margin: 0;
+  color: #c8c8c8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
 .auth-bootstrap-note {
   margin: 0;
   font-size: 0.64rem;
@@ -2592,6 +2620,12 @@ input {
   }
 }
 
+@keyframes rollover-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1024px) {
   .attempts-grid {
     grid-template-columns: 98px repeat(7, minmax(98px, 1fr));
@@ -2779,6 +2813,10 @@ input {
   }
 
   .attempts-loading__cell::after {
+    animation: none;
+  }
+
+  .game-rollover-loading__spinner {
     animation: none;
   }
 
