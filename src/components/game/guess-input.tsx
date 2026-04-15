@@ -112,7 +112,7 @@ export function GuessInput({
       .filter((entry) => entry.score >= 0)
       .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name));
 
-    return ranked.slice(0, 8).map((entry) => entry.exercise);
+    return ranked.map((entry) => entry.exercise);
   }, [exercises, normalizedQuery]);
 
   const showDropdown = isOpen && !disabled && query.trim().length > 0 && !selectedExerciseId;
