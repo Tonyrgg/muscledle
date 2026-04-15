@@ -722,6 +722,7 @@ input {
   margin-top: 0.62rem;
   padding-left: 0.8rem;
   padding-right: 0.8rem;
+  text-align: center;
 }
 
 .victory-panel__learning-line {
