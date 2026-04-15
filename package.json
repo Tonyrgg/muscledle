@@ -13,6 +13,8 @@
     "sync:gifs:all": "tsx scripts/sync-exercise-gifs-batch.ts",
     "curate:live:dry": "tsx scripts/curate-live-exercises.ts --dry-run",
     "curate:live": "tsx scripts/curate-live-exercises.ts --apply",
+    "curate:live:attributes:dry": "tsx scripts/curated-live-attribute-fixes.ts",
+    "curate:live:attributes": "tsx scripts/curated-live-attribute-fixes.ts --apply",
     "backfill:live:attributes:dry": "tsx scripts/backfill-live-exercise-attributes.ts",
     "backfill:live:attributes": "tsx scripts/backfill-live-exercise-attributes.ts --apply"
   },

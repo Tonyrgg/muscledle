@@ -149,6 +149,11 @@ export function getExerciseIconCandidates(exercise: ExerciseIconSource): string[
 }
 
 export function resolveMuscleGroupIconKey(exercise: ExerciseIconSource): MuscleGroupIconKey {
+  const direct = getMuscleGroupIconKey(exercise.muscle_group);
+  if (direct !== "full-body") {
+    return direct;
+  }
+
   const source = `${exercise.slug ?? ""} ${exercise.name ?? ""}`.trim();
 
   if (source) {
@@ -157,11 +162,6 @@ export function resolveMuscleGroupIconKey(exercise: ExerciseIconSource): MuscleG
         return matcher.key;
       }
     }
-  }
-
-  const direct = getMuscleGroupIconKey(exercise.muscle_group);
-  if (direct !== "full-body") {
-    return direct;
   }
 
   return "full-body";

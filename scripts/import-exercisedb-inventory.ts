@@ -223,6 +223,23 @@ function mapToGameplayShape(raw: ExerciseDbRaw): ExerciseRow | null {
   const slug = toSlug(rawName);
   if (!slug) return null;
 
+  if (/\bseated\s+bench\s+press\b/i.test(rawName)) {
+    return {
+      slug,
+      name: titleName,
+      aliases: buildAliases(rawName),
+      muscle: ["chest"],
+      equipment,
+      movement: ["push"],
+      pattern: ["horizontal"],
+      reps,
+      goal: [normalized.goal],
+      ego: [normalized.ego],
+      muscle_group: "chest",
+      is_live: true,
+    };
+  }
+
   const primaryMuscle = muscle[0];
   const muscleGroup = ["chest", "back", "legs", "shoulders", "arms", "core"].includes(primaryMuscle)
     ? primaryMuscle

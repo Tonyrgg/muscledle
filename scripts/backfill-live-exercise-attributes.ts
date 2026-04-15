@@ -199,6 +199,16 @@ function applyHighConfidenceOverrides(
     };
   }
 
+  if (/\bseated\s+bench\s+press\b/.test(source)) {
+    return {
+      ...next,
+      muscle_group: "chest" as const,
+      muscle: ["chest"],
+      movement: ["push"],
+      pattern: ["horizontal"],
+    };
+  }
+
   if (/\bplank\b/.test(source)) {
     return {
       ...next,
