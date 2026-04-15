@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
-import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import { getExerciseIconCandidates, getMuscleGroupIconKey, getMuscleGroupIconPath } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import type { FeedbackColor } from "@/types/exercise";
@@ -202,15 +202,47 @@ function VisualHint({ targetExercise }: { targetExercise: LiveExerciseSuggestion
     [targetExercise],
   );
   const { media } = useExerciseMediaAssets(targetExercise?.slug ?? "", fallbackMedia);
+  const splitIconPaths = useMemo(() => {
+    const muscles = targetExercise?.muscle ?? [];
+    if (muscles.length < 2) return null;
+
+    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[0]));
+    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[1]));
+    if (!first || !second || first === second) return null;
+
+    return [first, second] as const;
+  }, [targetExercise?.muscle]);
 
   return (
     <div className="daily-hints__visual" aria-label="Visual clue">
-      <ExerciseMediaView
-        media={media}
-        context="modal"
-        alt={targetExercise?.name ?? "Exercise visual hint"}
-        className="daily-hints__visual-media"
-      />
+      {splitIconPaths ? (
+        <span className="daily-hints__visual-split">
+          <img
+            src={splitIconPaths[0]}
+            alt=""
+            className="daily-hints__visual-split-part daily-hints__visual-split-part--primary"
+            width={132}
+            height={132}
+            loading="lazy"
+          />
+          <img
+            src={splitIconPaths[1]}
+            alt=""
+            className="daily-hints__visual-split-part daily-hints__visual-split-part--secondary"
+            width={132}
+            height={132}
+            loading="lazy"
+          />
+          <span className="daily-hints__visual-split-divider" />
+        </span>
+      ) : (
+        <ExerciseMediaView
+          media={media}
+          context="modal"
+          alt={targetExercise?.name ?? "Exercise visual hint"}
+          className="daily-hints__visual-media"
+        />
+      )}
     </div>
   );
 }
