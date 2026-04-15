@@ -41,6 +41,9 @@ type ExerciseDetailsRow = {
   ego: string[];
 };
 
+// Temporary testing override.
+const TEST_MARATHON_EXERCISE_COUNT = 100;
+
 function toPublicAttempt(row: MarathonAttemptRow, detailsById: Map<string, ExerciseDetailsRow>): PublicGameAttempt {
   const details = detailsById.get(row.guess_exercise_id);
 
@@ -262,7 +265,10 @@ export async function startMarathonRun(): Promise<PublicMarathonState> {
   }
 
   const runSeed = Date.now();
-  const order = shuffleIds(exerciseIds);
+  const order = shuffleIds(exerciseIds).slice(
+    0,
+    Math.max(1, TEST_MARATHON_EXERCISE_COUNT),
+  );
 
   const { data: created, error: createError } = await admin
     .from("marathon_runs")

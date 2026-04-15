@@ -465,14 +465,15 @@ input {
 .marathon-hud__kicker {
   margin: 0;
   color: #ffb16f;
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 800;
-  letter-spacing: 0.24em;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
 }
 
 .marathon-hud__title {
-  margin-top: 0.4rem;
+  margin-top: 0.46rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
 }
 
 .marathon-hud__bar-wrap {
@@ -511,17 +512,59 @@ input {
   width: 100%;
 }
 
-.marathon-hud__debug-answer {
-  margin: 0.62rem 0 0;
-  color: #bcbcbc;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.marathon-complete {
+  margin-top: 0.75rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.marathon-complete__progress {
+  margin-top: 0;
+}
+
+.marathon-complete__score {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+  line-height: 1;
   text-transform: uppercase;
 }
 
-.marathon-hud__debug-answer span {
-  color: #f2f2f2;
+.marathon-complete__score-label {
+  color: #c8c8c8;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.marathon-complete__score-value {
+  color: #f4f4f4;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(2rem, 8vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.marathon-complete__actions {
+  width: min(100%, 540px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.marathon-complete__button {
+  width: 100%;
+}
+
+.marathon-complete__button--placeholder {
+  opacity: 0.58;
+  cursor: not-allowed;
+  color: #9a9a9a;
 }
 
 .marathon-hud__failed-exercise {
@@ -2810,6 +2853,10 @@ input {
     width: 100%;
     aspect-ratio: 1 / 1;
     height: auto;
+  }
+
+  .marathon-complete__actions {
+    grid-template-columns: 1fr;
   }
 
   .attempts-grid {

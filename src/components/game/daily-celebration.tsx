@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 
 type DailyCelebrationProps = {
   durationMs: number;
+  powerMultiplier?: number;
 };
 
 function randomBetween(min: number, max: number): number {
@@ -19,9 +20,10 @@ function createEmojiShapes(scalar: number) {
 function fireLeftCannon(
   burst: ReturnType<typeof confetti.create>,
   emojiShapes: ReturnType<typeof createEmojiShapes>,
+  powerMultiplier: number,
 ) {
   return burst({
-    particleCount: 9,
+    particleCount: Math.max(1, Math.round(9 * powerMultiplier)),
     startVelocity: randomBetween(26, 38),
     angle: randomBetween(40, 58),
     spread: randomBetween(26, 40),
@@ -39,9 +41,10 @@ function fireLeftCannon(
 function fireRightCannon(
   burst: ReturnType<typeof confetti.create>,
   emojiShapes: ReturnType<typeof createEmojiShapes>,
+  powerMultiplier: number,
 ) {
   return burst({
-    particleCount: 9,
+    particleCount: Math.max(1, Math.round(9 * powerMultiplier)),
     startVelocity: randomBetween(26, 38),
     angle: randomBetween(122, 140),
     spread: randomBetween(26, 40),
@@ -56,7 +59,10 @@ function fireRightCannon(
   });
 }
 
-export function DailyCelebration({ durationMs }: DailyCelebrationProps) {
+export function DailyCelebration({
+  durationMs,
+  powerMultiplier = 1,
+}: DailyCelebrationProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -87,8 +93,8 @@ export function DailyCelebration({ durationMs }: DailyCelebrationProps) {
       };
 
       while (now >= nextShotAt && elapsed < safeDuration + 100) {
-        void fireLeftCannon(burst, emojiShapes);
-        void fireRightCannon(burst, emojiShapes);
+        void fireLeftCannon(burst, emojiShapes, powerMultiplier);
+        void fireRightCannon(burst, emojiShapes, powerMultiplier);
         nextShotAt += gapAt(nextShotAt);
       }
 
@@ -103,7 +109,7 @@ export function DailyCelebration({ durationMs }: DailyCelebrationProps) {
       window.cancelAnimationFrame(rafId);
       burst.reset();
     };
-  }, [durationMs]);
+  }, [durationMs, powerMultiplier]);
 
   return (
     <canvas

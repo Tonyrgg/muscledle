@@ -69,6 +69,8 @@ type DailyVictoryPhase = "idle" | "revealing" | "celebrating" | "complete";
 const FEEDBACK_REVEAL_DURATION_MS = 1700;
 const DAILY_CELEBRATION_DURATION_MS = 1200;
 const DAILY_CONFETTI_SETTLE_MS = 3200;
+const MARATHON_CELEBRATION_DURATION_MS = 1800;
+const MARATHON_CONFETTI_SETTLE_MS = 4200;
 
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -193,6 +195,8 @@ export function GameShell({ initialState }: GameShellProps) {
   );
   const [showDailyCelebration, setShowDailyCelebration] = useState(false);
   const [dailyCelebrationSeed, setDailyCelebrationSeed] = useState(0);
+  const [showMarathonCelebration, setShowMarathonCelebration] = useState(false);
+  const [marathonCelebrationSeed, setMarathonCelebrationSeed] = useState(0);
   const [infiniteState, setInfiniteState] = useState<InfiniteGameState | null>(
     null,
   );
@@ -224,6 +228,7 @@ export function GameShell({ initialState }: GameShellProps) {
   const dailyRevealTimeoutRef = useRef<number | null>(null);
   const dailyCelebrationTimeoutRef = useRef<number | null>(null);
   const dailyConfettiSettleTimeoutRef = useRef<number | null>(null);
+  const marathonConfettiSettleTimeoutRef = useRef<number | null>(null);
   const dailySyncQueueRef = useRef<Promise<void>>(Promise.resolve());
   const victoryPanelRef = useRef<HTMLElement | null>(null);
   const lastVictoryScrollKeyRef = useRef<string | null>(null);
@@ -338,6 +343,9 @@ export function GameShell({ initialState }: GameShellProps) {
       if (dailyConfettiSettleTimeoutRef.current !== null) {
         window.clearTimeout(dailyConfettiSettleTimeoutRef.current);
       }
+      if (marathonConfettiSettleTimeoutRef.current !== null) {
+        window.clearTimeout(marathonConfettiSettleTimeoutRef.current);
+      }
 
       if (marathonSolvedTimeoutRef.current !== null) {
         window.clearTimeout(marathonSolvedTimeoutRef.current);
@@ -399,6 +407,24 @@ export function GameShell({ initialState }: GameShellProps) {
       };
     }
   }, [dailyVictoryPhase, mode, showDailyCelebration]);
+
+  useEffect(() => {
+    if (!showMarathonCelebration) {
+      return;
+    }
+
+    marathonConfettiSettleTimeoutRef.current = window.setTimeout(() => {
+      setShowMarathonCelebration(false);
+      marathonConfettiSettleTimeoutRef.current = null;
+    }, MARATHON_CONFETTI_SETTLE_MS);
+
+    return () => {
+      if (marathonConfettiSettleTimeoutRef.current !== null) {
+        window.clearTimeout(marathonConfettiSettleTimeoutRef.current);
+        marathonConfettiSettleTimeoutRef.current = null;
+      }
+    };
+  }, [showMarathonCelebration]);
 
   useEffect(() => {
     if (!footerModal) return;
@@ -522,6 +548,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setSelectedExerciseId(null);
     setRevealingAttemptId(null);
     setShowDailyCelebration(false);
+    setShowMarathonCelebration(false);
     setDailyVictoryPhase("idle");
     setToast(null);
     setFooterModal(null);
@@ -653,6 +680,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setQuery("");
     setSelectedExerciseId(null);
     setRevealingAttemptId(null);
+    setShowMarathonCelebration(false);
 
     if (nextMode !== "daily") {
       setShowDailyCelebration(false);
@@ -694,6 +722,7 @@ export function GameShell({ initialState }: GameShellProps) {
       const nextState = await startMarathonRunRequest();
       setInfiniteState(toInfiniteStateFromPublic(nextState));
       setMarathonTransition(null);
+      setShowMarathonCelebration(false);
       setQuery("");
       setSelectedExerciseId(null);
       setRevealingAttemptId(null);
@@ -894,7 +923,9 @@ export function GameShell({ initialState }: GameShellProps) {
 
         if (attempt.isCorrect) {
           if (nextState.status === "completed") {
-            pushToast(`Perfect run completed. Final score: ${nextState.score}.`);
+            setMarathonTransition(null);
+            setShowMarathonCelebration(true);
+            setMarathonCelebrationSeed((current) => current + 1);
             return;
           }
 
@@ -979,6 +1010,7 @@ export function GameShell({ initialState }: GameShellProps) {
       const state = await startMarathonRunRequest();
       setInfiniteState(toInfiniteStateFromPublic(state));
       setMarathonTransition(null);
+      setShowMarathonCelebration(false);
       setQuery("");
       setSelectedExerciseId(null);
       setRevealingAttemptId(null);
@@ -1041,6 +1073,8 @@ export function GameShell({ initialState }: GameShellProps) {
     mode === "daily" && isDailyWon && dailyVictoryPhase === "complete";
   const shouldShowDailyCelebration =
     mode === "daily" && isDailyWon && showDailyCelebration;
+  const isMarathonCompleted =
+    mode === "infinite" && infiniteState?.status === "completed";
 
   useEffect(() => {
     if (!shouldShowVictoryPanel || !gameState?.gameDate) {
@@ -1112,7 +1146,9 @@ export function GameShell({ initialState }: GameShellProps) {
     (mode === "infinite" &&
       (infiniteState?.status === "in_progress" ||
         marathonTransition !== null ||
-        (activeAttempts.length > 0 && infiniteState?.status !== "not_started")));
+        (activeAttempts.length > 0 &&
+          infiniteState?.status !== "not_started" &&
+          infiniteState?.status !== "completed")));
 
   const statsChart = useMemo(() => {
     if (!stats || stats.guessHistory.length === 0) {
@@ -1283,105 +1319,142 @@ export function GameShell({ initialState }: GameShellProps) {
                         ? "Marathon ready"
                         : "Marathon mode"}
                 </h2>
-                <div
-                  className="marathon-hud__bar-wrap"
-                  aria-label="Marathon progress"
-                >
-                  <div className="marathon-hud__bar">
-                    <span
-                      className="marathon-hud__bar-fill"
-                      style={{ width: `${marathonProgressPct}%` }}
-                    />
-                  </div>
-                  <p className="marathon-hud__bar-label">
-                    {marathonProgressPct}% complete
-                  </p>
-                </div>
-                {infiniteState?.status !== "not_started" ? (
-                  <div className="marathon-hud__stats">
-                    <p className="marathon-hud__stat">
-                      <span className="marathon-hud__stat-label">Score</span>
-                      <strong>{infiniteState?.score ?? 0}</strong>
-                    </p>
-                    <p className="marathon-hud__stat">
-                      <span className="marathon-hud__stat-label">Attempts</span>
-                      <strong>{displayedInfiniteAttemptsLeft}</strong>
-                    </p>
-                  </div>
-                ) : null}
-                {infiniteState?.status === "in_progress" && activeInfiniteTarget ? (
-                  <p className="marathon-hud__debug-answer" aria-live="polite">
-                    Test answer: <span>{activeInfiniteTarget.name}</span>
-                  </p>
-                ) : null}
-                {infiniteState?.status === "lost" && activeInfiniteTarget ? (
-                  <div className="marathon-hud__failed-exercise-wrap">
-                    <p className="marathon-hud__failed-exercise">
-                      Last exercise: <span>{activeInfiniteTarget.name}</span>
-                    </p>
-                    <div className="marathon-hud__failed-exercise-media" aria-label={`Last exercise muscle ${activeInfiniteTarget.name}`}>
-                      {lastInfiniteExerciseSplitIconPaths ? (
-                        <div className="marathon-hud__failed-exercise-split">
-                          <Image
-                            src={lastInfiniteExerciseSplitIconPaths[0]}
-                            alt=""
-                            fill
-                            sizes="96px"
-                            className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--primary"
-                          />
-                          <Image
-                            src={lastInfiniteExerciseSplitIconPaths[1]}
-                            alt=""
-                            fill
-                            sizes="96px"
-                            className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--secondary"
-                          />
-                          <span className="marathon-hud__failed-exercise-split-divider" />
-                        </div>
-                      ) : (
-                        <Image
-                          src={lastInfiniteExerciseIconPath}
-                          alt=""
-                          fill
-                          sizes="96px"
-                          className="marathon-hud__failed-exercise-icon"
+                {infiniteState?.status === "completed" ? (
+                  <div className="marathon-complete">
+                    <div
+                      className="marathon-hud__bar-wrap marathon-complete__progress"
+                      aria-label="Marathon progress"
+                    >
+                      <div className="marathon-hud__bar">
+                        <span
+                          className="marathon-hud__bar-fill"
+                          style={{ width: `${marathonProgressPct}%` }}
                         />
-                      )}
+                      </div>
+                      <p className="marathon-hud__bar-label">
+                        {marathonProgressPct}% complete
+                      </p>
+                    </div>
+                    <p className="marathon-complete__score">
+                      <span className="marathon-complete__score-label">Score</span>
+                      <span className="marathon-complete__score-value">
+                        {infiniteState.score}
+                      </span>
+                    </p>
+                    <div className="marathon-complete__actions">
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close marathon-start-zone__button marathon-complete__button marathon-complete__button--placeholder"
+                        disabled
+                      >
+                        Share Soon
+                      </button>
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close marathon-start-zone__button marathon-complete__button"
+                        onClick={restartInfiniteMode}
+                      >
+                        Restart Run
+                      </button>
                     </div>
                   </div>
-                ) : null}
-                {infiniteState?.status === "not_started" ? (
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
-                    onClick={startMarathonRun}
-                    disabled={loadingExercises || exercises.length === 0}
-                  >
-                    Play Now
-                  </button>
-                ) : null}
-                {infiniteState?.status === "lost" ||
-                infiniteState?.status === "completed" ? (
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
-                    onClick={restartInfiniteMode}
-                  >
-                    Restart Run
-                  </button>
-                ) : null}
-                {infiniteState?.status === "in_progress" ? (
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
-                    onClick={() => {
-                      void surrenderInfiniteMode();
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Surrender
-                  </button>
-                ) : null}
+                ) : (
+                  <>
+                    <div
+                      className="marathon-hud__bar-wrap"
+                      aria-label="Marathon progress"
+                    >
+                      <div className="marathon-hud__bar">
+                        <span
+                          className="marathon-hud__bar-fill"
+                          style={{ width: `${marathonProgressPct}%` }}
+                        />
+                      </div>
+                      <p className="marathon-hud__bar-label">
+                        {marathonProgressPct}% complete
+                      </p>
+                    </div>
+                    {infiniteState?.status !== "not_started" ? (
+                      <div className="marathon-hud__stats">
+                        <p className="marathon-hud__stat">
+                          <span className="marathon-hud__stat-label">Score</span>
+                          <strong>{infiniteState?.score ?? 0}</strong>
+                        </p>
+                        <p className="marathon-hud__stat">
+                          <span className="marathon-hud__stat-label">Attempts</span>
+                          <strong>{displayedInfiniteAttemptsLeft}</strong>
+                        </p>
+                      </div>
+                    ) : null}
+                    {infiniteState?.status === "lost" && activeInfiniteTarget ? (
+                      <div className="marathon-hud__failed-exercise-wrap">
+                        <p className="marathon-hud__failed-exercise">
+                          Last exercise: <span>{activeInfiniteTarget.name}</span>
+                        </p>
+                        <div className="marathon-hud__failed-exercise-media" aria-label={`Last exercise muscle ${activeInfiniteTarget.name}`}>
+                          {lastInfiniteExerciseSplitIconPaths ? (
+                            <div className="marathon-hud__failed-exercise-split">
+                              <Image
+                                src={lastInfiniteExerciseSplitIconPaths[0]}
+                                alt=""
+                                fill
+                                sizes="96px"
+                                className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--primary"
+                              />
+                              <Image
+                                src={lastInfiniteExerciseSplitIconPaths[1]}
+                                alt=""
+                                fill
+                                sizes="96px"
+                                className="marathon-hud__failed-exercise-split-part marathon-hud__failed-exercise-split-part--secondary"
+                              />
+                              <span className="marathon-hud__failed-exercise-split-divider" />
+                            </div>
+                          ) : (
+                            <Image
+                              src={lastInfiniteExerciseIconPath}
+                              alt=""
+                              fill
+                              sizes="96px"
+                              className="marathon-hud__failed-exercise-icon"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+                    {infiniteState?.status === "not_started" ? (
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
+                        onClick={startMarathonRun}
+                        disabled={loadingExercises || exercises.length === 0}
+                      >
+                        Play Now
+                      </button>
+                    ) : null}
+                    {infiniteState?.status === "lost" ? (
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
+                        onClick={restartInfiniteMode}
+                      >
+                        Restart Run
+                      </button>
+                    ) : null}
+                    {infiniteState?.status === "in_progress" ? (
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close game-prompt-panel__restart marathon-start-zone__button"
+                        onClick={() => {
+                          void surrenderInfiniteMode();
+                        }}
+                        disabled={isSubmitting}
+                      >
+                        Surrender
+                      </button>
+                    ) : null}
+                  </>
+                )}
               </div>
             ) : null}
           </header>
@@ -1879,6 +1952,13 @@ export function GameShell({ initialState }: GameShellProps) {
         <DailyCelebration
           key={`daily-celebration-${dailyCelebrationSeed}`}
           durationMs={DAILY_CELEBRATION_DURATION_MS}
+        />
+      ) : null}
+      {isMarathonCompleted && showMarathonCelebration ? (
+        <DailyCelebration
+          key={`marathon-celebration-${marathonCelebrationSeed}`}
+          durationMs={MARATHON_CELEBRATION_DURATION_MS}
+          powerMultiplier={3}
         />
       ) : null}
     </>
