@@ -1843,14 +1843,6 @@ input {
   letter-spacing: 0.02em;
 }
 
-.archive-hero__stats {
-  margin: 0.4rem 0 0;
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #d0d0d0;
-}
-
 .archive-hero__back {
   margin-top: 0.72rem;
   display: inline-block;

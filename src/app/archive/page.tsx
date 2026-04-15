@@ -6,7 +6,7 @@ import { listExerciseArchive } from "@/lib/exercise-archive/service";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Liftdle Archive â€” Guess the exercise",
+  title: "Liftdle Archive - Guess the exercise",
   description: "Daily fitness guessing game. Can you identify the exercise?",
 };
 
@@ -22,17 +22,14 @@ export default async function ArchivePage() {
           <Logo className="archive-hero__logo" />
           <p className="archive-hero__kicker">Explore Liftdle Movements</p>
           <h1 className="archive-hero__title">Exercise Library</h1>
-          <p className="archive-hero__stats">
-            LIVE {live} - WITH MEDIA {withMedia}
-          </p>
           <Link className="archive-hero__back" href="/">
             Play Now
           </Link>
         </header>
-
         <ArchiveCards rows={rows.filter((row) => row.isLive)} />
       </section>
     </main>
   );
 }
+
 
