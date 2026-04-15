@@ -60,7 +60,7 @@ const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
 };
 
 const HINT_ICON_MAP: Record<HintId, string> = {
-  attribute: "/globe.svg",
+  attribute: "/hints/attribute-clue.svg",
   name: "/hints/name-clue.svg",
   visual: "/hints/image-clue.svg",
 };
