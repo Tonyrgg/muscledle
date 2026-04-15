@@ -167,18 +167,20 @@ function hasExplicitEquipmentKeyword(row: Pick<LiveExerciseRow, "slug" | "name">
   );
 }
 
-function applyHighConfidenceOverrides(
-  row: Pick<LiveExerciseRow, "slug" | "name">,
-  next: {
+function applyHighConfidenceOverrides<
+  T extends {
     muscle_group: (typeof MUSCLE_GROUP_VALUES)[number];
     muscle: string[];
     equipment: string[];
     movement: string[];
     pattern: string[];
-    reps: string[];
-    goal: string[];
-    ego: string[];
+    reps?: string[];
+    goal?: string[];
+    ego?: string[];
   },
+>(
+  row: Pick<LiveExerciseRow, "slug" | "name">,
+  next: T,
 ) {
   const source = `${row.slug} ${row.name}`.toLowerCase();
 
@@ -190,7 +192,7 @@ function applyHighConfidenceOverrides(
       equipment: ["bodyweight"],
       movement: ["pull"],
       pattern: ["vertical"],
-    };
+    } as T;
   }
 
   if (/\b(deadlift|rdl)\b/.test(source)) {
@@ -199,7 +201,7 @@ function applyHighConfidenceOverrides(
       muscle_group: "legs" as const,
       movement: ["pull"],
       pattern: ["hinge"],
-    };
+    } as T;
   }
 
   if (/\bseated\s+bench\s+press\b/.test(source)) {
@@ -209,7 +211,7 @@ function applyHighConfidenceOverrides(
       muscle: ["chest"],
       movement: ["push"],
       pattern: ["horizontal"],
-    };
+    } as T;
   }
 
   if (/\bplank\b/.test(source)) {
@@ -220,7 +222,7 @@ function applyHighConfidenceOverrides(
       equipment: ["bodyweight"],
       movement: ["core"],
       pattern: ["horizontal"],
-    };
+    } as T;
   }
 
   if (/\b(russian-twist|twist|woodchop|crunch|rollout)\b/.test(source)) {
@@ -229,7 +231,7 @@ function applyHighConfidenceOverrides(
       muscle_group: "core" as const,
       muscle: ["core"],
       movement: ["core"],
-    };
+    } as T;
   }
 
   return next;
