@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 const robotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
@@ -13,7 +14,8 @@ const oswald = Oswald({
 });
 
 const META_TITLE = "Liftdle \u2014 Guess the exercise";
-const META_DESCRIPTION = "Daily fitness guessing game. Can you identify the exercise?";
+const META_DESCRIPTION =
+  "Daily fitness guessing game. Can you identify the exercise?";
 
 export const metadata: Metadata = {
   title: META_TITLE,
@@ -49,9 +51,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}>
-      <body className="min-h-full bg-background text-on-background font-body">{children}</body>
+    <html
+      lang="en"
+      className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}
+    >
+      <Analytics/>
+      <body className="min-h-full bg-background text-on-background font-body">
+        {children}
+      </body>
     </html>
   );
 }
-
