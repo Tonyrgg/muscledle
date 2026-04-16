@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
+import { AnalyticsGate, ConsentManager } from "@/components/privacy/consent-manager";
 
 const robotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
@@ -55,8 +55,9 @@ export default function RootLayout({
       lang="en"
       className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}
     >
-      <Analytics/>
       <body className="min-h-full bg-background text-on-background font-body">
+        <AnalyticsGate />
+        <ConsentManager />
         {children}
       </body>
     </html>
