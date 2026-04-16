@@ -168,7 +168,7 @@ export function VictoryPanel({
   const shareText = useMemo(() => {
     const header = `I solved today's #Liftdle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
     const body = emojiRows.join("\n");
-    const footer = "https://Liftdle.local";
+    const footer = typeof window === "undefined" ? "https://liftdle.vercel.app" : window.location.origin;
     return [header, body, footer].filter(Boolean).join("\n");
   }, [emojiRows, gameDate, guessCount]);
 
@@ -186,6 +186,14 @@ export function VictoryPanel({
     } catch {
       setCopyState("failed");
       window.setTimeout(() => setCopyState("idle"), 1800);
+    }
+  };
+
+  const shareOnX = () => {
+    const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText }).toString()}`;
+    const popup = window.open(intentUrl, "_blank", "noopener,noreferrer");
+    if (!popup) {
+      window.location.assign(intentUrl);
     }
   };
 
@@ -323,10 +331,10 @@ export function VictoryPanel({
               </button>
               <button
                 type="button"
-                className="exercise-media-modal__close victory-panel__action victory-panel__action--placeholder"
-                disabled
+                className="exercise-media-modal__close victory-panel__action"
+                onClick={shareOnX}
               >
-                Share (Soon)
+                Share on X
               </button>
             </div>
           </div>
