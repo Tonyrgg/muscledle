@@ -191,10 +191,7 @@ export function VictoryPanel({
 
   const shareOnX = () => {
     const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText }).toString()}`;
-    const popup = window.open(intentUrl, "_blank", "noopener,noreferrer");
-    if (!popup) {
-      window.location.assign(intentUrl);
-    }
+    window.open(intentUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
