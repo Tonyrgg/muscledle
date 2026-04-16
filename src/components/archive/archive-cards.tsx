@@ -1,13 +1,16 @@
 'use client';
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
 import {
   getAttributeDefinition,
   type FeedbackColumnKey,
 } from "@/lib/exercises/attribute-definitions";
 import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
-import { getExerciseIconCandidates } from "@/lib/exercises/icons";
+import {
+  getMuscleGroupIconKey,
+  getMuscleGroupIconPath,
+  resolveMuscleGroupIconKey,
+} from "@/lib/exercises/icons";
 import type { ExerciseArchiveRow } from "@/lib/exercise-archive/types";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -30,6 +33,54 @@ function buildInfoLine(row: ExerciseArchiveRow): string {
   const reps = row.reps[0] ?? "6-12";
   const goal = row.goal[0] ? titleCase(row.goal[0]) : "Hypertrophy";
   return `${movement} movement, ${pattern} pattern, typical reps ${reps}, primary goal ${goal}.`;
+}
+
+function parseMuscleTokens(values: string[]): string[] {
+  return values
+    .flatMap((value) => value.split("/"))
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function resolveArchivePrimaryIcon(row: ExerciseArchiveRow): string {
+  const resolvedKey = resolveMuscleGroupIconKey({
+    slug: row.slug,
+    name: row.name,
+    muscle_group: row.muscleGroup,
+  });
+
+  return getMuscleGroupIconPath(resolvedKey);
+}
+
+function resolveIconPathFromToken(token: string): string {
+  const directKey = getMuscleGroupIconKey(token);
+  if (directKey !== "full-body") {
+    return getMuscleGroupIconPath(directKey);
+  }
+
+  const inferredKey = resolveMuscleGroupIconKey({
+    slug: "",
+    name: token,
+    muscle_group: token,
+  });
+
+  return getMuscleGroupIconPath(inferredKey);
+}
+
+function resolveArchiveSplitIconPaths(row: ExerciseArchiveRow): readonly [string, string] | null {
+  const tokens = parseMuscleTokens(row.muscle);
+  if (tokens.length < 2) return null;
+
+  const uniquePaths = Array.from(new Set(tokens.map((token) => resolveIconPathFromToken(token))));
+  if (uniquePaths.length < 2) return null;
+
+  return [uniquePaths[0], uniquePaths[1]];
+}
+
+function onIconError(event: SyntheticEvent<HTMLImageElement>) {
+  const fallback = "/muscle-icons/core.svg";
+  if (event.currentTarget.src.endsWith(fallback)) return;
+  event.currentTarget.src = fallback;
 }
 
 function sanitizeMediaUrl(value: string | null): string | null {
@@ -111,15 +162,13 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
   }, [groupFilter, query, rows]);
 
   const selectedIcon = useMemo(() => {
-    if (!selectedRow) return "/muscle-icons/full-body.svg";
-    return (
-      getExerciseIconCandidates({
-        slug: selectedRow.slug,
-        name: selectedRow.name,
-        muscle_group: selectedRow.muscleGroup,
-      })[0] ?? "/muscle-icons/full-body.svg"
-    );
+    if (!selectedRow) return "/muscle-icons/core.svg";
+    return resolveArchivePrimaryIcon(selectedRow);
   }, [selectedRow]);
+  const selectedSplitIconPaths = useMemo(
+    () => (selectedRow ? resolveArchiveSplitIconPaths(selectedRow) : null),
+    [selectedRow],
+  );
 
   const selectedMediaUrl = useMemo(
     () => sanitizeMediaUrl(selectedRow?.media.mediaUrl ?? null),
@@ -190,12 +239,8 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
 
       <div className="archive-cards__grid">
         {filtered.map((row) => {
-          const icon =
-            getExerciseIconCandidates({
-              slug: row.slug,
-              name: row.name,
-              muscle_group: row.muscleGroup,
-            })[0] ?? "/muscle-icons/full-body.svg";
+          const icon = resolveArchivePrimaryIcon(row);
+          const splitIconPaths = resolveArchiveSplitIconPaths(row);
 
           return (
             <article
@@ -213,7 +258,39 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
               aria-label={`Open details for ${row.name}`}
             >
               <div className="archive-card__media-wrap">
-                <Image src={icon} alt="" width={92} height={92} className="archive-card__media" />
+                {splitIconPaths ? (
+                  <span className="archive-card__split" aria-hidden>
+                    <img
+                      src={splitIconPaths[0]}
+                      alt=""
+                      className="archive-card__split-part archive-card__split-part--primary"
+                      width={92}
+                      height={92}
+                      loading="lazy"
+                      onError={onIconError}
+                    />
+                    <img
+                      src={splitIconPaths[1]}
+                      alt=""
+                      className="archive-card__split-part archive-card__split-part--secondary"
+                      width={92}
+                      height={92}
+                      loading="lazy"
+                      onError={onIconError}
+                    />
+                    <span className="archive-card__split-divider" />
+                  </span>
+                ) : (
+                  <img
+                    src={icon}
+                    alt=""
+                    width={92}
+                    height={92}
+                    className="archive-card__media"
+                    loading="lazy"
+                    onError={onIconError}
+                  />
+                )}
               </div>
               <div className="archive-card__body">
                 <p className="archive-card__group">{titleCase(row.muscleGroup)}</p>
@@ -261,13 +338,39 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
             <div className="archive-detail-modal__layout">
               <section className="archive-detail-modal__media">
                 {shouldShowFallbackIcon ? (
-                  <Image
-                    src={selectedIcon}
-                    alt={`${selectedRow.name} icon`}
-                    width={148}
-                    height={148}
-                    className="archive-detail-modal__fallback-icon"
-                  />
+                  selectedSplitIconPaths ? (
+                    <div className="archive-detail-modal__fallback-split" aria-label={`Muscle icons ${selectedRow.name}`}>
+                      <img
+                        src={selectedSplitIconPaths[0]}
+                        alt=""
+                        className="archive-detail-modal__fallback-split-part archive-detail-modal__fallback-split-part--primary"
+                        width={148}
+                        height={148}
+                        loading="lazy"
+                        onError={onIconError}
+                      />
+                      <img
+                        src={selectedSplitIconPaths[1]}
+                        alt=""
+                        className="archive-detail-modal__fallback-split-part archive-detail-modal__fallback-split-part--secondary"
+                        width={148}
+                        height={148}
+                        loading="lazy"
+                        onError={onIconError}
+                      />
+                      <span className="archive-detail-modal__fallback-split-divider" />
+                    </div>
+                  ) : (
+                    <img
+                      src={selectedIcon}
+                      alt={`${selectedRow.name} icon`}
+                      width={148}
+                      height={148}
+                      className="archive-detail-modal__fallback-icon"
+                      loading="lazy"
+                      onError={onIconError}
+                    />
+                  )
                 ) : selectedMediaKind === "video" ? (
                   <video
                     src={selectedMediaUrl ?? undefined}

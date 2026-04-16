@@ -81,7 +81,7 @@ export function VictoryPanel({
   const [expanded, setExpanded] = useState(true);
   const [learningOpen, setLearningOpen] = useState(false);
   const [countdown, setCountdown] = useState("00:00:00");
-  const [copied, setCopied] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const winningSlug = winningAttempt?.guessSlug ?? "";
   const fallbackMedia = useMemo<ExerciseMedia[]>(() => {
     if (!winningAttempt?.guessSlug) {
@@ -181,11 +181,11 @@ export function VictoryPanel({
     const value = shareText;
     try {
       await navigator.clipboard.writeText(value);
-      setCopied("Result copied");
-      window.setTimeout(() => setCopied(null), 1800);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1800);
     } catch {
-      setCopied("Copy failed");
-      window.setTimeout(() => setCopied(null), 1800);
+      setCopyState("failed");
+      window.setTimeout(() => setCopyState("idle"), 1800);
     }
   };
 
@@ -319,7 +319,7 @@ export function VictoryPanel({
                 className="exercise-media-modal__close victory-panel__action"
                 onClick={() => void copyText()}
               >
-                Copy Result
+                {copyState === "copied" ? "Result copied" : copyState === "failed" ? "Copy failed" : "Copy Result"}
               </button>
               <button
                 type="button"
@@ -329,8 +329,6 @@ export function VictoryPanel({
                 Share (Soon)
               </button>
             </div>
-
-            {copied ? <p className="victory-panel__copied">{copied}</p> : null}
           </div>
         </>
       ) : null}

@@ -135,8 +135,20 @@ input {
 }
 
 .game-hero__home-link {
+  display: inline-flex;
   color: inherit;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.game-hero__home-link .brand-logo__wordmark {
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.game-hero__home-link:hover .brand-logo__wordmark,
+.game-hero__home-link:focus-visible .brand-logo__wordmark {
+  transform: scale(1.06);
 }
 
 .game-hero__title {
@@ -1018,14 +1030,19 @@ input {
 
 .victory-panel__actions {
   margin-top: 0.72rem;
-  display: grid;
+  display: flex;
   gap: 0.42rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
 }
 
 .victory-panel .victory-panel__action {
   appearance: none;
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1036,16 +1053,6 @@ input {
   opacity: 0.55;
   cursor: not-allowed;
   color: #9a9a9a;
-}
-
-.victory-panel__copied {
-  margin: 0.45rem 0 0;
-  text-align: center;
-  color: #9cd7df;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .guess-input {
@@ -2354,6 +2361,39 @@ input {
   object-fit: contain;
 }
 
+.archive-card__split {
+  position: relative;
+  width: 58px;
+  height: 58px;
+}
+
+.archive-card__split-part {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.archive-card__split-part--primary {
+  clip-path: polygon(0 100%, 0 0, 100% 0);
+}
+
+.archive-card__split-part--secondary {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+}
+
+.archive-card__split-divider {
+  position: absolute;
+  left: 50%;
+  top: -8%;
+  width: 1px;
+  height: 116%;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(245, 245, 245, 0.36);
+  pointer-events: none;
+}
+
 .archive-card__body {
   min-width: 0;
   display: flex;
@@ -2491,6 +2531,42 @@ input {
   border: 1px solid #363636;
   background: #121212;
   padding: 0.95rem;
+}
+
+.archive-detail-modal__fallback-split {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #363636;
+  background: #121212;
+}
+
+.archive-detail-modal__fallback-split-part {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.95rem;
+}
+
+.archive-detail-modal__fallback-split-part--primary {
+  clip-path: polygon(0 100%, 0 0, 100% 0);
+}
+
+.archive-detail-modal__fallback-split-part--secondary {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+}
+
+.archive-detail-modal__fallback-split-divider {
+  position: absolute;
+  left: 50%;
+  top: -8%;
+  width: 1px;
+  height: 116%;
+  transform: translateX(-50%) rotate(45deg);
+  background: rgba(245, 245, 245, 0.38);
+  pointer-events: none;
 }
 
 .archive-detail-modal__media-meta {
@@ -2913,7 +2989,7 @@ input {
   }
 
   .victory-panel__actions {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .archive-toolbar {
@@ -2978,6 +3054,15 @@ input {
 
   .game-rollover-loading__spinner {
     animation: none;
+  }
+
+  .game-hero__home-link .brand-logo__wordmark {
+    transition: none;
+  }
+
+  .game-hero__home-link:hover .brand-logo__wordmark,
+  .game-hero__home-link:focus-visible .brand-logo__wordmark {
+    transform: none;
   }
 
 }
