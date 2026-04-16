@@ -1130,6 +1130,31 @@ export function GameShell({ initialState }: GameShellProps) {
           Math.max(0, Math.round((infiniteSolvedRounds / infiniteTotal) * 100)),
         )
       : 0;
+  const marathonShareText = useMemo(() => {
+    if (!infiniteState || infiniteState.status !== "completed") {
+      return "";
+    }
+
+    const header = `I completed #Liftdle Marathon and scored ${infiniteState.score} point${infiniteState.score === 1 ? "" : "s"} \u{1F4AA}\u{1F396}\u{FE0F}`;
+    const challenge = "Try to beat my score";
+    const footer =
+      typeof window === "undefined"
+        ? "https://liftdle.vercel.app"
+        : window.location.origin;
+
+    return [header, challenge, footer].join("\n");
+  }, [
+    infiniteState,
+  ]);
+
+  const shareMarathonOnX = useCallback(() => {
+    if (!marathonShareText) {
+      return;
+    }
+
+    const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: marathonShareText }).toString()}`;
+    window.open(intentUrl, "_blank", "noopener,noreferrer");
+  }, [marathonShareText]);
 
   const disabled =
     mode === "daily"
@@ -1346,10 +1371,10 @@ export function GameShell({ initialState }: GameShellProps) {
                     <div className="marathon-complete__actions">
                       <button
                         type="button"
-                        className="exercise-media-modal__close marathon-start-zone__button marathon-complete__button marathon-complete__button--placeholder"
-                        disabled
+                        className="exercise-media-modal__close marathon-start-zone__button marathon-complete__button"
+                        onClick={shareMarathonOnX}
                       >
-                        Share Soon
+                        Share on X
                       </button>
                       <button
                         type="button"
