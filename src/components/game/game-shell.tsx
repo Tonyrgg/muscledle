@@ -1254,7 +1254,9 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : (
             <>
           <header className="game-hero">
-            <Logo withTagline />
+            <Link className="game-hero__home-link" href="/" aria-label="Go to homepage">
+              <Logo withTagline />
+            </Link>
             <div className="mode-switch" aria-label="Game mode switch">
               <button
                 type="button"
