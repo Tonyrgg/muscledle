@@ -4,6 +4,7 @@ import type {
   CreateFeedbackReportInput,
   FeedbackDataType,
   FeedbackImpact,
+  FeedbackModule,
   FeedbackReportSummary,
   FeedbackSeverity,
   FeedbackStatus,
@@ -17,7 +18,7 @@ type FeedbackReportRow = {
   updated_at: string;
   status: FeedbackStatus;
   category: "bug" | "ux" | "feature" | "data";
-  module: "daily" | "marathon" | "archive" | "auth" | "privacy" | "general" | null;
+  module: string | null;
   severity: FeedbackSeverity | null;
   impact: FeedbackImpact | null;
   title: string;
@@ -33,6 +34,17 @@ type FeedbackReportRow = {
   game_mode: "daily" | "infinite" | null;
   triage_score: number;
 };
+
+function normalizeModule(value: string | null): FeedbackModule | null {
+  if (!value) return null;
+  if (value === "daily" || value === "marathon" || value === "archive" || value === "general") {
+    return value;
+  }
+  if (value === "auth" || value === "privacy") {
+    return "general";
+  }
+  return null;
+}
 
 type FeedbackAttachmentRow = {
   id: string;
@@ -214,7 +226,7 @@ export async function listMyFeedbackReports(visitorId: string): Promise<Feedback
       updatedAt: report.updated_at,
       status: report.status,
       category: report.category,
-      module: report.module,
+      module: normalizeModule(report.module),
       severity: report.severity,
       impact: report.impact,
       title: report.title,
