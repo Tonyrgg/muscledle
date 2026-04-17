@@ -65,10 +65,10 @@ const DATA_TYPE_OPTIONS: Array<{ value: FeedbackDataType; label: string }> = [
 ];
 
 const CATEGORY_STEPS: Record<FeedbackCategory, FieldId[]> = {
-  bug: ["module", "severity", "impact", "description", "attachments"],
-  ux: ["module", "impact", "description", "attachments"],
-  feature: ["module", "impact", "description", "attachments"],
-  data: ["module", "impact", "dataType", "description", "attachments"],
+  bug: ["module", "severity", "impact", "description"],
+  ux: ["module", "impact", "description"],
+  feature: ["module", "impact", "description"],
+  data: ["module", "impact", "dataType", "description"],
 };
 
 export function FeedbackCenter() {
@@ -399,7 +399,6 @@ export function FeedbackCenter() {
                       onChange={(event) => {
                         const next = event.target.value;
                         setDescription(next);
-                        revealNextAfter("description", next.trim().length > 0);
                       }}
                       rows={6}
                       placeholder="Scrivi qui tutti i dettagli del feedback."
@@ -428,7 +427,7 @@ export function FeedbackCenter() {
                   </div>
                 ) : null}
 
-                {visibleFieldSet.has("attachments") ? (
+                {visibleFieldSet.has("description") ? (
                   <label>
                     Attachments (up to 5 files, 10MB each)
                     <input
@@ -437,7 +436,6 @@ export function FeedbackCenter() {
                       onChange={(event) => {
                         const next = Array.from(event.target.files ?? []).slice(0, 5);
                         setFiles(next);
-                        revealNextAfter("attachments", true);
                       }}
                     />
                   </label>

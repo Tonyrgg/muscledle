@@ -1647,6 +1647,7 @@ button.game-quick-tools__item:active {
   backface-visibility: hidden;
   transform-origin: center;
   cursor: pointer;
+  transition: filter 180ms ease;
 }
 
 .feedback-cell--green {
@@ -1659,6 +1660,17 @@ button.game-quick-tools__item:active {
 
 .feedback-cell--red {
   background: var(--feedback-red);
+}
+
+@media (hover: hover) {
+  .feedback-cell--green:hover,
+  .feedback-cell--green:focus-visible,
+  .feedback-cell--yellow:hover,
+  .feedback-cell--yellow:focus-visible,
+  .feedback-cell--red:hover,
+  .feedback-cell--red:focus-visible {
+    filter: brightness(1.11);
+  }
 }
 
 .feedback-cell--reveal {
@@ -3119,6 +3131,10 @@ button.game-quick-tools__item:active {
   }
 
   .daily-hints__tile {
+    transition: none;
+  }
+
+  .feedback-cell {
     transition: none;
   }
 
