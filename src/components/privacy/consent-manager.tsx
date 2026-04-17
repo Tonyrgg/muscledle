@@ -119,7 +119,9 @@ export function ConsentManager() {
   const [settingsPrivacyOpen, setSettingsPrivacyOpen] = useState(false);
   const [settingsCookiesOpen, setSettingsCookiesOpen] = useState(false);
 
-  const shouldShowBanner = ready && !choice && bannerOpen && !manageOpen;
+  const isFirstConsentRequired = ready && !choice;
+  const shouldShowBanner = isFirstConsentRequired && bannerOpen && !manageOpen;
+  const shouldShowManageAsOverlay = manageOpen && isFirstConsentRequired;
 
   useEffect(() => {
     const current = readConsentChoice();
@@ -143,7 +145,7 @@ export function ConsentManager() {
   }, []);
 
   useEffect(() => {
-    if (!manageOpen && !shouldShowBanner) return;
+    if (!manageOpen) return;
 
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
@@ -151,19 +153,14 @@ export function ConsentManager() {
       if (popoverRef.current?.contains(target)) return;
       if (fabRef.current?.contains(target)) return;
 
-      if (manageOpen) {
+      if (!isFirstConsentRequired) {
         setManageOpen(false);
-        return;
-      }
-
-      if (shouldShowBanner) {
-        setBannerOpen(false);
       }
     };
 
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [manageOpen, shouldShowBanner]);
+  }, [isFirstConsentRequired, manageOpen]);
 
   const consentSummary = useMemo(() => {
     if (!choice) return "No choice saved yet";
@@ -232,10 +229,10 @@ export function ConsentManager() {
       {shouldShowBanner ? (
         <section
           ref={popoverRef}
-          className="consent-popover"
+          className="consent-overlay"
           aria-label="Cookie consent"
           role="dialog"
-          aria-modal="false"
+          aria-modal="true"
         >
           <div className="consent-modal">
             <h2 className="consent-modal__title">Privacy and Cookies</h2>
@@ -292,10 +289,10 @@ export function ConsentManager() {
       {manageOpen ? (
         <section
           ref={popoverRef}
-          className="consent-popover"
+          className={shouldShowManageAsOverlay ? "consent-overlay" : "consent-popover"}
           aria-label="Cookie settings"
           role="dialog"
-          aria-modal="false"
+          aria-modal={shouldShowManageAsOverlay ? "true" : "false"}
         >
           <div className="consent-modal">
             <h2 className="consent-modal__title">Privacy and Cookies</h2>

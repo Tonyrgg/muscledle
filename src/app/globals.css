@@ -3145,10 +3145,8 @@ button.game-quick-tools__item:active {
 .consent-fab-wrap {
   position: fixed;
   left: 0.9rem;
-  bottom: 0.9rem;
+  bottom: calc(0.9rem + var(--consent-fab-lift, 0px));
   z-index: 90;
-  transform: translateY(calc(-1 * var(--consent-fab-lift, 0px)));
-  will-change: transform;
 }
 
 .consent-fab {
@@ -3407,7 +3405,7 @@ button.game-quick-tools__item:active {
 @media (max-width: 760px) {
   .consent-fab-wrap {
     left: 0.6rem;
-    bottom: 0.6rem;
+    bottom: calc(0.6rem + var(--consent-fab-lift, 0px));
   }
 
   .feedback-popover {
