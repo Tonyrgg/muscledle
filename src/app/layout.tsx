@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 import { AnalyticsGate, ConsentManager } from "@/components/privacy/consent-manager";
+import { FeedbackCenter } from "@/components/feedback/feedback-center";
 
 const robotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
@@ -58,6 +59,7 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-on-background font-body">
         <AnalyticsGate />
         <ConsentManager />
+        <FeedbackCenter />
         {children}
       </body>
     </html>

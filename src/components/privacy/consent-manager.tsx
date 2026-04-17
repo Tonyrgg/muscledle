@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
+import { useRef } from "react";
+import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_POLICY_VERSION,
@@ -103,9 +106,14 @@ export function AnalyticsGate() {
 }
 
 export function ConsentManager() {
+  const pathname = usePathname();
+  const fabRef = useRef<HTMLButtonElement | null>(null);
+  const popoverRef = useRef<HTMLElement | null>(null);
+  const [fabLift, setFabLift] = useState(0);
   const [ready, setReady] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
+  const [bannerOpen, setBannerOpen] = useState(false);
   const [draft, setDraft] = useState<ConsentPreferences>(DEFAULT_CONSENT_PREFERENCES);
   const [saving, setSaving] = useState(false);
   const [bannerPrivacyOpen, setBannerPrivacyOpen] = useState(false);
@@ -113,12 +121,13 @@ export function ConsentManager() {
   const [settingsPrivacyOpen, setSettingsPrivacyOpen] = useState(false);
   const [settingsCookiesOpen, setSettingsCookiesOpen] = useState(false);
 
-  const shouldShowBanner = ready && !choice;
+  const shouldShowBanner = ready && !choice && bannerOpen && !manageOpen;
 
   useEffect(() => {
     const current = readConsentChoice();
     setChoice(current);
     setDraft(current?.preferences ?? DEFAULT_CONSENT_PREFERENCES);
+    setBannerOpen(!current);
     setReady(true);
 
     const openManage = () => {
@@ -130,6 +139,69 @@ export function ConsentManager() {
     window.addEventListener(OPEN_CONSENT_EVENT, openManage);
     return () => window.removeEventListener(OPEN_CONSENT_EVENT, openManage);
   }, []);
+
+  useEffect(() => {
+    let rafId = 0;
+
+    const updateFabLift = () => {
+      rafId = 0;
+
+      const footer = document.querySelector<HTMLElement>(".game-footer");
+      if (!footer) {
+        setFabLift(0);
+        return;
+      }
+
+      const footerRect = footer.getBoundingClientRect();
+      const footerGap = 12;
+      const overlapWithViewportBottom = window.innerHeight - footerRect.top;
+      const nextLift = overlapWithViewportBottom > 0
+        ? Math.max(0, overlapWithViewportBottom + footerGap)
+        : 0;
+
+      setFabLift((current) => (Math.abs(current - nextLift) < 0.5 ? current : nextLift));
+    };
+
+    const scheduleUpdate = () => {
+      if (rafId !== 0) return;
+      rafId = window.requestAnimationFrame(updateFabLift);
+    };
+
+    scheduleUpdate();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      if (rafId !== 0) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!manageOpen && !shouldShowBanner) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (popoverRef.current?.contains(target)) return;
+      if (fabRef.current?.contains(target)) return;
+
+      if (manageOpen) {
+        setManageOpen(false);
+        return;
+      }
+
+      if (shouldShowBanner) {
+        setBannerOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [manageOpen, shouldShowBanner]);
 
   const consentSummary = useMemo(() => {
     if (!choice) return "No choice saved yet";
@@ -180,9 +252,10 @@ export function ConsentManager() {
   };
 
   return (
-    <>
+    <div className="consent-fab-wrap" style={{ "--consent-fab-lift": `${fabLift}px` } as CSSProperties}>
       <button
         type="button"
+        ref={fabRef}
         className="consent-fab"
         onClick={() => {
           const current = readConsentChoice();
@@ -195,8 +268,14 @@ export function ConsentManager() {
       </button>
 
       {shouldShowBanner ? (
-        <section className="consent-overlay" aria-label="Cookie consent" role="dialog" aria-modal="true">
-          <div className="consent-modal" onClick={(event) => event.stopPropagation()}>
+        <section
+          ref={popoverRef}
+          className="consent-popover"
+          aria-label="Cookie consent"
+          role="dialog"
+          aria-modal="false"
+        >
+          <div className="consent-modal">
             <h2 className="consent-modal__title">Privacy and Cookies</h2>
             <p className="consent-modal__text">
               We use necessary cookies to run Liftdle. We also ask permission for analytics to measure gameplay and improve the product.
@@ -249,8 +328,14 @@ export function ConsentManager() {
       ) : null}
 
       {manageOpen ? (
-        <section className="consent-overlay" aria-label="Cookie settings" role="dialog" aria-modal="true" onClick={() => setManageOpen(false)}>
-          <div className="consent-modal" onClick={(event) => event.stopPropagation()}>
+        <section
+          ref={popoverRef}
+          className="consent-popover"
+          aria-label="Cookie settings"
+          role="dialog"
+          aria-modal="false"
+        >
+          <div className="consent-modal">
             <h2 className="consent-modal__title">Privacy and Cookies</h2>
             <p className="consent-modal__text">Current status: {consentSummary}</p>
 
@@ -314,6 +399,6 @@ export function ConsentManager() {
           </div>
         </section>
       ) : null}
-    </>
+    </div>
   );
 }

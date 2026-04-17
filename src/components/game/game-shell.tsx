@@ -221,8 +221,6 @@ export function GameShell({ initialState }: GameShellProps) {
   const [marathonTransition, setMarathonTransition] =
     useState<MarathonTransitionState | null>(null);
   const [footerModal, setFooterModal] = useState<FooterModal>(null);
-  const [privacyNoticeOpen, setPrivacyNoticeOpen] = useState(false);
-  const [cookieNoticeOpen, setCookieNoticeOpen] = useState(false);
   const toastIdRef = useRef(0);
   const revealTimeoutRef = useRef<number | null>(null);
   const marathonSolvedTimeoutRef = useRef<number | null>(null);
@@ -447,13 +445,6 @@ export function GameShell({ initialState }: GameShellProps) {
     };
   }, [footerModal]);
 
-  useEffect(() => {
-    if (footerModal !== "privacy") {
-      setPrivacyNoticeOpen(false);
-      setCookieNoticeOpen(false);
-    }
-  }, [footerModal]);
-
   const loadStats = useCallback(
     async (options?: { silent?: boolean; force?: boolean }) => {
       if (statsStatus === "loading") {
@@ -561,8 +552,6 @@ export function GameShell({ initialState }: GameShellProps) {
     setDailyVictoryPhase("idle");
     setToast(null);
     setFooterModal(null);
-    setPrivacyNoticeOpen(false);
-    setCookieNoticeOpen(false);
     setMarathonTransition(null);
     lastVictoryScrollKeyRef.current = null;
 
@@ -1603,13 +1592,6 @@ export function GameShell({ initialState }: GameShellProps) {
           <Link href="/archive" className="game-footer__link">
             ARCHIVE
           </Link>
-          <button
-            type="button"
-            className="game-footer__link"
-            onClick={() => window.dispatchEvent(new Event("liftdle-open-consent"))}
-          >
-            PRIVACY AND COOKIES
-          </button>
         </nav>
         <p className="game-footer__copy">
         © 2026 Liftdle. All rights reserved.
@@ -1941,102 +1923,7 @@ export function GameShell({ initialState }: GameShellProps) {
                   </section>
                 )}
               </div>
-            ) : (
-              <div className="info-sheet__body">
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Data Controller</h3>
-                  <p>
-                    Liftdle processes personal data to provide gameplay,
-                    security, and product improvements.
-                  </p>
-                  <p>
-                    Contact: support@liftdle.app
-                  </p>
-                </section>
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Data Categories</h3>
-                  <p>
-                    We store gameplay events such as guesses, feedback, game
-                    progress, streaks, and aggregate statistics.
-                  </p>
-                  <p>
-                    Technical authentication/session data is handled through
-                    Supabase, including anonymous sessions.
-                  </p>
-                </section>
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Purposes And Legal Bases</h3>
-                  <p>
-                    Necessary processing is used to provide gameplay, account
-                    security, and anti-abuse safeguards.
-                  </p>
-                  <p>
-                    Optional analytics is used only after consent, and can be
-                    changed anytime from Cookie settings.
-                  </p>
-                </section>
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Third Parties</h3>
-                  <p>
-                    Liftdle uses Supabase for authentication/storage and Vercel
-                    for hosting and analytics services.
-                  </p>
-                  <p>
-                    Embedded third-party media (for example YouTube content) is
-                    loaded only when relevant views are opened.
-                  </p>
-                </section>
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Your Rights</h3>
-                  <p>
-                    You can request access, rectification, deletion, and object
-                    to processing where applicable.
-                  </p>
-                  <p>
-                    For privacy requests, contact support@liftdle.app and
-                    include your user identifier if available.
-                  </p>
-                </section>
-                <section className="info-sheet__section">
-                  <h3 className="info-sheet__section-title">Notices In This Modal</h3>
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close"
-                    onClick={() => setPrivacyNoticeOpen((current) => !current)}
-                  >
-                    {privacyNoticeOpen ? "Hide Privacy Notice" : "Read Privacy Notice"}
-                  </button>
-                  {privacyNoticeOpen ? (
-                    <p>
-                      Liftdle processes gameplay and account/session data to provide
-                      game functionality, anti-abuse safeguards, and support operations.
-                      For rights requests, contact support@liftdle.app.
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close"
-                    onClick={() => setCookieNoticeOpen((current) => !current)}
-                  >
-                    {cookieNoticeOpen ? "Hide Cookie Notice" : "Read Cookie Notice"}
-                  </button>
-                  {cookieNoticeOpen ? (
-                    <p>
-                      Necessary cookies are always active for core features.
-                      Analytics cookies are optional and follow your consent
-                      preference, which you can edit anytime from Privacy and Cookies settings.
-                    </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close"
-                    onClick={() => window.dispatchEvent(new Event("liftdle-open-consent"))}
-                  >
-                    Open Privacy And Cookies Settings
-                  </button>
-                </section>
-              </div>
-            )}
+            ) : null}
           </div>
         </section>
       ) : null}
@@ -2058,4 +1945,6 @@ export function GameShell({ initialState }: GameShellProps) {
     </>
   );
 }
+
+
 
