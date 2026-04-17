@@ -3111,25 +3111,42 @@ input {
 .feedback-popover {
   position: absolute;
   right: 0.15rem;
-  bottom: calc(100% + 18px);
+  bottom: calc(100% + 8px);
   z-index: 120;
   width: min(440px, calc(100vw - 2rem));
-  max-height: min(72vh, 620px);
+  max-height: calc(100vh - 0.125rem);
 }
 
 .consent-popover {
   position: absolute;
   left: 0;
-  bottom: calc(100% + 18px);
+  bottom: calc(100% + 8px);
   z-index: 120;
   width: min(420px, calc(100vw - 2rem));
-  max-height: min(72vh, 620px);
+  max-height: calc(100vh - 0.125rem);
 }
 
 .feedback-popover .feedback-modal {
   max-height: inherit;
-  overflow: auto;
+  height: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.45);
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.feedback-popover .feedback-modal::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent;
+}
+
+.feedback-popover .feedback-modal::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border: 0 !important;
 }
 
 .feedback-popover .feedback-modal__head {
@@ -3146,11 +3163,46 @@ input {
   grid-template-columns: 1fr;
 }
 
+.feedback-popover .feedback-modal__actions--submit {
+  grid-template-columns: 6fr 1fr;
+  align-items: stretch;
+}
+
+.feedback-popover .feedback-modal__actions--submit .feedback-modal__action-send {
+  width: 100%;
+}
+
+.feedback-popover .feedback-modal__actions--submit .feedback-modal__action-reset {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+}
+
 .consent-popover .consent-modal {
   width: 100%;
   max-height: inherit;
-  overflow: auto;
+  height: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.45);
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
+}
+
+.consent-popover .consent-modal::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+  background: transparent;
+}
+
+.consent-popover .consent-modal::-webkit-scrollbar-thumb {
+  background: transparent !important;
+  border: 0 !important;
 }
 
 .consent-popover .consent-modal__actions {

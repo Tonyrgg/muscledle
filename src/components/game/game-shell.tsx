@@ -1592,13 +1592,6 @@ export function GameShell({ initialState }: GameShellProps) {
           <Link href="/archive" className="game-footer__link">
             ARCHIVE
           </Link>
-          <button
-            type="button"
-            className="game-footer__link"
-            onClick={() => window.dispatchEvent(new Event("liftdle-open-consent"))}
-          >
-            PRIVACY AND COOKIES
-          </button>
         </nav>
         <p className="game-footer__copy">
         © 2026 Liftdle. All rights reserved.

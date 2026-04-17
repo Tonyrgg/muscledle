@@ -10,7 +10,7 @@ import type {
 } from "@/types/feedback";
 
 const CATEGORY_VALUES = new Set<FeedbackCategory>(["bug", "ux", "feature", "data"]);
-const MODULE_VALUES = new Set<FeedbackModule>(["daily", "marathon", "archive", "auth", "privacy", "general"]);
+const MODULE_VALUES = new Set<FeedbackModule>(["daily", "marathon", "archive", "general"]);
 const SEVERITY_VALUES = new Set<FeedbackSeverity>(["blocker", "high", "medium", "low"]);
 const IMPACT_VALUES = new Set<FeedbackImpact>(["low", "medium", "high", "critical"]);
 const DATA_TYPE_VALUES = new Set<FeedbackDataType>(["exercise_text", "exercise_media", "attributes", "translation", "other"]);
@@ -112,42 +112,14 @@ export async function POST(request: Request) {
       if (!severity || !SEVERITY_VALUES.has(severity)) {
         return NextResponse.json({ error: "Severity is required for bug reports." }, { status: 400 });
       }
-
-      if (reproCheck.error || !reproCheck.value) {
-        return NextResponse.json({ error: reproCheck.error ?? "Repro steps are required for bug reports." }, { status: 400 });
-      }
     } else if (severity && !SEVERITY_VALUES.has(severity)) {
       return NextResponse.json({ error: "Invalid severity." }, { status: 400 });
-    }
-
-    if (category === "ux") {
-      if (currentBehaviorCheck.error || !currentBehaviorCheck.value) {
-        return NextResponse.json({ error: currentBehaviorCheck.error ?? "Current behavior is required for UX reports." }, { status: 400 });
-      }
-      if (suggestionCheck.error || !suggestionCheck.value) {
-        return NextResponse.json({ error: suggestionCheck.error ?? "Suggestion is required for UX reports." }, { status: 400 });
-      }
-    }
-
-    if (category === "feature") {
-      if (useCaseCheck.error || !useCaseCheck.value) {
-        return NextResponse.json({ error: useCaseCheck.error ?? "Use case is required for feature requests." }, { status: 400 });
-      }
-      if (benefitCheck.error || !benefitCheck.value) {
-        return NextResponse.json({ error: benefitCheck.error ?? "Benefit is required for feature requests." }, { status: 400 });
-      }
     }
 
     const dataType = body?.dataType ?? null;
     if (category === "data") {
       if (!dataType || !DATA_TYPE_VALUES.has(dataType)) {
         return NextResponse.json({ error: "Data type is required for data/content reports." }, { status: 400 });
-      }
-      if (contentRefCheck.error || !contentRefCheck.value) {
-        return NextResponse.json({ error: contentRefCheck.error ?? "Content reference is required for data/content reports." }, { status: 400 });
-      }
-      if (reproCheck.error || !reproCheck.value) {
-        return NextResponse.json({ error: reproCheck.error ?? "Repro steps are required for data/content reports." }, { status: 400 });
       }
     } else if (dataType && !DATA_TYPE_VALUES.has(dataType)) {
       return NextResponse.json({ error: "Invalid data type." }, { status: 400 });

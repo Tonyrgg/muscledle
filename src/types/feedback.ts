@@ -8,8 +8,6 @@ export type FeedbackModule =
   | "daily"
   | "marathon"
   | "archive"
-  | "auth"
-  | "privacy"
   | "general";
 
 export type FeedbackDataType =
