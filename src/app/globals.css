@@ -464,6 +464,80 @@ input {
   color: var(--text-primary);
 }
 
+.game-quick-tools {
+  margin-top: 0.82rem;
+  width: min(100%, 430px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.48rem;
+  padding: 0.46rem;
+  border: 1px solid rgba(249, 115, 22, 0.55);
+  border-radius: 0.78rem;
+  background: linear-gradient(180deg, #212121 0%, #1b1b1b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.game-quick-tools__item {
+  border: 1px solid #424242;
+  background: #232323;
+  border-radius: 0.62rem;
+  min-height: 4.2rem;
+  padding: 0.35rem 0.28rem;
+  color: #dddddd;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  text-transform: uppercase;
+  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+}
+
+button.game-quick-tools__item {
+  cursor: pointer;
+}
+
+button.game-quick-tools__item:hover,
+button.game-quick-tools__item:focus-visible {
+  border-color: var(--accent);
+  background: #272727;
+  transform: translateY(-1px);
+}
+
+button.game-quick-tools__item:active {
+  transform: translateY(0);
+}
+
+.game-quick-tools__icon {
+  width: 1.36rem;
+  height: 1.36rem;
+  fill: currentColor;
+}
+
+.game-quick-tools__icon--accent {
+  color: var(--accent);
+}
+
+.game-quick-tools__value {
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #f4f4f4;
+}
+
+.game-quick-tools__label {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  line-height: 1.1;
+}
+
+.game-quick-tools__item--streak {
+  border-color: rgba(249, 115, 22, 0.45);
+  background: linear-gradient(180deg, #252221 0%, #1f1f1f 100%);
+}
+
 .game-prompt-panel--infinite .game-prompt-panel__subtitle {
   margin-top: 0.36rem;
 }
@@ -1742,54 +1816,6 @@ input {
   }
 }
 
-.game-footer {
-  position: static;
-  width: 100%;
-  margin-top: 0.75rem;
-  border-top: 1px solid #2b2b2b;
-  background: rgba(23, 23, 23, 0.96);
-  padding: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.game-footer__links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: clamp(1.15rem, 4vw, 2.4rem);
-}
-
-.game-footer__link {
-  border: 0;
-  background: transparent;
-  color: #b8b8b8;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: none;
-}
-
-.game-footer__link:hover,
-.game-footer__link:focus-visible {
-  color: var(--text-primary);
-}
-
-.game-footer__copy {
-  margin: 0;
-  color: #adadad;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  text-align: center;
-}
-
 .game-toast {
   position: fixed;
   left: 50%;
@@ -1809,7 +1835,9 @@ input {
 .yesterday-exercise {
   width: min(100%, 940px);
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
 .yesterday-exercise__text {
@@ -1817,12 +1845,34 @@ input {
   font-size: clamp(0.72rem, 1.5vw, 0.9rem);
   font-weight: 700;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
+  text-transform: none;
+  text-align: center;
   color: var(--text-muted);
 }
 
 .yesterday-exercise__name {
   color: var(--accent);
+}
+
+.yesterday-exercise__archive-link {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.yesterday-exercise__archive-link:hover,
+.yesterday-exercise__archive-link:focus-visible {
+  text-decoration: underline;
+}
+
+.yesterday-exercise__copy {
+  margin: 0.55rem 0 0;
+  color: #adadad;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
 }
 
 .info-sheet {
@@ -2888,6 +2938,31 @@ input {
   .game-prompt-panel {
     border-radius: 0.62rem;
     padding: 0.8rem 0.85rem;
+  }
+
+  .game-quick-tools {
+    width: min(100%, 360px);
+    gap: 0.35rem;
+    padding: 0.36rem;
+  }
+
+  .game-quick-tools__item {
+    min-height: 3.7rem;
+    padding: 0.3rem 0.22rem;
+  }
+
+  .game-quick-tools__icon {
+    width: 1.18rem;
+    height: 1.18rem;
+  }
+
+  .game-quick-tools__value {
+    font-size: 0.95rem;
+  }
+
+  .game-quick-tools__label {
+    font-size: 0.48rem;
+    letter-spacing: 0.08em;
   }
 
   .daily-hints {

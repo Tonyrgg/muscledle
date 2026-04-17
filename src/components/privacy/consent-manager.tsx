@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
-import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_POLICY_VERSION,
@@ -106,7 +105,6 @@ export function AnalyticsGate() {
 }
 
 export function ConsentManager() {
-  const pathname = usePathname();
   const fabRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLElement | null>(null);
   const [fabLift, setFabLift] = useState(0);
@@ -141,44 +139,8 @@ export function ConsentManager() {
   }, []);
 
   useEffect(() => {
-    let rafId = 0;
-
-    const updateFabLift = () => {
-      rafId = 0;
-
-      const footer = document.querySelector<HTMLElement>(".game-footer");
-      if (!footer) {
-        setFabLift(0);
-        return;
-      }
-
-      const footerRect = footer.getBoundingClientRect();
-      const footerGap = 12;
-      const overlapWithViewportBottom = window.innerHeight - footerRect.top;
-      const nextLift = overlapWithViewportBottom > 0
-        ? Math.max(0, overlapWithViewportBottom + footerGap)
-        : 0;
-
-      setFabLift((current) => (Math.abs(current - nextLift) < 0.5 ? current : nextLift));
-    };
-
-    const scheduleUpdate = () => {
-      if (rafId !== 0) return;
-      rafId = window.requestAnimationFrame(updateFabLift);
-    };
-
-    scheduleUpdate();
-    window.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("resize", scheduleUpdate);
-
-    return () => {
-      if (rafId !== 0) {
-        window.cancelAnimationFrame(rafId);
-      }
-      window.removeEventListener("scroll", scheduleUpdate);
-      window.removeEventListener("resize", scheduleUpdate);
-    };
-  }, [pathname]);
+    setFabLift(0);
+  }, []);
 
   useEffect(() => {
     if (!manageOpen && !shouldShowBanner) return;

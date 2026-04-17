@@ -120,43 +120,7 @@ export function FeedbackCenter() {
   }, []);
 
   useEffect(() => {
-    let rafId = 0;
-
-    const updateFabLift = () => {
-      rafId = 0;
-
-      const footer = document.querySelector<HTMLElement>(".game-footer");
-      if (!footer) {
-        setFabLift(0);
-        return;
-      }
-
-      const footerRect = footer.getBoundingClientRect();
-      const footerGap = 12;
-      const overlapWithViewportBottom = window.innerHeight - footerRect.top;
-      const nextLift = overlapWithViewportBottom > 0
-        ? Math.max(0, overlapWithViewportBottom + footerGap)
-        : 0;
-
-      setFabLift((current) => (Math.abs(current - nextLift) < 0.5 ? current : nextLift));
-    };
-
-    const scheduleUpdate = () => {
-      if (rafId !== 0) return;
-      rafId = window.requestAnimationFrame(updateFabLift);
-    };
-
-    scheduleUpdate();
-    window.addEventListener("scroll", scheduleUpdate, { passive: true });
-    window.addEventListener("resize", scheduleUpdate);
-
-    return () => {
-      if (rafId !== 0) {
-        window.cancelAnimationFrame(rafId);
-      }
-      window.removeEventListener("scroll", scheduleUpdate);
-      window.removeEventListener("resize", scheduleUpdate);
-    };
+    setFabLift(0);
   }, [pathname]);
 
   useEffect(() => {
