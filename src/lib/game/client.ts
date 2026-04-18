@@ -1,4 +1,5 @@
 import type {
+  PublicDailyTracker,
   PublicGameStats,
   PublicMarathonState,
   PublicTodayGameState,
@@ -132,6 +133,18 @@ export async function fetchGameStats(): Promise<PublicGameStats> {
   });
 
   return parseOrThrow<PublicGameStats>(response, `Failed to load stats (${response.status}).`);
+}
+
+export async function fetchDailyTracker(): Promise<PublicDailyTracker> {
+  const response = await fetch("/api/game/daily-tracker", {
+    method: "GET",
+    cache: "no-store",
+  });
+
+  return parseOrThrow<PublicDailyTracker>(
+    response,
+    `Failed to load daily tracker (${response.status}).`,
+  );
 }
 
 export async function fetchMarathonState(): Promise<PublicMarathonState> {

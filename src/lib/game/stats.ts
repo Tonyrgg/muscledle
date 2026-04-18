@@ -1,4 +1,5 @@
 import { AuthRequiredError } from "@/lib/game/shared";
+import { gameDateRome } from "@/lib/game/date";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import type { PublicGameStats, PublicGameStatsPoint } from "@/types/game";
@@ -53,14 +54,23 @@ export async function getGameStats(): Promise<PublicGameStats> {
 
   let maxStreak = 0;
   let runningStreak = 0;
+  let currentStreak = 0;
   let prevDate: string | null = null;
   let prevWasWin = false;
+  const todayGameDate = gameDateRome();
 
   for (const row of rows) {
+    const isPendingToday = row.status === "in_progress" && row.game_date === todayGameDate;
+
+    if (isPendingToday) {
+      continue;
+    }
+
     const isWin = row.status === "won";
 
     if (!isWin) {
       runningStreak = 0;
+      currentStreak = 0;
       prevDate = row.game_date;
       prevWasWin = false;
       continue;
@@ -76,11 +86,10 @@ export async function getGameStats(): Promise<PublicGameStats> {
       maxStreak = runningStreak;
     }
 
+    currentStreak = runningStreak;
     prevDate = row.game_date;
     prevWasWin = true;
   }
-
-  const currentStreak = rows.length > 0 && rows[rows.length - 1]?.status === "won" ? runningStreak : 0;
 
   const guessHistory: PublicGameStatsPoint[] = rows.slice(-30).map((row) => ({
     gameDate: row.game_date,

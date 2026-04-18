@@ -55,6 +55,14 @@ export type PublicGameStats = {
   guessHistory: PublicGameStatsPoint[];
 };
 
+export type PublicDailyTracker = {
+  gameDate: string;
+  playersTried: number;
+  playersWon: number;
+  playersFailed: number;
+  successRate: number;
+};
+
 export type PublicMarathonState = {
   status: "not_started" | "in_progress" | "won" | "lost";
   score: number;

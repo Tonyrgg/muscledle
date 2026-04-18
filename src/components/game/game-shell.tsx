@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/brand/logo";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
@@ -11,6 +11,7 @@ import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
 import {
+  fetchDailyTracker,
   fetchMarathonState,
   fetchGameStats,
   fetchLiveExercises,
@@ -26,6 +27,7 @@ import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
 import type {
+  PublicDailyTracker,
   PublicGameAttempt,
   PublicGameStats,
   PublicMarathonState,
@@ -71,6 +73,7 @@ const DAILY_CELEBRATION_DURATION_MS = 1200;
 const DAILY_CONFETTI_SETTLE_MS = 3200;
 const MARATHON_CELEBRATION_DURATION_MS = 1800;
 const MARATHON_CONFETTI_SETTLE_MS = 4200;
+const DAILY_TRACKER_POLL_MS = 15000;
 
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -185,6 +188,25 @@ function buildDailyAttempt(
   };
 }
 
+function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNode {
+  if (!tracker) {
+    return "Today is still wide open. Step in and set the pace.";
+  }
+
+  if (tracker.playersTried <= 0) {
+    return "No one has stepped in yet today. Be the one who sets the bar.";
+  }
+
+  const number = new Intl.NumberFormat("en-US");
+  return (
+    <>
+      Today <span className="daily-tracker-copy__number">{number.format(tracker.playersTried)}</span>{" "}
+      players stepped in, and only{" "}
+      <span className="daily-tracker-copy__number">{tracker.successRate}%</span> cracked it.
+    </>
+  );
+}
+
 export function GameShell({ initialState }: GameShellProps) {
   const [mode, setMode] = useState<GameMode>("daily");
   const [gameState, setGameState] = useState<PublicTodayGameState | null>(
@@ -211,6 +233,9 @@ export function GameShell({ initialState }: GameShellProps) {
   const [query, setQuery] = useState("");
   const [toast, setToast] = useState<ToastState | null>(null);
   const [stats, setStats] = useState<PublicGameStats | null>(null);
+  const [dailyTracker, setDailyTracker] = useState<PublicDailyTracker | null>(
+    null,
+  );
   const [statsStatus, setStatsStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
@@ -475,6 +500,15 @@ export function GameShell({ initialState }: GameShellProps) {
     [pushToast, statsStatus],
   );
 
+  const loadDailyTracker = useCallback(async () => {
+    try {
+      const tracker = await fetchDailyTracker();
+      setDailyTracker(tracker);
+    } catch {
+      setDailyTracker(null);
+    }
+  }, []);
+
   const refreshStatsAfterDailySubmit = useCallback(() => {
     setStatsStatus("idle");
     if (footerModal === "stats") {
@@ -489,6 +523,27 @@ export function GameShell({ initialState }: GameShellProps) {
 
     void loadStats({ silent: true });
   }, [loadStats, statsStatus]);
+
+  useEffect(() => {
+    const refreshIfVisible = () => {
+      if (document.visibilityState !== "visible") {
+        return;
+      }
+
+      void loadDailyTracker();
+    };
+
+    const intervalId = window.setInterval(() => {
+      refreshIfVisible();
+    }, DAILY_TRACKER_POLL_MS);
+
+    document.addEventListener("visibilitychange", refreshIfVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
+  }, [loadDailyTracker]);
 
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
@@ -572,11 +627,12 @@ export function GameShell({ initialState }: GameShellProps) {
 
     try {
       const state = await loadTodayState();
+      void loadDailyTracker();
       return Boolean(state && state.gameDate !== previousGameDate);
     } finally {
       setIsDailyRolloverLoading(false);
     }
-  }, [loadTodayState]);
+  }, [loadDailyTracker, loadTodayState]);
 
   useEffect(() => {
     currentGameDateRef.current = gameState?.gameDate ?? null;
@@ -658,11 +714,19 @@ export function GameShell({ initialState }: GameShellProps) {
     void loadExercises();
     void loadMarathonState();
     void loadStats({ silent: true });
+    void loadDailyTracker();
 
     if (!gameState) {
       void loadTodayState();
     }
-  }, [gameState, loadExercises, loadMarathonState, loadStats, loadTodayState]);
+  }, [
+    gameState,
+    loadDailyTracker,
+    loadExercises,
+    loadMarathonState,
+    loadStats,
+    loadTodayState,
+  ]);
 
   const handleModeChange = useCallback((nextMode: GameMode) => {
     if (marathonSolvedTimeoutRef.current !== null) {
@@ -799,6 +863,7 @@ export function GameShell({ initialState }: GameShellProps) {
           setQuery("");
           setSelectedExerciseId(null);
           refreshStatsAfterDailySubmit();
+          void loadDailyTracker();
         } catch (error) {
           pushToast(
             error instanceof Error ? error.message : "Failed to submit guess.",
@@ -853,6 +918,7 @@ export function GameShell({ initialState }: GameShellProps) {
             };
           });
           refreshStatsAfterDailySubmit();
+          void loadDailyTracker();
         })
         .catch((error) => {
           pushToast(
@@ -866,6 +932,7 @@ export function GameShell({ initialState }: GameShellProps) {
       gameState,
       pushToast,
       refreshStatsAfterDailySubmit,
+      loadDailyTracker,
       selectedExerciseId,
     ],
   );
@@ -1300,6 +1367,9 @@ export function GameShell({ initialState }: GameShellProps) {
                 Marathon
               </button>
             </div>
+            <p className="daily-tracker-copy" aria-live="polite">
+              {formatDailyTrackerMessage(dailyTracker)}
+            </p>
             <section className="game-quick-tools" aria-label="Game tools">
               <button
                 type="button"
