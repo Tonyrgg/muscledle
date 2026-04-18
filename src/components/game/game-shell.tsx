@@ -188,21 +188,81 @@ function buildDailyAttempt(
   };
 }
 
+const ROLLING_DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+
+function RollingNumber({ value }: { value: number }) {
+  const formatted = useMemo(
+    () => new Intl.NumberFormat("en-US").format(value),
+    [value],
+  );
+
+  return (
+    <span className="rolling-number" aria-label={formatted}>
+      {formatted.split("").map((char, index) => {
+        if (!/^\d$/.test(char)) {
+          return (
+            <span key={`sep-${index}`} className="rolling-number__separator">
+              {char}
+            </span>
+          );
+        }
+
+        const digit = Number(char);
+
+        return (
+          <span key={`digit-${index}`} className="rolling-number__digit" aria-hidden="true">
+            <span
+              className="rolling-number__track"
+              style={{ transform: `translateY(calc(${digit} * -1em))` }}
+            >
+              {ROLLING_DIGITS.map((rollDigit) => (
+                <span key={rollDigit} className="rolling-number__cell">
+                  {rollDigit}
+                </span>
+              ))}
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNode {
   if (!tracker) {
-    return "Today is still wide open. Step in and set the pace.";
+    return (
+      <>
+        <span className="daily-tracker-copy__chunk">Today is still wide open.</span>
+        <span className="daily-tracker-copy__chunk">Step in and set the pace.</span>
+      </>
+    );
   }
 
   if (tracker.playersTried <= 0) {
-    return "No one has stepped in yet today. Be the one who sets the bar.";
+    return (
+      <>
+        <span className="daily-tracker-copy__chunk">No one has stepped in yet today.</span>
+        <span className="daily-tracker-copy__chunk">Be the one who sets the bar.</span>
+      </>
+    );
   }
 
-  const number = new Intl.NumberFormat("en-US");
   return (
     <>
-      Today <span className="daily-tracker-copy__number">{number.format(tracker.playersTried)}</span>{" "}
-      players stepped in, and only{" "}
-      <span className="daily-tracker-copy__number">{tracker.successRate}%</span> cracked it.
+      <span className="daily-tracker-copy__chunk">Today</span>
+      <span className="daily-tracker-copy__metric">
+        <span className="daily-tracker-copy__number">
+          <RollingNumber value={tracker.playersTried} />
+        </span>
+      </span>{" "}
+      <span className="daily-tracker-copy__chunk">players stepped in, and only</span>
+      <span className="daily-tracker-copy__metric">
+        <span className="daily-tracker-copy__number">
+          <RollingNumber value={tracker.successRate} />
+        </span>
+        <span className="daily-tracker-copy__symbol">%</span>
+      </span>{" "}
+      <span className="daily-tracker-copy__chunk">cracked it.</span>
     </>
   );
 }
