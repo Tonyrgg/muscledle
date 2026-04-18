@@ -64,12 +64,21 @@ export function useExerciseMediaAssets(slug: string, fallbackMedia: ExerciseMedi
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!normalized) return;
+    if (!normalized) {
+      const reset = window.setTimeout(() => {
+        setMedia(fallbackMedia);
+        setLoading(false);
+        setError(null);
+      }, 0);
+      return () => window.clearTimeout(reset);
+    }
 
     let active = true;
     const kickoff = window.setTimeout(() => {
       if (!active) return;
-      setLoading(!mediaCache.has(normalized));
+      const cached = mediaCache.get(normalized);
+      setMedia(cached ?? fallbackMedia);
+      setLoading(!cached);
       setError(null);
     }, 0);
 

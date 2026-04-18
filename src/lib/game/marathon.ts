@@ -41,6 +41,17 @@ type ExerciseDetailsRow = {
   ego: string[];
 };
 
+type LiveMarathonExerciseRow = {
+  id: string;
+  muscle: string[] | null;
+  equipment: string[] | null;
+  movement: string[] | null;
+  pattern: string[] | null;
+  reps: string[] | null;
+  goal: string[] | null;
+  ego: string[] | null;
+};
+
 // Temporary testing override.
 const TEST_MARATHON_EXERCISE_COUNT = 100;
 
@@ -85,6 +96,31 @@ function toExerciseModel(row: ExerciseDetailsRow): Exercise {
   };
 }
 
+function isHybridFamilyMatch(
+  guess: Exercise,
+  target: Exercise,
+  feedback: ReturnType<typeof evaluateGuess>,
+): boolean {
+  if (isCorrectGuess(feedback)) {
+    return false;
+  }
+
+  const nonMuscleColumnsAreGreen =
+    feedback.equipment === "green" &&
+    feedback.movement === "green" &&
+    feedback.pattern === "green" &&
+    feedback.reps === "green" &&
+    feedback.goal === "green" &&
+    feedback.ego === "green";
+
+  if (!nonMuscleColumnsAreGreen) {
+    return false;
+  }
+
+  const hasHybridMuscleSet = guess.muscle.length > 1 || target.muscle.length > 1;
+  return hasHybridMuscleSet && feedback.muscle === "yellow";
+}
+
 function toPublicState(run: MarathonRunRow | null, attempts: PublicGameAttempt[]): PublicMarathonState {
   if (!run) {
     return {
@@ -118,6 +154,24 @@ function shuffleIds(ids: string[]): string[] {
     output[j] = tmp;
   }
   return output;
+}
+
+function normalizeSignatureValues(values: string[] | null): string {
+  return [...new Set((values ?? []).map((value) => value.trim().toLowerCase()).filter(Boolean))]
+    .sort((left, right) => left.localeCompare(right))
+    .join(",");
+}
+
+function buildExerciseSignature(row: LiveMarathonExerciseRow): string {
+  return [
+    normalizeSignatureValues(row.muscle),
+    normalizeSignatureValues(row.equipment),
+    normalizeSignatureValues(row.movement),
+    normalizeSignatureValues(row.pattern),
+    normalizeSignatureValues(row.reps),
+    normalizeSignatureValues(row.goal),
+    normalizeSignatureValues(row.ego),
+  ].join("|");
 }
 
 async function getActiveRun(userId: string): Promise<MarathonRunRow | null> {
@@ -208,19 +262,19 @@ async function getExerciseDetailsByIds(ids: string[]): Promise<Map<string, Exerc
   return new Map((data ?? []).map((row) => [row.id, row]));
 }
 
-async function getLiveExerciseIds(): Promise<string[]> {
+async function getLiveExercisesForMarathon(): Promise<LiveMarathonExerciseRow[]> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("exercises")
-    .select("id")
+    .select("id, muscle, equipment, movement, pattern, reps, goal, ego")
     .eq("is_live", true)
-    .returns<Array<{ id: string }>>();
+    .returns<LiveMarathonExerciseRow[]>();
 
   if (error) {
     throw new Error(`Failed to load live exercises: ${error.message}`);
   }
 
-  return (data ?? []).map((row) => row.id);
+  return data ?? [];
 }
 
 async function getAuthenticatedUserId(): Promise<string> {
@@ -259,13 +313,30 @@ export async function startMarathonRun(): Promise<PublicMarathonState> {
     .eq("user_id", userId)
     .eq("status", "in_progress");
 
-  const exerciseIds = await getLiveExerciseIds();
-  if (exerciseIds.length === 0) {
+  const liveExercises = await getLiveExercisesForMarathon();
+  if (liveExercises.length === 0) {
     throw new GameConflictError("No live exercises available for marathon.");
   }
 
+  const shuffled = shuffleIds(liveExercises.map((row) => row.id));
+  const byId = new Map(liveExercises.map((row) => [row.id, row]));
+  const uniqueBySignature = new Map<string, string>();
+
+  for (const id of shuffled) {
+    const candidate = byId.get(id);
+    if (!candidate) continue;
+    const signature = buildExerciseSignature(candidate);
+    if (uniqueBySignature.has(signature)) continue;
+    uniqueBySignature.set(signature, id);
+  }
+
+  const uniqueExerciseIds = Array.from(uniqueBySignature.values());
+  if (uniqueExerciseIds.length === 0) {
+    throw new GameConflictError("No unique live exercises available for marathon.");
+  }
+
   const runSeed = Date.now();
-  const order = shuffleIds(exerciseIds).slice(
+  const order = uniqueExerciseIds.slice(
     0,
     Math.max(1, TEST_MARATHON_EXERCISE_COUNT),
   );
@@ -351,7 +422,9 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
   const guessedModel = toExerciseModel(guessedRow);
   const targetModel = toExerciseModel(targetRow);
   const feedback = evaluateGuess(guessedModel, targetModel);
-  const correct = isCorrectGuess(feedback);
+  const strictCorrect = isCorrectGuess(feedback);
+  const acceptedFamilyMatch = isHybridFamilyMatch(guessedModel, targetModel, feedback);
+  const correct = strictCorrect || acceptedFamilyMatch;
   const guessIndex = currentAttemptRows.length + 1;
 
   const { data: insertedAttempt, error: attemptError } = await admin
@@ -430,7 +503,7 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
     state: toPublicState(updatedRun, attempts),
     attempt,
     pointsEarned,
-    acceptedFamilyMatch: correct && insertedAttempt.guess_exercise_id !== targetExerciseId,
+    acceptedFamilyMatch,
   };
 }
 

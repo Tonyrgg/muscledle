@@ -10,6 +10,7 @@ import { DailyHints } from "@/components/game/daily-hints";
 import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
+import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import {
   fetchDailyTracker,
   fetchMarathonState,
@@ -22,8 +23,14 @@ import {
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
-import { getMuscleGroupIconKey, getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
+import {
+  getExerciseIconCandidates,
+  getMuscleGroupIconKey,
+  getMuscleGroupIconPath,
+  resolveMuscleGroupIconKey,
+} from "@/lib/exercises/icons";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
+import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
 import type {
@@ -33,6 +40,7 @@ import type {
   PublicMarathonState,
   PublicTodayGameState,
 } from "@/types/game";
+import type { ExerciseMedia } from "@/types/media";
 
 type GameShellProps = {
   initialState: PublicTodayGameState | null;
@@ -59,7 +67,10 @@ type InfiniteGameState = {
 
 type MarathonTransitionState = {
   phase: "solved" | "next";
+  exerciseSlug: string;
   exerciseName: string;
+  exerciseMuscleGroup: string | null;
+  exerciseMuscle: string[];
   score: number;
   acceptedFamilyMatch: boolean;
   attemptsSnapshot: PublicGameAttempt[];
@@ -342,6 +353,74 @@ export function GameShell({ initialState }: GameShellProps) {
     if (!targetId) return null;
     return exerciseById.get(targetId) ?? null;
   }, [exerciseById, gameState?.dailySecretExerciseId]);
+
+  const marathonTransitionFallbackMedia = useMemo<ExerciseMedia[]>(() => {
+    if (!marathonTransition || marathonTransition.phase !== "solved") {
+      return [];
+    }
+
+    const iconPath =
+      getExerciseIconCandidates({
+        slug: marathonTransition.exerciseSlug,
+        name: marathonTransition.exerciseName,
+        muscle_group: marathonTransition.exerciseMuscleGroup,
+      })[0] ?? "/muscle-icons/full-body.svg";
+
+    return [
+      {
+        id: `fallback-marathon-transition-icon-${marathonTransition.exerciseSlug}`,
+        exerciseId: marathonTransition.exerciseSlug,
+        mediaKind: "icon",
+        source: "local",
+        sourceId: marathonTransition.exerciseSlug,
+        url: iconPath,
+        thumbnailUrl: null,
+        posterUrl: null,
+        mimeType: "image/svg+xml",
+        width: null,
+        height: null,
+        durationSeconds: null,
+        isPrimary: true,
+        sortOrder: 0,
+        isActive: true,
+        attributionText: null,
+        attributionUrl: null,
+        license: null,
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      },
+    ];
+  }, [marathonTransition]);
+  const marathonTransitionSlug =
+    marathonTransition?.phase === "solved"
+      ? marathonTransition.exerciseSlug
+      : "";
+  const {
+    media: marathonTransitionMedia,
+    loading: marathonTransitionMediaLoading,
+    error: marathonTransitionMediaError,
+  } = useExerciseMediaAssets(
+    marathonTransitionSlug,
+    marathonTransitionFallbackMedia,
+  );
+  const marathonTransitionSplitIconPaths = useMemo(() => {
+    if (!marathonTransition || marathonTransition.phase !== "solved") {
+      return null;
+    }
+
+    const muscles = marathonTransition.exerciseMuscle ?? [];
+    if (muscles.length < 2) {
+      return null;
+    }
+
+    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[0]));
+    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[1]));
+    if (!first || !second || first === second) {
+      return null;
+    }
+
+    return [first, second] as const;
+  }, [marathonTransition]);
 
   const lastInfiniteExerciseSplitIconPaths = useMemo(() => {
     const muscles = activeInfiniteTarget?.muscle ?? [];
@@ -1058,7 +1137,10 @@ export function GameShell({ initialState }: GameShellProps) {
 
           setMarathonTransition({
             phase: "solved",
+            exerciseSlug: activeInfiniteTarget.slug,
             exerciseName: activeInfiniteTarget.name,
+            exerciseMuscleGroup: activeInfiniteTarget.muscle_group,
+            exerciseMuscle: activeInfiniteTarget.muscle,
             score: nextState.score,
             acceptedFamilyMatch,
             attemptsSnapshot: solvedRoundAttempts,
@@ -1067,7 +1149,10 @@ export function GameShell({ initialState }: GameShellProps) {
           marathonSolvedTimeoutRef.current = window.setTimeout(() => {
             setMarathonTransition({
               phase: "next",
+              exerciseSlug: activeInfiniteTarget.slug,
               exerciseName: activeInfiniteTarget.name,
+              exerciseMuscleGroup: activeInfiniteTarget.muscle_group,
+              exerciseMuscle: activeInfiniteTarget.muscle,
               score: nextState.score,
               acceptedFamilyMatch,
               attemptsSnapshot: solvedRoundAttempts,
@@ -1246,10 +1331,7 @@ export function GameShell({ initialState }: GameShellProps) {
     infiniteState && infiniteState.exerciseOrderIds.length > 0
       ? infiniteState.exerciseOrderIds.length
       : exercises.length;
-  const infiniteSolvedRounds =
-    infiniteState && marathonTransition
-      ? Math.min(infiniteTotal, infiniteState.currentIndex + 1)
-      : (infiniteState?.currentIndex ?? 0);
+  const infiniteSolvedRounds = infiniteState?.currentIndex ?? 0;
   const marathonProgressPct =
     infiniteTotal > 0
       ? Math.min(
@@ -1427,43 +1509,47 @@ export function GameShell({ initialState }: GameShellProps) {
                 Marathon
               </button>
             </div>
-            <p className="daily-tracker-copy" aria-live="polite">
-              {formatDailyTrackerMessage(dailyTracker)}
-            </p>
-            <section className="game-quick-tools" aria-label="Game tools">
-              <button
-                type="button"
-                className="game-quick-tools__item"
-                onClick={() => setFooterModal("stats")}
-                aria-label="Open statistics"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                  <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
-                </svg>
-                <span className="game-quick-tools__label">Stats</span>
-              </button>
-              <button
-                type="button"
-                className="game-quick-tools__item"
-                onClick={() => setFooterModal("how-to-play")}
-                aria-label="Open how to play"
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                  <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
-                </svg>
-                <span className="game-quick-tools__label">How To Play</span>
-              </button>
-              <div
-                className="game-quick-tools__item game-quick-tools__item--streak"
-                aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
-              >
-                <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
-                  <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
-                </svg>
-                <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
-                <span className="game-quick-tools__label">Current Streak</span>
-              </div>
-            </section>
+            {mode === "daily" ? (
+              <>
+                <p className="daily-tracker-copy" aria-live="polite">
+                  {formatDailyTrackerMessage(dailyTracker)}
+                </p>
+                <section className="game-quick-tools" aria-label="Game tools">
+                  <button
+                    type="button"
+                    className="game-quick-tools__item"
+                    onClick={() => setFooterModal("stats")}
+                    aria-label="Open statistics"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                      <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
+                    </svg>
+                    <span className="game-quick-tools__label">Stats</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="game-quick-tools__item"
+                    onClick={() => setFooterModal("how-to-play")}
+                    aria-label="Open how to play"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                      <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
+                    </svg>
+                    <span className="game-quick-tools__label">How To Play</span>
+                  </button>
+                  <div
+                    className="game-quick-tools__item game-quick-tools__item--streak"
+                    aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
+                      <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
+                    </svg>
+                    <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
+                    <span className="game-quick-tools__label">Current Streak</span>
+                  </div>
+                </section>
+              </>
+            ) : null}
 
             {shouldShowDailyPrompt ? (
               <div
@@ -1709,6 +1795,56 @@ export function GameShell({ initialState }: GameShellProps) {
                         ? marathonTransition.exerciseName
                         : "Preparing next excercise"}
                     </p>
+                    {marathonTransition.phase === "solved" ? (
+                      <div className="marathon-transition__media-wrap">
+                        {marathonTransitionSplitIconPaths ? (
+                          <div className="marathon-transition__split">
+                            <Image
+                              src={marathonTransitionSplitIconPaths[0]}
+                              alt=""
+                              fill
+                              sizes="240px"
+                              className="marathon-transition__split-part marathon-transition__split-part--primary"
+                            />
+                            <Image
+                              src={marathonTransitionSplitIconPaths[1]}
+                              alt=""
+                              fill
+                              sizes="240px"
+                              className="marathon-transition__split-part marathon-transition__split-part--secondary"
+                            />
+                            <span className="marathon-transition__split-divider" />
+                          </div>
+                        ) : marathonTransitionMedia.length > 0 ? (
+                          <ExerciseMediaView
+                            media={marathonTransitionMedia}
+                            context="victory"
+                            alt={`Demo ${marathonTransition.exerciseName}`}
+                            className="marathon-transition__media"
+                          />
+                        ) : (
+                          <p className="marathon-transition__media-fallback">
+                            {marathonTransitionMediaLoading
+                              ? "Loading demo..."
+                              : (marathonTransitionMediaError ?? "Demo unavailable")}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
+                    <div
+                      className="marathon-hud__bar-wrap marathon-transition__progress"
+                      aria-label="Marathon progress"
+                    >
+                      <div className="marathon-hud__bar">
+                        <span
+                          className="marathon-hud__bar-fill"
+                          style={{ width: `${marathonProgressPct}%` }}
+                        />
+                      </div>
+                      <p className="marathon-hud__bar-label">
+                        {marathonProgressPct}% complete
+                      </p>
+                    </div>
                     <p className="marathon-transition__score">
                       <span className="marathon-transition__score-label">Score</span>
                       <span className="marathon-transition__score-value">{marathonTransition.score}</span>
