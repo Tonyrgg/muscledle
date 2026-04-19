@@ -3223,6 +3223,15 @@ button.game-quick-tools__item:active {
     touch-action: pan-x;
   }
 
+  .guess-input__field {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  .guess-input__dropdown {
+    max-height: min(42dvh, 14rem);
+  }
+
   .attempts-mobile-card {
     flex: 0 0 100%;
     min-width: 100%;

@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, type WheelEvent, useId, useMemo, useState } from "react";
+import { type KeyboardEvent, type WheelEvent, useId, useMemo, useRef, useState } from "react";
 import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -102,6 +102,7 @@ export function GuessInput({
 }: GuessInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const listId = useId();
 
   const normalizedQuery = normalize(query);
@@ -173,11 +174,38 @@ export function GuessInput({
     }
   };
 
+  const handleInputFocus = () => {
+    setIsOpen(true);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!window.matchMedia("(max-width: 768px)").matches) {
+      return;
+    }
+
+    const focusInput = inputRef.current;
+    const inputZone = focusInput?.closest(".game-input-zone");
+    if (!(inputZone instanceof HTMLElement)) {
+      return;
+    }
+
+    const scrollInputNearTop = () => {
+      inputZone.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      window.scrollBy({ top: -10, behavior: "smooth" });
+    };
+
+    window.requestAnimationFrame(scrollInputNearTop);
+    window.setTimeout(scrollInputNearTop, 180);
+  };
+
   return (
     <div className="guess-input">
       <div className="guess-input__row">
         <div className="guess-input__field-wrap">
           <input
+            ref={inputRef}
             role="combobox"
             aria-expanded={showDropdown}
             aria-controls={listId}
@@ -186,7 +214,7 @@ export function GuessInput({
               showDropdown && activeIndex >= 0 ? `${listId}-option-${activeIndex}` : undefined
             }
             value={query}
-            onFocus={() => setIsOpen(true)}
+            onFocus={handleInputFocus}
             onBlur={() => {
               window.setTimeout(() => {
                 setIsOpen(false);
