@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, type WheelEvent, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type WheelEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -119,6 +119,20 @@ export function GuessInput({
   const showDropdown = isOpen && !disabled && query.trim().length > 0 && !selectedExerciseId;
   const canSubmitFromButton =
     query.trim().length > 0 && !disabled && !loadingExercises && !submitting;
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const isMobile = window.matchMedia("(max-width: 760px)").matches;
+    const shouldHideFloatingPills = isMobile && showDropdown;
+    document.body.classList.toggle("guess-dropdown-open-mobile", shouldHideFloatingPills);
+
+    return () => {
+      document.body.classList.remove("guess-dropdown-open-mobile");
+    };
+  }, [showDropdown]);
 
   const handleSelect = (exercise: LiveExerciseSuggestion) => {
     onSelectExercise(exercise);

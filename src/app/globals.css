@@ -1993,6 +1993,10 @@ button.game-quick-tools__item:active {
   display: none;
 }
 
+.game-quick-tools--mobile {
+  display: none;
+}
+
 .info-sheet {
   position: fixed;
   inset: 0;
@@ -3127,6 +3131,15 @@ button.game-quick-tools__item:active {
     padding: 0.3rem;
   }
 
+  .game-quick-tools--desktop {
+    display: none;
+  }
+
+  .game-quick-tools--mobile {
+    display: grid;
+    margin: 0 0 0.5rem;
+  }
+
   .daily-tracker-copy {
     margin: 1rem;
     width: min(100%, 940px);
@@ -3783,6 +3796,11 @@ button.game-quick-tools__item:active {
     position: relative;
   }
 
+  body.guess-dropdown-open-mobile .mobile-floating-pills-host {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .mobile-floating-pills-host .consent-fab-wrap--inline,
   .mobile-floating-pills-host .feedback-fab-wrap--inline {
     position: relative;
@@ -3791,11 +3809,29 @@ button.game-quick-tools__item:active {
 
   .mobile-floating-pills-host .consent-popover,
   .mobile-floating-pills-host .feedback-popover {
+    position: fixed;
+    top: 50%;
     left: 50%;
     right: auto;
-    bottom: calc(100% + 8px);
+    bottom: auto;
     transform: translateX(-50%);
     width: min(92vw, 380px);
+    max-height: calc(100dvh - 1rem);
+    z-index: 130;
+  }
+
+  .mobile-floating-pills-host .consent-popover {
+    transform: translate(-50%, -50%);
+  }
+
+  .mobile-floating-pills-host .feedback-popover {
+    transform: translate(-50%, -50%);
+  }
+
+  .mobile-floating-pills-host .consent-popover .consent-modal,
+  .mobile-floating-pills-host .feedback-popover .feedback-modal {
+    width: 100%;
+    max-height: inherit;
   }
 }
 

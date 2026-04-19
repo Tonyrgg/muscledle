@@ -1514,7 +1514,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 <p className="daily-tracker-copy" aria-live="polite">
                   {formatDailyTrackerMessage(dailyTracker)}
                 </p>
-                <section className="game-quick-tools" aria-label="Game tools">
+                <section className="game-quick-tools game-quick-tools--desktop" aria-label="Game tools">
                   <button
                     type="button"
                     className="game-quick-tools__item"
@@ -1860,6 +1860,40 @@ export function GameShell({ initialState }: GameShellProps) {
               className="yesterday-exercise"
               aria-label="Yesterday exercise"
             >
+              <section className="game-quick-tools game-quick-tools--mobile" aria-label="Game tools">
+                <button
+                  type="button"
+                  className="game-quick-tools__item"
+                  onClick={() => setFooterModal("stats")}
+                  aria-label="Open statistics"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                    <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
+                  </svg>
+                  <span className="game-quick-tools__label">Stats</span>
+                </button>
+                <button
+                  type="button"
+                  className="game-quick-tools__item"
+                  onClick={() => setFooterModal("how-to-play")}
+                  aria-label="Open how to play"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                    <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
+                  </svg>
+                  <span className="game-quick-tools__label">How To Play</span>
+                </button>
+                <div
+                  className="game-quick-tools__item game-quick-tools__item--streak"
+                  aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
+                    <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
+                  </svg>
+                  <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
+                  <span className="game-quick-tools__label">Current Streak</span>
+                </div>
+              </section>
               <p className="yesterday-exercise__text">
                 Yesterday&apos;s exercise was{" "}
                 <span className="yesterday-exercise__name">
