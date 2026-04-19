@@ -5,7 +5,7 @@ import {
   getAttributeDefinition,
   type FeedbackColumnKey,
 } from "@/lib/exercises/attribute-definitions";
-import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
+import { buildPostGameInsights, buildPreferredCoachNotesForSlug } from "@/lib/exercises/post-game-insights";
 import {
   getMuscleGroupIconKey,
   getMuscleGroupIconPath,
@@ -25,6 +25,23 @@ function titleCase(value: string): string {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function formatCoachSectionLabel(key: string): string {
+  const explicit: Record<string, string> = {
+    coach_take: "Coach Take",
+    make_it_easier: "Make It Easier",
+    level_it_up: "Level It Up",
+    build_size: "Build Size",
+    build_strength: "Build Strength",
+    build_skill: "Build Skill",
+    build_control: "Build Control",
+    build_resilience: "Build Resilience",
+    chase_pump: "Chase Pump",
+    build_power: "Build Power",
+  };
+  if (explicit[key]) return explicit[key];
+  return titleCase(key.replaceAll("_", "-"));
 }
 
 function buildInfoLine(row: ExerciseArchiveRow): string {
@@ -186,6 +203,10 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
   const selectedCoachNotes = useMemo(
     () => buildPostGameInsights(selectedRow ? toLiveExerciseSuggestion(selectedRow) : null),
     [selectedRow],
+  );
+  const selectedCoachNotesPreferred = useMemo(
+    () => (selectedRow ? buildPreferredCoachNotesForSlug(selectedRow.slug, selectedCoachNotes) : null),
+    [selectedCoachNotes, selectedRow],
   );
 
   const openDetails = (row: ExerciseArchiveRow) => {
@@ -420,37 +441,27 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
 
                   {coachNotesOpen ? (
                     <div className="archive-detail-modal__coach-body">
-                      <p className="archive-detail-modal__coach-head">Why use it</p>
-                      <p className="archive-detail-modal__coach-line">{selectedCoachNotes.whyUse}</p>
-
-                      <p className="archive-detail-modal__coach-head">Execution cues</p>
-                      <ul className="archive-detail-modal__coach-list">
-                        {selectedCoachNotes.cues.map((cue) => (
-                          <li key={cue}>{cue}</li>
-                        ))}
-                      </ul>
-
-                      <p className="archive-detail-modal__coach-head">Common mistakes</p>
-                      <ul className="archive-detail-modal__coach-list">
-                        {selectedCoachNotes.mistakes.map((mistake) => (
-                          <li key={mistake}>{mistake}</li>
-                        ))}
-                      </ul>
-
-                      <p className="archive-detail-modal__coach-head">Regression / progression</p>
+                      <p className="archive-detail-modal__coach-head">{formatCoachSectionLabel("coach_take")}</p>
                       <p className="archive-detail-modal__coach-line">
-                        Easier: {selectedCoachNotes.variants.easier}
+                        {selectedCoachNotesPreferred?.coach_take ?? selectedCoachNotes.whyUse}
+                      </p>
+                      <p className="archive-detail-modal__coach-head">{formatCoachSectionLabel("make_it_easier")}</p>
+                      <p className="archive-detail-modal__coach-line">
+                        {selectedCoachNotesPreferred?.make_it_easier ?? selectedCoachNotes.variants.easier}
+                      </p>
+                      <p className="archive-detail-modal__coach-head">{formatCoachSectionLabel("level_it_up")}</p>
+                      <p className="archive-detail-modal__coach-line">
+                        {selectedCoachNotesPreferred?.level_it_up ?? selectedCoachNotes.variants.harder}
+                      </p>
+                      <p className="archive-detail-modal__coach-head">{formatCoachSectionLabel("build_size")}</p>
+                      <p className="archive-detail-modal__coach-line">
+                        {selectedCoachNotesPreferred?.build_size ?? selectedCoachNotes.dose.hypertrophy}
+                      </p>
+                      <p className="archive-detail-modal__coach-head">
+                        {formatCoachSectionLabel(selectedCoachNotesPreferred?.secondary_key ?? "build_strength")}
                       </p>
                       <p className="archive-detail-modal__coach-line">
-                        Harder: {selectedCoachNotes.variants.harder}
-                      </p>
-
-                      <p className="archive-detail-modal__coach-head">Suggested dose</p>
-                      <p className="archive-detail-modal__coach-line">
-                        Hypertrophy: {selectedCoachNotes.dose.hypertrophy}
-                      </p>
-                      <p className="archive-detail-modal__coach-line">
-                        Strength/skill: {selectedCoachNotes.dose.strengthOrSkill}
+                        {selectedCoachNotesPreferred?.secondary_value ?? selectedCoachNotes.dose.strengthOrSkill}
                       </p>
                     </div>
                   ) : null}

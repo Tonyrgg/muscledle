@@ -1133,11 +1133,11 @@ button.game-quick-tools__item:active {
 
 .victory-panel__learning-head {
   margin: 0.66rem 0 0;
-  color: #f3f3f3;
-  font-size: 0.76rem;
+  color: #ffb36b;
+  font-size: 1rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-transform: none;
 }
 
 .victory-panel__learning-list {
@@ -2803,10 +2803,11 @@ button.game-quick-tools__item:active {
 
 .archive-detail-modal__coach-head {
   margin: 0.34rem 0 0;
-  color: #f0f0f0;
-  font-size: 0.54rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  color: #ffb36b;
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: none;
 }
 
 .archive-detail-modal__coach-line {

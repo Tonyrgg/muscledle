@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import { getExerciseIconCandidates, getMuscleGroupIconKey, getMuscleGroupIconPath } from "@/lib/exercises/icons";
-import { buildPostGameInsights } from "@/lib/exercises/post-game-insights";
+import { buildPostGameInsights, buildPreferredCoachNotesForSlug } from "@/lib/exercises/post-game-insights";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import type { FeedbackColor } from "@/types/exercise";
@@ -69,6 +69,28 @@ function parseMuscleTokens(value: string | null | undefined): string[] {
     .split("/")
     .map((item) => item.trim().toLowerCase())
     .filter(Boolean);
+}
+
+function formatCoachSectionLabel(key: string): string {
+  const explicit: Record<string, string> = {
+    coach_take: "Coach Take",
+    make_it_easier: "Make It Easier",
+    level_it_up: "Level It Up",
+    build_size: "Build Size",
+    build_strength: "Build Strength",
+    build_skill: "Build Skill",
+    build_control: "Build Control",
+    build_resilience: "Build Resilience",
+    chase_pump: "Chase Pump",
+    build_power: "Build Power",
+  };
+  if (explicit[key]) return explicit[key];
+  return key
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export function VictoryPanel({
@@ -176,6 +198,10 @@ export function VictoryPanel({
     () => buildPostGameInsights(targetExercise),
     [targetExercise],
   );
+  const insightsPreferred = useMemo(
+    () => buildPreferredCoachNotesForSlug(targetExercise?.slug ?? "", insights),
+    [insights, targetExercise?.slug],
+  );
 
   const copyText = async () => {
     const value = shareText;
@@ -281,38 +307,16 @@ export function VictoryPanel({
 
             {learningOpen ? (
               <div className="victory-panel__learning-body">
-                <p className="victory-panel__learning-head">Why use it</p>
-                <p className="victory-panel__learning-line">{insights.whyUse}</p>
-
-                <p className="victory-panel__learning-head">Execution cues</p>
-                <ul className="victory-panel__learning-list">
-                  {insights.cues.map((cue) => (
-                    <li key={cue}>{cue}</li>
-                  ))}
-                </ul>
-
-                <p className="victory-panel__learning-head">Common mistakes</p>
-                <ul className="victory-panel__learning-list">
-                  {insights.mistakes.map((mistake) => (
-                    <li key={mistake}>{mistake}</li>
-                  ))}
-                </ul>
-
-                <p className="victory-panel__learning-head">Regression / progression</p>
-                <p className="victory-panel__learning-line">
-                  Easier: {insights.variants.easier}
-                </p>
-                <p className="victory-panel__learning-line">
-                  Harder: {insights.variants.harder}
-                </p>
-
-                <p className="victory-panel__learning-head">Suggested dose</p>
-                <p className="victory-panel__learning-line">
-                  Hypertrophy: {insights.dose.hypertrophy}
-                </p>
-                <p className="victory-panel__learning-line">
-                  Strength/skill: {insights.dose.strengthOrSkill}
-                </p>
+                <p className="victory-panel__learning-head">{formatCoachSectionLabel("coach_take")}</p>
+                <p className="victory-panel__learning-line">{insightsPreferred.coach_take}</p>
+                <p className="victory-panel__learning-head">{formatCoachSectionLabel("make_it_easier")}</p>
+                <p className="victory-panel__learning-line">{insightsPreferred.make_it_easier}</p>
+                <p className="victory-panel__learning-head">{formatCoachSectionLabel("level_it_up")}</p>
+                <p className="victory-panel__learning-line">{insightsPreferred.level_it_up}</p>
+                <p className="victory-panel__learning-head">{formatCoachSectionLabel("build_size")}</p>
+                <p className="victory-panel__learning-line">{insightsPreferred.build_size}</p>
+                <p className="victory-panel__learning-head">{formatCoachSectionLabel(insightsPreferred.secondary_key)}</p>
+                <p className="victory-panel__learning-line">{insightsPreferred.secondary_value}</p>
               </div>
             ) : null}
           </section>
