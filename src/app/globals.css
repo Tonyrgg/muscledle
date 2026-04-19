@@ -3205,7 +3205,7 @@ button.game-quick-tools__item:active {
 
   .attempts-mobile-scroll {
     display: flex;
-    gap: 0.54rem;
+    gap: 0;
     width: 100%;
     overflow-x: auto;
     overflow-y: hidden;
@@ -3213,25 +3213,43 @@ button.game-quick-tools__item:active {
     scroll-padding-inline: 0;
     padding-inline: 0;
     overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
   }
 
   .attempts-mobile-card {
     flex: 0 0 100%;
+    min-width: 100%;
+    max-width: 100%;
     width: 100%;
+    box-sizing: border-box;
     scroll-snap-align: start;
+    scroll-snap-stop: always;
     border: 0;
     background: transparent;
     padding: 0;
   }
 
   .attempts-mobile-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.26rem;
+    --attempt-mobile-gap: clamp(0.22rem, 1.3vw, 0.34rem);
+    display: flex;
+    flex-direction: column;
+    gap: var(--attempt-mobile-gap);
+    width: 100%;
+  }
+
+  .attempts-mobile-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--attempt-mobile-gap);
+    width: 100%;
   }
 
   .attempts-mobile-slot {
+    flex: 1 1 0;
+    width: auto;
     border: 1px solid #313131;
     background: #202020;
     padding: 0.24rem;
@@ -3318,6 +3336,10 @@ button.game-quick-tools__item:active {
     padding: 0.7rem;
     max-height: calc(100dvh - 1rem);
     overflow-y: auto;
+  }
+
+  .attempts-mobile-scroll::-webkit-scrollbar {
+    display: none;
   }
 
   .exercise-media-preview__state {

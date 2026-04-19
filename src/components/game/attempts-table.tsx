@@ -30,97 +30,108 @@ function MobileAttemptCard({
   attempt: PublicGameAttempt;
   isRevealing: boolean;
 }) {
+  const topRow = (
+    <>
+      <section className="attempts-mobile-slot attempts-mobile-slot--exercise">
+        <p className="attempts-mobile-slot__label">Exercise</p>
+        <div className="attempts-mobile-slot__body attempts-mobile-slot__body--exercise">
+          <ExerciseIconCell
+            exerciseName={attempt.guessName}
+            exerciseSlug={attempt.guessSlug}
+            exerciseMuscleGroup={attempt.guessMuscleGroup}
+            exerciseMuscleValues={attempt.values.muscle}
+          />
+        </div>
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Muscle</p>
+        <FeedbackCell
+          column={mobileColumnKeys[0]}
+          color={attempt.feedback.muscle}
+          value={attempt.values.muscle}
+          isRevealing={isRevealing}
+          revealOrder={0}
+        />
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Equipment</p>
+        <FeedbackCell
+          column={mobileColumnKeys[1]}
+          color={attempt.feedback.equipment}
+          value={attempt.values.equipment}
+          isRevealing={isRevealing}
+          revealOrder={1}
+        />
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Movement</p>
+        <FeedbackCell
+          column={mobileColumnKeys[2]}
+          color={attempt.feedback.movement}
+          value={attempt.values.movement}
+          isRevealing={isRevealing}
+          revealOrder={2}
+        />
+      </section>
+    </>
+  );
+
+  const bottomRow = (
+    <>
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Pattern</p>
+        <FeedbackCell
+          column={mobileColumnKeys[3]}
+          color={attempt.feedback.pattern}
+          value={attempt.values.pattern}
+          isRevealing={isRevealing}
+          revealOrder={3}
+        />
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Reps</p>
+        <FeedbackCell
+          column={mobileColumnKeys[4]}
+          color={attempt.feedback.reps}
+          value={attempt.values.reps}
+          isRevealing={isRevealing}
+          revealOrder={4}
+        />
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Goal</p>
+        <FeedbackCell
+          column={mobileColumnKeys[5]}
+          color={attempt.feedback.goal}
+          value={attempt.values.goal}
+          isRevealing={isRevealing}
+          revealOrder={5}
+        />
+      </section>
+
+      <section className="attempts-mobile-slot">
+        <p className="attempts-mobile-slot__label">Ego</p>
+        <FeedbackCell
+          column={mobileColumnKeys[6]}
+          color={attempt.feedback.ego}
+          value={attempt.values.ego}
+          isRevealing={isRevealing}
+          revealOrder={6}
+        />
+      </section>
+    </>
+  );
+
   return (
     <article className="attempts-mobile-card" aria-label={`Attempt ${attempt.guessName}`}>
       <div className="attempts-mobile-grid">
-        <section className="attempts-mobile-slot attempts-mobile-slot--exercise">
-          <p className="attempts-mobile-slot__label">Exercise</p>
-          <div className="attempts-mobile-slot__body attempts-mobile-slot__body--exercise">
-            <ExerciseIconCell
-              exerciseName={attempt.guessName}
-              exerciseSlug={attempt.guessSlug}
-              exerciseMuscleGroup={attempt.guessMuscleGroup}
-              exerciseMuscleValues={attempt.values.muscle}
-            />
-          </div>
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Muscle</p>
-          <FeedbackCell
-            column={mobileColumnKeys[0]}
-            color={attempt.feedback.muscle}
-            value={attempt.values.muscle}
-            isRevealing={isRevealing}
-            revealOrder={0}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Equipment</p>
-          <FeedbackCell
-            column={mobileColumnKeys[1]}
-            color={attempt.feedback.equipment}
-            value={attempt.values.equipment}
-            isRevealing={isRevealing}
-            revealOrder={1}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Movement</p>
-          <FeedbackCell
-            column={mobileColumnKeys[2]}
-            color={attempt.feedback.movement}
-            value={attempt.values.movement}
-            isRevealing={isRevealing}
-            revealOrder={2}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Pattern</p>
-          <FeedbackCell
-            column={mobileColumnKeys[3]}
-            color={attempt.feedback.pattern}
-            value={attempt.values.pattern}
-            isRevealing={isRevealing}
-            revealOrder={3}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Reps</p>
-          <FeedbackCell
-            column={mobileColumnKeys[4]}
-            color={attempt.feedback.reps}
-            value={attempt.values.reps}
-            isRevealing={isRevealing}
-            revealOrder={4}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Goal</p>
-          <FeedbackCell
-            column={mobileColumnKeys[5]}
-            color={attempt.feedback.goal}
-            value={attempt.values.goal}
-            isRevealing={isRevealing}
-            revealOrder={5}
-          />
-        </section>
-
-        <section className="attempts-mobile-slot">
-          <p className="attempts-mobile-slot__label">Ego</p>
-          <FeedbackCell
-            column={mobileColumnKeys[6]}
-            color={attempt.feedback.ego}
-            value={attempt.values.ego}
-            isRevealing={isRevealing}
-            revealOrder={6}
-          />
-        </section>
+        <div className="attempts-mobile-row">{topRow}</div>
+        <div className="attempts-mobile-row">{bottomRow}</div>
       </div>
     </article>
   );
@@ -188,12 +199,22 @@ export function AttemptsTable({
           {Array.from({ length: 2 }).map((_, index) => (
             <article key={index} className="attempts-mobile-card attempts-mobile-card--loading">
               <div className="attempts-mobile-grid attempts-mobile-grid--loading">
-                {Array.from({ length: 8 }).map((__, cellIndex) => (
-                  <div key={cellIndex} className="attempts-mobile-slot attempts-mobile-slot--loading">
-                    <span className="attempts-mobile-slot__label-skeleton" />
-                    <span className="attempts-mobile-slot__body-skeleton" />
-                  </div>
-                ))}
+                <div className="attempts-mobile-row">
+                  {Array.from({ length: 4 }).map((__, cellIndex) => (
+                    <div key={`top-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
+                      <span className="attempts-mobile-slot__label-skeleton" />
+                      <span className="attempts-mobile-slot__body-skeleton" />
+                    </div>
+                  ))}
+                </div>
+                <div className="attempts-mobile-row">
+                  {Array.from({ length: 4 }).map((__, cellIndex) => (
+                    <div key={`bottom-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
+                      <span className="attempts-mobile-slot__label-skeleton" />
+                      <span className="attempts-mobile-slot__body-skeleton" />
+                    </div>
+                  ))}
+                </div>
               </div>
             </article>
           ))}
