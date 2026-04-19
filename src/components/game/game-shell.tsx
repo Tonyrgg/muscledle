@@ -1872,6 +1872,7 @@ export function GameShell({ initialState }: GameShellProps) {
                 to discover other exercises.
               </p>
               <p className="yesterday-exercise__copy">© 2026 Liftdle. All rights reserved.</p>
+              <div id="mobile-floating-pills-host" className="mobile-floating-pills-host" aria-hidden />
             </section>
           ) : null}
             </>

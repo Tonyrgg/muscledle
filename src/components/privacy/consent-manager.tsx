@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
 import {
   CONSENT_POLICY_VERSION,
@@ -105,9 +107,11 @@ export function AnalyticsGate() {
 }
 
 export function ConsentManager() {
+  const pathname = usePathname();
   const fabRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLElement | null>(null);
   const [fabLift, setFabLift] = useState(0);
+  const [mobileInlineHost, setMobileInlineHost] = useState<HTMLElement | null>(null);
   const [ready, setReady] = useState(false);
   const [choice, setChoice] = useState<ConsentChoice | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
@@ -143,6 +147,28 @@ export function ConsentManager() {
   useEffect(() => {
     setFabLift(0);
   }, []);
+
+  useEffect(() => {
+    const syncHost = () => {
+      if (typeof window === "undefined") {
+        setMobileInlineHost(null);
+        return;
+      }
+
+      const isMobile = window.matchMedia("(max-width: 760px)").matches;
+      const host = document.getElementById("mobile-floating-pills-host");
+      setMobileInlineHost(isMobile && host instanceof HTMLElement ? host : null);
+    };
+
+    syncHost();
+    window.addEventListener("resize", syncHost);
+    window.addEventListener("orientationchange", syncHost);
+
+    return () => {
+      window.removeEventListener("resize", syncHost);
+      window.removeEventListener("orientationchange", syncHost);
+    };
+  }, [pathname, manageOpen, bannerOpen]);
 
   useEffect(() => {
     if (!manageOpen) return;
@@ -210,7 +236,7 @@ export function ConsentManager() {
     setManageOpen(false);
   };
 
-  return (
+  const content = (
     <div className="consent-fab-wrap" style={{ "--consent-fab-lift": `${fabLift}px` } as CSSProperties}>
       <button
         type="button"
@@ -360,4 +386,13 @@ export function ConsentManager() {
       ) : null}
     </div>
   );
+
+  if (mobileInlineHost) {
+    return createPortal(
+      <div className="consent-fab-wrap consent-fab-wrap--inline">{content.props.children}</div>,
+      mobileInlineHost,
+    );
+  }
+
+  return content;
 }

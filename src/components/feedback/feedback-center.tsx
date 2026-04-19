@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRef } from "react";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   createFeedbackReportRequest,
@@ -76,6 +77,7 @@ export function FeedbackCenter() {
   const fabRef = useRef<HTMLButtonElement | null>(null);
   const popoverRef = useRef<HTMLElement | null>(null);
   const [fabLift, setFabLift] = useState(0);
+  const [mobileInlineHost, setMobileInlineHost] = useState<HTMLElement | null>(null);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorsFeed, setErrorsFeed] = useState<string[]>([]);
@@ -122,6 +124,28 @@ export function FeedbackCenter() {
   useEffect(() => {
     setFabLift(0);
   }, [pathname]);
+
+  useEffect(() => {
+    const syncHost = () => {
+      if (typeof window === "undefined") {
+        setMobileInlineHost(null);
+        return;
+      }
+
+      const isMobile = window.matchMedia("(max-width: 760px)").matches;
+      const host = document.getElementById("mobile-floating-pills-host");
+      setMobileInlineHost(isMobile && host instanceof HTMLElement ? host : null);
+    };
+
+    syncHost();
+    window.addEventListener("resize", syncHost);
+    window.addEventListener("orientationchange", syncHost);
+
+    return () => {
+      window.removeEventListener("resize", syncHost);
+      window.removeEventListener("orientationchange", syncHost);
+    };
+  }, [open, pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -290,7 +314,7 @@ export function FeedbackCenter() {
     setVisibleSteps((current) => Math.max(current, Math.min(activeSteps.length, index + 2)));
   }, [activeSteps, category]);
 
-  return (
+  const content = (
     <div className="feedback-fab-wrap" style={{ "--feedback-fab-lift": `${fabLift}px` } as CSSProperties}>
       <button
         type="button"
@@ -469,4 +493,13 @@ export function FeedbackCenter() {
       ) : null}
     </div>
   );
+
+  if (mobileInlineHost) {
+    return createPortal(
+      <div className="feedback-fab-wrap feedback-fab-wrap--inline">{content.props.children}</div>,
+      mobileInlineHost,
+    );
+  }
+
+  return content;
 }

@@ -1989,6 +1989,10 @@ button.game-quick-tools__item:active {
   text-align: center;
 }
 
+.mobile-floating-pills-host {
+  display: none;
+}
+
 .info-sheet {
   position: fixed;
   inset: 0;
@@ -3739,6 +3743,12 @@ button.game-quick-tools__item:active {
     bottom: calc(0.6rem + var(--consent-fab-lift, 0px));
   }
 
+  .consent-fab-wrap--inline {
+    left: auto;
+    right: auto;
+    bottom: auto;
+  }
+
   .feedback-popover {
     right: 0.4rem;
     width: min(380px, calc(100vw - 1.2rem));
@@ -3751,6 +3761,32 @@ button.game-quick-tools__item:active {
 
   .consent-modal__actions {
     grid-template-columns: 1fr;
+  }
+
+  .mobile-floating-pills-host {
+    margin: 0.62rem auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    width: min(100%, 420px);
+    position: relative;
+  }
+
+  .mobile-floating-pills-host .consent-fab-wrap--inline,
+  .mobile-floating-pills-host .feedback-fab-wrap--inline {
+    position: relative;
+    margin: 0;
+  }
+
+  .mobile-floating-pills-host .consent-popover,
+  .mobile-floating-pills-host .feedback-popover {
+    left: 50%;
+    right: auto;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    width: min(92vw, 380px);
   }
 }
 
@@ -3815,6 +3851,16 @@ button.game-quick-tools__item:active {
   z-index: 90;
   transform: translateY(calc(-1 * var(--feedback-fab-lift, 0px)));
   will-change: transform;
+}
+
+.consent-fab-wrap--inline,
+.feedback-fab-wrap--inline {
+  position: relative;
+  right: auto;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  will-change: auto;
 }
 
 .feedback-fab {
@@ -4052,6 +4098,12 @@ button.game-quick-tools__item:active {
   .feedback-fab-wrap {
     right: 0.6rem;
     bottom: 3.2rem;
+  }
+
+  .feedback-fab-wrap--inline {
+    left: auto;
+    right: auto;
+    bottom: auto;
   }
 
   .feedback-modal__grid {

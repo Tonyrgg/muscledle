@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { getAttributeDefinition, type FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
 import type { FeedbackColor } from "@/types/exercise";
@@ -19,13 +19,67 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
   red: "feedback-cell--red",
 };
 
+const TOOLTIP_OPEN_EVENT = "liftdle-feedback-tooltip-open";
+
 export function FeedbackCell({ column, color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
+  const cellRef = useRef<HTMLDivElement | null>(null);
+  const tooltipId = useId();
   const normalizedValue = value.trim();
   const displayValue = normalizedValue.length > 0 ? normalizedValue : "Unknown";
 
   const tooltipText = useMemo(() => getAttributeDefinition(column, displayValue), [column, displayValue]);
+
+  useEffect(() => {
+    const onAnotherTooltipOpen = (event: Event) => {
+      const customEvent = event as CustomEvent<{ id?: string }>;
+      if (customEvent.detail?.id === tooltipId) {
+        return;
+      }
+
+      setTooltipOpen(false);
+      setCursorPosition(null);
+    };
+
+    window.addEventListener(TOOLTIP_OPEN_EVENT, onAnotherTooltipOpen as EventListener);
+    return () => window.removeEventListener(TOOLTIP_OPEN_EVENT, onAnotherTooltipOpen as EventListener);
+  }, [tooltipId]);
+
+  useEffect(() => {
+    if (!tooltipOpen) {
+      return;
+    }
+
+    const closeTooltip = () => {
+      setTooltipOpen(false);
+      setCursorPosition(null);
+    };
+
+    const onDocumentPointerDown = (event: globalThis.PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        closeTooltip();
+        return;
+      }
+
+      if (cellRef.current?.contains(target)) {
+        return;
+      }
+
+      closeTooltip();
+    };
+
+    document.addEventListener("pointerdown", onDocumentPointerDown, true);
+    window.addEventListener("scroll", closeTooltip, true);
+    window.addEventListener("resize", closeTooltip);
+
+    return () => {
+      document.removeEventListener("pointerdown", onDocumentPointerDown, true);
+      window.removeEventListener("scroll", closeTooltip, true);
+      window.removeEventListener("resize", closeTooltip);
+    };
+  }, [tooltipOpen]);
 
   const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
     const viewportPadding = 12;
@@ -42,7 +96,7 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
     };
   };
 
-  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!tooltipOpen) {
       return;
     }
@@ -50,14 +104,18 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
     setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
   };
 
-  const handleClick = (event: PointerEvent<HTMLDivElement>) => {
+  const handleClick = (event: ReactPointerEvent<HTMLDivElement>) => {
     const nextOpen = !tooltipOpen;
     setTooltipOpen(nextOpen);
 
     if (!nextOpen) {
+      setCursorPosition(null);
       return;
     }
 
+    window.dispatchEvent(
+      new CustomEvent(TOOLTIP_OPEN_EVENT, { detail: { id: tooltipId } }),
+    );
     setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
   };
 
@@ -74,6 +132,7 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
 
   return (
     <div
+      ref={cellRef}
       className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""}`}
       role="cell"
       aria-label={displayValue}
