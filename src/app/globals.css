@@ -2499,6 +2499,8 @@ button.game-quick-tools__item:active {
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.6rem;
   min-height: 145px;
+  content-visibility: auto;
+  contain-intrinsic-size: 145px 320px;
 }
 
 .archive-card--interactive {
@@ -3818,6 +3820,7 @@ button.game-quick-tools__item:active {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.85rem;
+  min-height: 3.8rem;
 }
 
 .exercise-page__kicker {
@@ -3865,6 +3868,7 @@ button.game-quick-tools__item:active {
 .exercise-page__media-card {
   position: sticky;
   top: 0.7rem;
+  min-height: 19rem;
 }
 
 .exercise-page__section-head {
@@ -3881,6 +3885,10 @@ button.game-quick-tools__item:active {
 
 .exercise-page__coach-body {
   margin-top: 0.45rem;
+}
+
+.exercise-page__coach {
+  min-height: 14rem;
 }
 
 .exercise-page__related {
@@ -3956,6 +3964,18 @@ button.game-quick-tools__item:active {
 
   .exercise-page__card {
     padding: 0.52rem;
+  }
+
+  .exercise-page__header {
+    min-height: 0;
+  }
+
+  .exercise-page__media-card {
+    min-height: 14rem;
+  }
+
+  .exercise-page__coach {
+    min-height: 0;
   }
 
   .mobile-floating-pills-host {

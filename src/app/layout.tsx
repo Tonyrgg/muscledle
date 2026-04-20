@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
-import { AnalyticsGate, ConsentManager } from "@/components/privacy/consent-manager";
-import { FeedbackCenter } from "@/components/feedback/feedback-center";
+import { GlobalOverlays } from "@/components/app/global-overlays";
 
 const robotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
   subsets: ["latin"],
+  display: "optional",
 });
 
 const oswald = Oswald({
   variable: "--font-oswald",
   subsets: ["latin"],
+  display: "optional",
 });
 
 const SITE_URL = "https://liftdle.com";
@@ -91,9 +92,7 @@ export default function RootLayout({
       className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-background text-on-background font-body">
-        <AnalyticsGate />
-        <ConsentManager />
-        <FeedbackCenter />
+        <GlobalOverlays />
         {children}
       </body>
     </html>

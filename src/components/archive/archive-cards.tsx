@@ -131,6 +131,7 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
               key={row.id}
               className="archive-card archive-card--interactive"
               href={`/exercise/${row.slug}`}
+              prefetch={false}
               aria-label={`Open exercise page for ${row.name}`}
             >
               <div className="archive-card__media-wrap">
@@ -186,4 +187,3 @@ export function ArchiveCards({ rows }: ArchiveCardsProps) {
     </section>
   );
 }
-

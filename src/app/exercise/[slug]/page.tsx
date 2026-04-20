@@ -384,7 +384,12 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
                 <div className="exercise-page__related">
                   {related.length > 0 ? (
                     related.map((entry) => (
-                      <Link key={entry.slug} href={`/exercise/${entry.slug}`} className="exercise-page__related-link">
+                      <Link
+                        key={entry.slug}
+                        href={`/exercise/${entry.slug}`}
+                        prefetch={false}
+                        className="exercise-page__related-link"
+                      >
                         {entry.name}
                       </Link>
                     ))
