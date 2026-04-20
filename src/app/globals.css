@@ -3823,6 +3823,12 @@ button.game-quick-tools__item:active {
   min-height: 3.8rem;
 }
 
+.exercise-page__back-link {
+  min-width: 8.8rem;
+  min-height: 2.15rem;
+  justify-content: center;
+}
+
 .exercise-page__kicker {
   margin: 0;
   color: #a7a7a7;
@@ -3847,6 +3853,7 @@ button.game-quick-tools__item:active {
   grid-template-columns: minmax(250px, 360px) minmax(0, 1fr);
   align-items: start;
   gap: 0.72rem;
+  contain: layout paint;
 }
 
 .exercise-page__media-col,
@@ -3858,12 +3865,15 @@ button.game-quick-tools__item:active {
   margin-top: 0.6rem;
   display: grid;
   gap: 0.6rem;
+  content-visibility: auto;
+  contain-intrinsic-size: 780px;
 }
 
 .exercise-page__card {
   border: 1px solid #393939;
   background: #222;
   padding: 0.62rem;
+  contain: content;
 }
 
 .exercise-page__media-card {
@@ -3949,6 +3959,11 @@ button.game-quick-tools__item:active {
   .exercise-page__header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .exercise-page__back-link {
+    width: 100%;
+    min-width: 0;
   }
 
   .exercise-page__layout {

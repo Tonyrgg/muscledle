@@ -278,7 +278,7 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
             <p className="exercise-page__kicker">{toTitleCase(archiveRow.muscleGroup)} Focus</p>
             <h1 className="exercise-page__title">{exercise.display_name}</h1>
           </div>
-          <Link className="exercise-media-modal__close" href="/archive">
+          <Link className="exercise-media-modal__close exercise-page__back-link" href="/archive">
             Back to Archive
           </Link>
         </header>
