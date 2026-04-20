@@ -8,6 +8,7 @@ type LiveExerciseSuggestion = {
   id: string;
   slug: string;
   name: string;
+  aliases: string[];
   muscle_group: "chest" | "back" | "legs" | "shoulders" | "arms" | "core";
   muscle: Array<"chest" | "back" | "legs" | "shoulders" | "arms" | "core">;
   equipment: Array<"barbell" | "dumbbells" | "bodyweight" | "machine" | "cable" | "kettlebell">;
@@ -31,7 +32,7 @@ async function main() {
 
   const { data, error } = await supabase
     .from("exercises")
-    .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
+    .select("id, slug, name, aliases, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
     .eq("is_live", true)
     .order("name", { ascending: true })
     .returns<LiveExerciseSuggestion[]>();
@@ -52,4 +53,3 @@ main().catch((error) => {
   console.error("[summarize-live-coach-notes] fatal", error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
-
