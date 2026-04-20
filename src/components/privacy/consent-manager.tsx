@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { Analytics } from "@vercel/analytics/next";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import {
   CONSENT_POLICY_VERSION,
   CONSENT_STORAGE_KEY,
@@ -103,7 +104,12 @@ export function AnalyticsGate() {
     };
   }, []);
 
-  return enabled ? <Analytics /> : null;
+  return enabled ? (
+    <>
+      <Analytics />
+      <GoogleAnalytics />
+    </>
+  ) : null;
 }
 
 export function ConsentManager() {
