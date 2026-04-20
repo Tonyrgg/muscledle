@@ -9,6 +9,8 @@ type LiveExerciseSuggestion = {
   slug: string;
   name: string;
   aliases: string[];
+  canonical_name: string;
+  display_name: string;
   muscle_group: "chest" | "back" | "legs" | "shoulders" | "arms" | "core";
   muscle: Array<"chest" | "back" | "legs" | "shoulders" | "arms" | "core">;
   equipment: Array<"barbell" | "dumbbells" | "bodyweight" | "machine" | "cable" | "kettlebell">;
@@ -40,7 +42,11 @@ async function main() {
   if (error) throw new Error(`Failed to load live exercises: ${error.message}`);
 
   for (const exercise of data ?? []) {
-    const notes = buildPostGameInsights(exercise);
+    const notes = buildPostGameInsights({
+      ...exercise,
+      canonical_name: exercise.name,
+      display_name: exercise.name,
+    });
     console.log(
       `${exercise.name}: why_use=${notes.whyUse} - cues=${notes.cues.join(" | ")} - mistakes=${notes.mistakes.join(
         " | ",

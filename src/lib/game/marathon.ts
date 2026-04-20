@@ -1,4 +1,5 @@
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
+import { getExerciseNaming, isMergedExerciseSlug, resolveMergedIntoSlug } from "@/lib/exercises/naming";
 import { trackEvent } from "@/lib/analytics/track";
 import { AuthRequiredError, GameConflictError, normalizeFeedback } from "@/lib/game/shared";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -43,6 +44,7 @@ type ExerciseDetailsRow = {
 
 type LiveMarathonExerciseRow = {
   id: string;
+  slug: string;
   muscle: string[] | null;
   equipment: string[] | null;
   movement: string[] | null;
@@ -62,7 +64,7 @@ function toPublicAttempt(row: MarathonAttemptRow, detailsById: Map<string, Exerc
     id: row.id,
     guessExerciseId: row.guess_exercise_id,
     guessSlug: details?.slug ?? "",
-    guessName: details?.name ?? "Unknown Exercise",
+    guessName: details ? getExerciseNaming(details.slug, details.name).display_name : "Unknown Exercise",
     guessMuscleGroup: details?.muscle_group ?? null,
     values: {
       muscle: details?.muscle.join(" / ") ?? "-",
@@ -266,7 +268,7 @@ async function getLiveExercisesForMarathon(): Promise<LiveMarathonExerciseRow[]>
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("exercises")
-    .select("id, muscle, equipment, movement, pattern, reps, goal, ego")
+    .select("id, slug, muscle, equipment, movement, pattern, reps, goal, ego")
     .eq("is_live", true)
     .returns<LiveMarathonExerciseRow[]>();
 
@@ -274,7 +276,7 @@ async function getLiveExercisesForMarathon(): Promise<LiveMarathonExerciseRow[]>
     throw new Error(`Failed to load live exercises: ${error.message}`);
   }
 
-  return data ?? [];
+  return (data ?? []).filter((row) => !isMergedExerciseSlug(row.slug));
 }
 
 async function getAuthenticatedUserId(): Promise<string> {
@@ -408,14 +410,32 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
     getRoundAttempts(run.id, run.current_index),
   ]);
 
-  const guessedRow = guessRows.get(input.guessExerciseId);
+  let guessedRow = guessRows.get(input.guessExerciseId);
   const targetRow = guessRows.get(targetExerciseId);
 
   if (!guessedRow || !targetRow) {
     throw new GameConflictError("Guessed exercise or target exercise not found.");
   }
 
-  if (currentAttemptRows.some((row) => row.guess_exercise_id === input.guessExerciseId)) {
+  const guessedMergedIntoSlug = resolveMergedIntoSlug(guessedRow.slug);
+  if (guessedMergedIntoSlug) {
+    const { data: mergedTarget, error: mergedTargetError } = await admin
+      .from("exercises")
+      .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
+      .eq("slug", guessedMergedIntoSlug)
+      .eq("is_live", true)
+      .maybeSingle<ExerciseDetailsRow>();
+
+    if (mergedTargetError) {
+      throw new Error(`Failed to resolve merged marathon guess: ${mergedTargetError.message}`);
+    }
+
+    if (mergedTarget) {
+      guessedRow = mergedTarget;
+    }
+  }
+
+  if (currentAttemptRows.some((row) => row.guess_exercise_id === guessedRow.id)) {
     throw new GameConflictError("You already guessed this exercise in this round.");
   }
 
@@ -434,7 +454,7 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
       user_id: userId,
       round_index: run.current_index,
       guess_index: guessIndex,
-      guess_exercise_id: input.guessExerciseId,
+      guess_exercise_id: guessedRow.id,
       feedback,
       is_correct: correct,
     })
@@ -491,7 +511,7 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
     payload: {
       runId: run.id,
       roundIndex: run.current_index,
-      guessExerciseId: input.guessExerciseId,
+      guessExerciseId: guessedRow.id,
       guessIndex,
       isCorrect: correct,
       pointsEarned,

@@ -1,10 +1,12 @@
 import { shiftIsoDate } from "@/lib/game/date";
 import { GameConflictError } from "@/lib/game/shared";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getExerciseNaming, isMergedExerciseSlug, resolveMergedIntoSlug } from "@/lib/exercises/naming";
 
 type LiveExerciseRow = {
   id: string;
   name: string;
+  slug: string;
 };
 
 type DailyExerciseRow = {
@@ -56,7 +58,7 @@ async function getLiveExercises(): Promise<LiveExerciseRow[]> {
 
   const { data, error } = await admin
     .from("exercises")
-    .select("id, name")
+    .select("id, name, slug")
     .eq("is_live", true)
     .order("id", { ascending: true })
     .returns<LiveExerciseRow[]>();
@@ -69,7 +71,7 @@ async function getLiveExercises(): Promise<LiveExerciseRow[]> {
     throw new GameConflictError("No live exercises available for daily rotation.");
   }
 
-  return data;
+  return data.filter((row) => !isMergedExerciseSlug(row.slug));
 }
 
 async function getConfiguredDailySelection(gameDate: string): Promise<DailySelection | null> {
@@ -87,7 +89,7 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
 
   const { data: exercise, error: exerciseError } = await admin
     .from("exercises")
-    .select("id, name")
+    .select("id, name, slug")
     .eq("id", configured.exercise_id)
     .maybeSingle<LiveExerciseRow>();
 
@@ -95,7 +97,24 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
     return null;
   }
 
-  return { exerciseId: exercise.id, exerciseName: exercise.name };
+  let effectiveExercise = exercise;
+  const mergedIntoSlug = resolveMergedIntoSlug(exercise.slug);
+
+  if (mergedIntoSlug) {
+    const { data: mergedTarget, error: mergedTargetError } = await admin
+      .from("exercises")
+      .select("id, name, slug")
+      .eq("slug", mergedIntoSlug)
+      .eq("is_live", true)
+      .maybeSingle<LiveExerciseRow>();
+
+    if (!mergedTargetError && mergedTarget?.id) {
+      effectiveExercise = mergedTarget;
+    }
+  }
+
+  const naming = getExerciseNaming(effectiveExercise.slug, effectiveExercise.name);
+  return { exerciseId: effectiveExercise.id, exerciseName: naming.display_name };
 }
 
 function computeRotationSelection(gameDate: string, exercises: LiveExerciseRow[]): DailySelection {
@@ -110,7 +129,7 @@ function computeRotationSelection(gameDate: string, exercises: LiveExerciseRow[]
 
   return {
     exerciseId: chosen.id,
-    exerciseName: chosen.name,
+    exerciseName: getExerciseNaming(chosen.slug, chosen.name).display_name,
   };
 }
 

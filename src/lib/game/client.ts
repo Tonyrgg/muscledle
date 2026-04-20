@@ -12,6 +12,8 @@ import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps
 export type LiveExerciseSuggestion = {
   id: string;
   name: string;
+  canonical_name: string;
+  display_name: string;
   slug: string;
   aliases: string[];
   muscle_group: MuscleGroup;

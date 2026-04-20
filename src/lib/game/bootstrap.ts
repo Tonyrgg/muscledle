@@ -4,6 +4,7 @@ import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getExerciseNaming } from "@/lib/exercises/naming";
 import type { PublicTodayGameState } from "@/types/game";
 
 type UserDailyGameRow = {
@@ -153,7 +154,9 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
         id: row.id,
         guessExerciseId: row.guess_exercise_id,
         guessSlug: details?.slug ?? "",
-        guessName: details?.name ?? "Unknown Exercise",
+        guessName: details
+          ? getExerciseNaming(details.slug, details.name).display_name
+          : "Unknown Exercise",
         guessMuscleGroup: details?.muscle_group ?? null,
         values: {
           muscle: details?.muscle.join(" / ") ?? "-",

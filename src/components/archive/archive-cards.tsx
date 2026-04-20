@@ -144,6 +144,8 @@ function toLiveExerciseSuggestion(row: ExerciseArchiveRow): LiveExerciseSuggesti
     id: row.id,
     slug: row.slug,
     name: row.name,
+    canonical_name: row.name,
+    display_name: row.name,
     aliases: row.aliases,
     muscle_group: row.muscleGroup as LiveExerciseSuggestion["muscle_group"],
     muscle: row.muscle as LiveExerciseSuggestion["muscle"],

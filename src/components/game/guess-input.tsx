@@ -25,8 +25,15 @@ function normalize(value: string): string {
   return value
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/['''`]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeCompact(value: string): string {
+  return normalize(value).replace(/\s+/g, "");
 }
 
 function levenshteinDistance(a: string, b: string): number {
@@ -58,15 +65,26 @@ function levenshteinDistance(a: string, b: string): number {
 }
 
 function scoreExercise(query: string, exercise: LiveExerciseSuggestion): number {
-  const name = normalize(exercise.name);
+  const name = normalize(exercise.display_name || exercise.name);
+  const canonical = normalize(exercise.canonical_name || exercise.display_name || exercise.name);
   const aliases = exercise.aliases.map(normalize);
+  const queryCompact = normalizeCompact(query);
+  const nameCompact = normalizeCompact(name);
+  const canonicalCompact = normalizeCompact(canonical);
+  const aliasCompacts = aliases.map(normalizeCompact);
 
   if (!query) return 10;
   if (name === query) return 220;
+  if (canonical === query) return 215;
+  if (nameCompact === queryCompact) return 210;
+  if (canonicalCompact === queryCompact) return 205;
   if (name.startsWith(query)) return 160;
+  if (canonical.startsWith(query)) return 155;
   if (name.includes(query)) return 120;
+  if (canonical.includes(query)) return 115;
 
   if (aliases.some((alias) => alias === query)) return 110;
+  if (aliasCompacts.some((alias) => alias === queryCompact)) return 108;
   if (query.length >= 2 && aliases.some((alias) => alias.startsWith(query))) return 95;
   if (query.length >= 3 && aliases.some((alias) => alias.includes(query))) return 80;
 
@@ -111,7 +129,11 @@ export function GuessInput({
     const ranked: RankedExercise[] = exercises
       .map((exercise) => ({ exercise, score: scoreExercise(normalizedQuery, exercise) }))
       .filter((entry) => entry.score >= 0)
-      .sort((a, b) => b.score - a.score || a.exercise.name.localeCompare(b.exercise.name));
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          (a.exercise.display_name || a.exercise.name).localeCompare(b.exercise.display_name || b.exercise.name),
+      );
 
     return ranked.map((entry) => entry.exercise);
   }, [exercises, normalizedQuery]);
@@ -265,7 +287,7 @@ export function GuessInput({
                     }}
                     className={`guess-input__option ${index === activeIndex ? "guess-input__option--active" : ""}`}
                   >
-                    <span>{exercise.name}</span>
+                    <span>{exercise.display_name || exercise.name}</span>
                     <span className="guess-input__option-icon" aria-hidden>
                       <img
                         src={getMuscleGroupIconPath(resolveMuscleGroupIconKey(exercise))}
@@ -295,3 +317,5 @@ export function GuessInput({
     </div>
   );
 }
+
+

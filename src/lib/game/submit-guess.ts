@@ -1,5 +1,6 @@
 import { trackEvent } from "@/lib/analytics/track";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
+import { getExerciseNaming, resolveMergedIntoSlug } from "@/lib/exercises/naming";
 import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
@@ -101,7 +102,7 @@ export async function submitGuess(input: {
     throw new GameConflictError("Game is already finished for today.");
   }
 
-  const [{ data: guessedExercise, error: guessError }, { data: targetExercise, error: targetError }] =
+  const [{ data: guessedExerciseRaw, error: guessError }, { data: targetExercise, error: targetError }] =
     await Promise.all([
       admin
         .from("exercises")
@@ -120,8 +121,27 @@ export async function submitGuess(input: {
     throw new Error(`Failed to load guessed exercise: ${guessError.message}`);
   }
 
-  if (!guessedExercise) {
+  if (!guessedExerciseRaw) {
     throw new GameConflictError("Guessed exercise does not exist or is not live.");
+  }
+
+  let guessedExercise = guessedExerciseRaw;
+  const mergedIntoSlug = resolveMergedIntoSlug(guessedExerciseRaw.slug);
+  if (mergedIntoSlug) {
+    const { data: mergedTarget, error: mergedTargetError } = await admin
+      .from("exercises")
+      .select("*")
+      .eq("slug", mergedIntoSlug)
+      .eq("is_live", true)
+      .maybeSingle<Exercise>();
+
+    if (mergedTargetError) {
+      throw new Error(`Failed to resolve merged guessed exercise: ${mergedTargetError.message}`);
+    }
+
+    if (mergedTarget) {
+      guessedExercise = mergedTarget;
+    }
   }
 
   if (targetError) {
@@ -151,7 +171,7 @@ export async function submitGuess(input: {
       game_date: gameDate,
       user_daily_game_id: userDailyGame.id,
       guess_index: newGuessCount,
-      guess_exercise_id: input.guessExerciseId,
+      guess_exercise_id: guessedExercise.id,
       feedback,
       is_correct: correct,
     })
@@ -194,7 +214,7 @@ export async function submitGuess(input: {
     id: insertedAttempt.id,
     guessExerciseId: guessedExercise.id,
     guessSlug: guessedExercise.slug,
-    guessName: guessedExercise.name,
+    guessName: getExerciseNaming(guessedExercise.slug, guessedExercise.name).display_name,
     guessMuscleGroup: guessedExercise.muscle_group ?? null,
     values: {
       muscle: guessedExercise.muscle.join(" / "),
@@ -214,7 +234,7 @@ export async function submitGuess(input: {
     eventName: "guess_submitted",
     payload: {
       gameDate,
-      guessExerciseId: input.guessExerciseId,
+      guessExerciseId: guessedExercise.id,
       guessCount: newGuessCount,
       isCorrect: correct,
     },

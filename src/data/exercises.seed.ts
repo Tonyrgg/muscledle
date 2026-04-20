@@ -1,8 +1,9 @@
 import type { Exercise } from "@/types/exercise";
+import { getExerciseNaming } from "@/lib/exercises/naming";
 
 type ExerciseSeed = Omit<Exercise, "id" | "created_at" | "updated_at">;
 
-export const exercisesSeed: ExerciseSeed[] = [
+const RAW_EXERCISES_SEED: ExerciseSeed[] = [
   {
     slug: "bench-press",
     name: "Bench Press",
@@ -620,3 +621,15 @@ export const exercisesSeed: ExerciseSeed[] = [
     is_live: true,
   },
 ];
+
+function applySeedNaming(seed: ExerciseSeed): ExerciseSeed {
+  const naming = getExerciseNaming(seed.slug, seed.name, seed.aliases ?? []);
+  return {
+    ...seed,
+    name: naming.display_name,
+    aliases: naming.aliases,
+    is_live: naming.merged_into_slug ? false : seed.is_live,
+  };
+}
+
+export const exercisesSeed: ExerciseSeed[] = RAW_EXERCISES_SEED.map(applySeedNaming);

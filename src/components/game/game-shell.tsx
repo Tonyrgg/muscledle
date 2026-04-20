@@ -128,7 +128,7 @@ function toExerciseModel(exercise: LiveExerciseSuggestion): Exercise {
   return {
     id: exercise.id,
     slug: exercise.slug,
-    name: exercise.name,
+    name: exercise.display_name || exercise.name,
     aliases: exercise.aliases,
     muscle: exercise.muscle,
     equipment: exercise.equipment,
@@ -183,7 +183,7 @@ function buildDailyAttempt(
     id: `daily-local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     guessExerciseId: guess.id,
     guessSlug: guess.slug,
-    guessName: guess.name,
+    guessName: guess.display_name || guess.name,
     guessMuscleGroup: guess.muscle_group,
     values: {
       muscle: guess.muscle.join(" / "),
@@ -945,7 +945,7 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const handleSelectExercise = useCallback(
     (exercise: LiveExerciseSuggestion) => {
-      setQuery(exercise.name);
+      setQuery(exercise.display_name || exercise.name);
       setSelectedExerciseId(exercise.id);
     },
     [],
