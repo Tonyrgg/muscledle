@@ -295,7 +295,9 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
                       className="archive-detail-modal__fallback-split-part archive-detail-modal__fallback-split-part--primary"
                       width={148}
                       height={148}
-                      loading="lazy"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                     />
                     <img
                       src={splitIconPaths[1]}
@@ -303,7 +305,9 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
                       className="archive-detail-modal__fallback-split-part archive-detail-modal__fallback-split-part--secondary"
                       width={148}
                       height={148}
-                      loading="lazy"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                     />
                     <span className="archive-detail-modal__fallback-split-divider" />
                   </div>
@@ -314,7 +318,9 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
                     width={148}
                     height={148}
                     className="archive-detail-modal__fallback-icon"
-                    loading="lazy"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
                   />
                 )
               ) : mediaKind === "video" ? (
@@ -332,7 +338,9 @@ export default async function ExercisePage({ params }: ExercisePageProps) {
                   src={mediaUrl ?? ""}
                   alt={`${exercise.display_name} preview`}
                   className="archive-detail-modal__gif"
-                  loading="lazy"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               )}
             </section>
