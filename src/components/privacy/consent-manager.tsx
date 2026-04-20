@@ -104,12 +104,12 @@ export function AnalyticsGate() {
     };
   }, []);
 
-  return enabled ? (
+  return (
     <>
-      <Analytics />
       <GoogleAnalytics />
+      {enabled ? <Analytics /> : null}
     </>
-  ) : null;
+  );
 }
 
 export function ConsentManager() {
