@@ -2504,6 +2504,8 @@ button.game-quick-tools__item:active {
 .archive-card--interactive {
   width: 100%;
   text-align: left;
+  text-decoration: none;
+  color: inherit;
   cursor: pointer;
   transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
 }
@@ -3760,6 +3762,146 @@ button.game-quick-tools__item:active {
   color: #a9a9a9;
 }
 
+.legal-page__cta-wrap {
+  margin-top: 0.72rem;
+  border-top: 1px solid #2b2b2b;
+  padding-top: 0.72rem;
+  display: grid;
+  gap: 0.44rem;
+}
+
+.legal-page__line--cta {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.66rem;
+}
+
+.legal-page__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #181818;
+  text-decoration: none;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.48rem 0.7rem;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.legal-page__cta:hover,
+.legal-page__cta:focus-visible {
+  background: #ff8b3a;
+  border-color: #ff8b3a;
+  transform: translateY(-1px);
+}
+
+.exercise-page {
+  min-height: 100vh;
+  padding: 1rem 0.75rem 2.2rem;
+}
+
+.exercise-page__shell {
+  width: min(100%, 1320px);
+  margin: 0 auto;
+  display: grid;
+  gap: 0.72rem;
+}
+
+.exercise-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.exercise-page__kicker {
+  margin: 0;
+  color: #a7a7a7;
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.exercise-page__title {
+  margin: 0.18rem 0 0;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.5rem, 3.8vw, 2.35rem);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.08;
+}
+
+.exercise-page__layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 360px) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.72rem;
+}
+
+.exercise-page__media-col,
+.exercise-page__main-col {
+  min-width: 0;
+}
+
+.exercise-page__content-grid {
+  margin-top: 0.6rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.exercise-page__card {
+  border: 1px solid #393939;
+  background: #222;
+  padding: 0.62rem;
+}
+
+.exercise-page__media-card {
+  position: sticky;
+  top: 0.7rem;
+}
+
+.exercise-page__section-head {
+  border-bottom: 1px solid #3b3b3b;
+  padding-bottom: 0.42rem;
+}
+
+.exercise-page__section-kicker {
+  color: #f4f4f4;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.exercise-page__coach-body {
+  margin-top: 0.45rem;
+}
+
+.exercise-page__related {
+  margin-top: 0.32rem;
+  display: grid;
+  gap: 0.32rem;
+}
+
+.exercise-page__related-link {
+  color: #f0f0f0;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.exercise-page__related-link:hover,
+.exercise-page__related-link:focus-visible {
+  color: var(--accent);
+}
+
 @media (max-width: 760px) {
   .consent-fab-wrap {
     left: 0.6rem;
@@ -3784,6 +3926,36 @@ button.game-quick-tools__item:active {
 
   .consent-modal__actions {
     grid-template-columns: 1fr;
+  }
+
+  .legal-page__cta {
+    width: 100%;
+    font-size: 0.62rem;
+  }
+
+  .exercise-page {
+    padding-inline: 0.58rem;
+  }
+
+  .exercise-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .exercise-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-page__media-card {
+    position: static;
+  }
+
+  .exercise-page__title {
+    font-size: clamp(1.2rem, 7.4vw, 1.7rem);
+  }
+
+  .exercise-page__card {
+    padding: 0.52rem;
   }
 
   .mobile-floating-pills-host {

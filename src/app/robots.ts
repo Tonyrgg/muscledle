@@ -8,9 +8,10 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/admin/", "/hidden-archive/"],
+        disallow: ["/api/", "/admin/", "/hidden-archive", "/hidden-archive/"],
       },
     ],
+    host: SITE_URL,
     sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
