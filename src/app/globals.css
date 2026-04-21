@@ -52,7 +52,7 @@ input {
   width: min(100%, 980px);
   flex-direction: column;
   align-items: center;
-  gap: clamp(1.25rem, 3vw, 3rem);
+  gap: 1rem;
 }
 
 .game-rollover-loading {
@@ -181,7 +181,7 @@ input {
 }
 
 .game-prompt-panel {
-  margin-top: clamp(1rem, 2.2vw, 1.4rem);
+  margin-top: 0.5rem;
   border: 1px solid var(--accent);
   border-radius: 0.7rem;
   background: #1f1f1f;
@@ -214,7 +214,8 @@ input {
 
 .daily-hints {
   margin-top: 0.85rem;
-  width: min(100%, 560px);
+  width: 386px;
+  max-width: 100%;
 }
 
 .daily-hints__tiles {
@@ -465,7 +466,7 @@ input {
 }
 
 .daily-tracker-copy {
-  margin: 1.5rem 0;
+  margin: 1rem 0;
   width: min(100%, 940px);
   color: var(--text-muted);
   font-size: clamp(0.72rem, 1.5vw, 0.9rem);
@@ -3173,7 +3174,8 @@ button.game-quick-tools__item:active {
   }
 
   .daily-hints {
-    width: 100%;
+    width: 560px;
+    max-width: 100%;
   }
 
   .daily-hints__tiles {

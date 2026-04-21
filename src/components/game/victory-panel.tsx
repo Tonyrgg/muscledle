@@ -63,6 +63,23 @@ function feedbackToEmoji(color: FeedbackColor): string {
   return "\u{1F7E5}";
 }
 
+function toKeycapDigits(value: number): string {
+  const digits = String(Math.max(0, Math.floor(value))).split("");
+  const map: Record<string, string> = {
+    "0": "0\uFE0F\u20E3",
+    "1": "1\uFE0F\u20E3",
+    "2": "2\uFE0F\u20E3",
+    "3": "3\uFE0F\u20E3",
+    "4": "4\uFE0F\u20E3",
+    "5": "5\uFE0F\u20E3",
+    "6": "6\uFE0F\u20E3",
+    "7": "7\uFE0F\u20E3",
+    "8": "8\uFE0F\u20E3",
+    "9": "9\uFE0F\u20E3",
+  };
+  return digits.map((digit) => map[digit] ?? "").join("");
+}
+
 function parseMuscleTokens(value: string | null | undefined): string[] {
   if (!value) return [];
   return value
@@ -194,6 +211,17 @@ export function VictoryPanel({
     return [header, body, footer].filter(Boolean).join("\n");
   }, [emojiRows, gameDate, guessCount]);
 
+  const shareTextForX = useMemo(() => {
+    const header = `I solved today's #Liftdle (${gameDate}) in ${guessCount} guess${guessCount === 1 ? "" : "es"} \u{1F4AA}`;
+    const maxRows = 10;
+    const visibleRows = emojiRows.slice(0, maxRows);
+    const remainingRows = Math.max(0, emojiRows.length - maxRows);
+    const recap = remainingRows > 0 ? `\u2795${toKeycapDigits(remainingRows)} more` : null;
+    const body = [...visibleRows, recap].filter(Boolean).join("\n");
+    const footer = typeof window === "undefined" ? "https://liftdle.vercel.app" : window.location.origin;
+    return [header, body, footer].filter(Boolean).join("\n");
+  }, [emojiRows, gameDate, guessCount]);
+
   const insights = useMemo(
     () => buildPostGameInsights(targetExercise),
     [targetExercise],
@@ -216,7 +244,7 @@ export function VictoryPanel({
   };
 
   const shareOnX = () => {
-    const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareText }).toString()}`;
+    const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: shareTextForX }).toString()}`;
     window.open(intentUrl, "_blank", "noopener,noreferrer");
   };
 
