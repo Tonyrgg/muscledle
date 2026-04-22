@@ -3129,6 +3129,9 @@ button.game-quick-tools__item:active {
     margin-top: 0.56rem;
     border-radius: 0.58rem;
     padding: 0.66rem 0.72rem;
+    width: min(100%, 560px);
+    max-width: 100%;
+    min-width: 0;
   }
 
   .game-quick-tools {
@@ -3174,8 +3177,9 @@ button.game-quick-tools__item:active {
   }
 
   .daily-hints {
-    width: 560px;
+    width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .daily-hints__tiles {
