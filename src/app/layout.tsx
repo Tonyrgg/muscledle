@@ -6,13 +6,13 @@ import { GlobalOverlays } from "@/components/app/global-overlays";
 const robotoCondensed = Roboto_Condensed({
   variable: "--font-roboto-condensed",
   subsets: ["latin"],
-  display: "optional",
+  display: "swap",
 });
 
 const oswald = Oswald({
   variable: "--font-oswald",
   subsets: ["latin"],
-  display: "optional",
+  display: "swap",
 });
 
 const SITE_URL = "https://liftdle.com";
