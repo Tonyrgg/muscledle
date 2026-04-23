@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Oswald, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 import { GlobalOverlays } from "@/components/app/global-overlays";
@@ -79,6 +79,12 @@ export const metadata: Metadata = {
         },
       }
     : {}),
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

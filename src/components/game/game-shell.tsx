@@ -13,13 +13,10 @@ import { VictoryPanel } from "@/components/game/victory-panel";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import {
   fetchDailyTracker,
-  fetchMarathonState,
   fetchGameStats,
   fetchLiveExercises,
   fetchTodayGameState,
-  startMarathonRunRequest,
-  surrenderMarathonRunRequest,
-  submitMarathonGuessRequest,
+  saveMarathonScoreRequest,
   submitGuessRequest,
   type LiveExerciseSuggestion,
 } from "@/lib/game/client";
@@ -37,7 +34,6 @@ import type {
   PublicDailyTracker,
   PublicGameAttempt,
   PublicGameStats,
-  PublicMarathonState,
   PublicTodayGameState,
 } from "@/types/game";
 import type { ExerciseMedia } from "@/types/media";
@@ -63,6 +59,14 @@ type InfiniteGameState = {
   maxAttemptsPerRound: number;
   exerciseOrderIds: string[];
   runSeed: number | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  resultSynced: boolean;
+};
+
+type LocalMarathonAttemptResult = {
+  attempt: PublicGameAttempt;
+  acceptedFamilyMatch: boolean;
 };
 
 type MarathonTransitionState = {
@@ -85,6 +89,8 @@ const DAILY_CONFETTI_SETTLE_MS = 3200;
 const MARATHON_CELEBRATION_DURATION_MS = 1800;
 const MARATHON_CONFETTI_SETTLE_MS = 4200;
 const DAILY_TRACKER_POLL_MS = 15000;
+const MARATHON_EXERCISE_COUNT = 100;
+const LOCAL_MARATHON_STATE_KEY = "liftdle:marathon-state:v1";
 
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -151,22 +157,107 @@ function createInfiniteGameState(): InfiniteGameState {
     maxAttemptsPerRound: 10,
     exerciseOrderIds: [],
     runSeed: null,
+    startedAt: null,
+    finishedAt: null,
+    resultSynced: false,
   };
 }
 
-function toInfiniteStateFromPublic(state: PublicMarathonState): InfiniteGameState {
-  const status: InfiniteStatus =
-    state.status === "won" ? "completed" : state.status;
+function shuffleExerciseIds(ids: string[]): string[] {
+  const output = [...ids];
+  for (let i = output.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = output[i];
+    output[i] = output[j];
+    output[j] = tmp;
+  }
+
+  return output;
+}
+
+function createMarathonExerciseOrder(exercises: LiveExerciseSuggestion[]): string[] {
+  return shuffleExerciseIds(exercises.map((exercise) => exercise.id)).slice(
+    0,
+    Math.max(1, Math.min(MARATHON_EXERCISE_COUNT, exercises.length)),
+  );
+}
+
+function isHybridFamilyMatch(
+  guess: LiveExerciseSuggestion,
+  target: LiveExerciseSuggestion,
+  feedback: ReturnType<typeof evaluateGuess>,
+): boolean {
+  if (isCorrectGuess(feedback)) {
+    return false;
+  }
+
+  const nonMuscleColumnsAreGreen =
+    feedback.equipment === "green" &&
+    feedback.movement === "green" &&
+    feedback.pattern === "green" &&
+    feedback.reps === "green" &&
+    feedback.goal === "green" &&
+    feedback.ego === "green";
+
+  if (!nonMuscleColumnsAreGreen) {
+    return false;
+  }
+
+  const hasHybridMuscleSet = guess.muscle.length > 1 || target.muscle.length > 1;
+  return hasHybridMuscleSet && feedback.muscle === "yellow";
+}
+
+function buildMarathonAttempt(
+  guess: LiveExerciseSuggestion,
+  target: LiveExerciseSuggestion,
+): LocalMarathonAttemptResult {
+  const feedback = evaluateGuess(toExerciseModel(guess), toExerciseModel(target));
+  const strictCorrect = isCorrectGuess(feedback);
+  const acceptedFamilyMatch = isHybridFamilyMatch(guess, target, feedback);
 
   return {
-    status,
-    score: state.score,
-    currentIndex: state.currentIndex,
-    attempts: state.attempts,
-    maxAttemptsPerRound: state.maxAttemptsPerRound,
-    exerciseOrderIds: state.exerciseOrderIds,
-    runSeed: state.runSeed,
+    attempt: {
+      id: `marathon-local-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      guessExerciseId: guess.id,
+      guessSlug: guess.slug,
+      guessName: guess.display_name || guess.name,
+      guessMuscleGroup: guess.muscle_group,
+      values: {
+        muscle: guess.muscle.join(" / "),
+        equipment: guess.equipment.join(" / "),
+        movement: guess.movement.join(" / "),
+        pattern: guess.pattern.join(" / "),
+        reps: guess.reps.join(" / "),
+        goal: guess.goal.join(" / "),
+        ego: guess.ego.join(" / "),
+      },
+      feedback,
+      isCorrect: strictCorrect || acceptedFamilyMatch,
+    },
+    acceptedFamilyMatch,
   };
+}
+
+function readStoredMarathonState(): InfiniteGameState | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(LOCAL_MARATHON_STATE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as { state?: InfiniteGameState } | null;
+    if (!parsed || typeof parsed !== "object" || !parsed.state) {
+      return null;
+    }
+
+    return parsed.state;
+  } catch {
+    return null;
+  }
 }
 
 function buildDailyAttempt(
@@ -664,6 +755,10 @@ export function GameShell({ initialState }: GameShellProps) {
   }, [loadStats, statsStatus]);
 
   useEffect(() => {
+    if (mode !== "daily") {
+      return;
+    }
+
     const refreshIfVisible = () => {
       if (document.visibilityState !== "visible") {
         return;
@@ -682,7 +777,7 @@ export function GameShell({ initialState }: GameShellProps) {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", refreshIfVisible);
     };
-  }, [loadDailyTracker]);
+  }, [loadDailyTracker, mode]);
 
   const loadExercises = useCallback(async () => {
     if (exercises.length > 0) {
@@ -702,18 +797,6 @@ export function GameShell({ initialState }: GameShellProps) {
       setLoadingExercises(false);
     }
   }, [exercises.length, pushToast]);
-
-  const loadMarathonState = useCallback(async () => {
-    try {
-      const state = await fetchMarathonState();
-      setInfiniteState(toInfiniteStateFromPublic(state));
-    } catch (error) {
-      setInfiniteState(createInfiniteGameState());
-      pushToast(
-        error instanceof Error ? error.message : "Failed to load marathon state.",
-      );
-    }
-  }, [pushToast]);
 
   const loadTodayState = useCallback(async () => {
     setIsLoadingState(true);
@@ -766,12 +849,14 @@ export function GameShell({ initialState }: GameShellProps) {
 
     try {
       const state = await loadTodayState();
-      void loadDailyTracker();
+      if (mode === "daily") {
+        void loadDailyTracker();
+      }
       return Boolean(state && state.gameDate !== previousGameDate);
     } finally {
       setIsDailyRolloverLoading(false);
     }
-  }, [loadDailyTracker, loadTodayState]);
+  }, [loadDailyTracker, loadTodayState, mode]);
 
   useEffect(() => {
     currentGameDateRef.current = gameState?.gameDate ?? null;
@@ -851,21 +936,96 @@ export function GameShell({ initialState }: GameShellProps) {
 
   const handleAuthReady = useCallback(() => {
     void loadExercises();
-    void loadMarathonState();
     void loadStats({ silent: true });
-    void loadDailyTracker();
+    if (mode === "daily") {
+      void loadDailyTracker();
+    }
+
+    const storedMarathonState = readStoredMarathonState();
+    setInfiniteState((current) => {
+      if (current) {
+        return current;
+      }
+
+      return storedMarathonState ?? createInfiniteGameState();
+    });
 
     if (!gameState) {
       void loadTodayState();
     }
   }, [
     gameState,
+    mode,
     loadDailyTracker,
     loadExercises,
-    loadMarathonState,
     loadStats,
     loadTodayState,
   ]);
+
+  useEffect(() => {
+    if (mode !== "daily") {
+      return;
+    }
+
+    void loadDailyTracker();
+  }, [loadDailyTracker, mode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !infiniteState) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        LOCAL_MARATHON_STATE_KEY,
+        JSON.stringify({ state: infiniteState }),
+      );
+    } catch {
+      // ignore storage quota/permission errors
+    }
+  }, [infiniteState]);
+
+  const saveMarathonScore = useCallback(
+    async (state: InfiniteGameState) => {
+      if (
+        state.resultSynced ||
+        (state.status !== "completed" && state.status !== "lost")
+      ) {
+        return;
+      }
+
+      try {
+        await saveMarathonScoreRequest({
+          status: state.status === "completed" ? "won" : "lost",
+          score: state.score,
+          solvedRounds: state.currentIndex,
+          runSeed: state.runSeed,
+          exerciseOrderIds: state.exerciseOrderIds,
+          maxAttemptsPerRound: state.maxAttemptsPerRound,
+          startedAt: state.startedAt,
+          finishedAt: state.finishedAt,
+        });
+
+        setInfiniteState((current) => {
+          if (!current || current.runSeed !== state.runSeed) {
+            return current;
+          }
+
+          return {
+            ...current,
+            resultSynced: true,
+          };
+        });
+      } catch (error) {
+        pushToast(
+          error instanceof Error
+            ? error.message
+            : "Failed to save marathon score.",
+        );
+      }
+    },
+    [pushToast],
+  );
 
   const handleModeChange = useCallback((nextMode: GameMode) => {
     if (marathonSolvedTimeoutRef.current !== null) {
@@ -886,6 +1046,7 @@ export function GameShell({ initialState }: GameShellProps) {
     setShowMarathonCelebration(false);
 
     if (nextMode !== "daily") {
+      setDailyTracker(null);
       setShowDailyCelebration(false);
       if (dailyRevealTimeoutRef.current !== null) {
         window.clearTimeout(dailyRevealTimeoutRef.current);
@@ -920,22 +1081,30 @@ export function GameShell({ initialState }: GameShellProps) {
       marathonNextTimeoutRef.current = null;
     }
 
-    setIsSubmitting(true);
-    try {
-      const nextState = await startMarathonRunRequest();
-      setInfiniteState(toInfiniteStateFromPublic(nextState));
-      setMarathonTransition(null);
-      setShowMarathonCelebration(false);
-      setQuery("");
-      setSelectedExerciseId(null);
-      setRevealingAttemptId(null);
-    } catch (error) {
-      pushToast(
-        error instanceof Error ? error.message : "Failed to start marathon run.",
-      );
-    } finally {
-      setIsSubmitting(false);
+    const order = createMarathonExerciseOrder(exercises);
+    if (order.length === 0) {
+      pushToast("No exercises available for marathon.");
+      return;
     }
+
+    const startedAt = new Date().toISOString();
+    setInfiniteState({
+      status: "in_progress",
+      score: 0,
+      currentIndex: 0,
+      attempts: [],
+      maxAttemptsPerRound: 10,
+      exerciseOrderIds: order,
+      runSeed: Date.now(),
+      startedAt,
+      finishedAt: null,
+      resultSynced: false,
+    });
+    setMarathonTransition(null);
+    setShowMarathonCelebration(false);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
   }, [exercises, pushToast]);
 
   const handleQueryChange = useCallback((value: string) => {
@@ -1114,24 +1283,43 @@ export function GameShell({ initialState }: GameShellProps) {
       setIsSubmitting(true);
 
       try {
-        const response = await submitMarathonGuessRequest(exerciseId);
-        const attempt = response.attempt;
-        const acceptedFamilyMatch = response.acceptedFamilyMatch;
-        const nextState = toInfiniteStateFromPublic(response.state);
+        const { attempt, acceptedFamilyMatch } = buildMarathonAttempt(
+          guessed,
+          activeInfiniteTarget,
+        );
+        const currentAttempts = infiniteState.attempts;
+        const guessIndex = currentAttempts.length + 1;
+        const solvedRoundAttempts = [attempt, ...currentAttempts];
 
         await preloadExerciseMedia(attempt.guessSlug);
         setRevealingAttemptId(attempt.id);
         setQuery("");
         setSelectedExerciseId(null);
-        setInfiniteState(nextState);
-
-        const solvedRoundAttempts = [attempt, ...infiniteState.attempts];
 
         if (attempt.isCorrect) {
+          const pointsEarned = Math.max(
+            1,
+            infiniteState.maxAttemptsPerRound - guessIndex + 1,
+          );
+          const nextIndex = infiniteState.currentIndex + 1;
+          const isCompleted = nextIndex >= infiniteState.exerciseOrderIds.length;
+          const nextState: InfiniteGameState = {
+            ...infiniteState,
+            status: isCompleted ? "completed" : "in_progress",
+            score: infiniteState.score + pointsEarned,
+            currentIndex: nextIndex,
+            attempts: [],
+            finishedAt: isCompleted ? new Date().toISOString() : null,
+            resultSynced: false,
+          };
+
+          setInfiniteState(nextState);
+
           if (nextState.status === "completed") {
             setMarathonTransition(null);
             setShowMarathonCelebration(true);
             setMarathonCelebrationSeed((current) => current + 1);
+            void saveMarathonScore(nextState);
             return;
           }
 
@@ -1168,10 +1356,21 @@ export function GameShell({ initialState }: GameShellProps) {
           return;
         }
 
-        if (nextState.status === "lost") {
+        const isLost = guessIndex >= infiniteState.maxAttemptsPerRound;
+        const nextState: InfiniteGameState = {
+          ...infiniteState,
+          status: isLost ? "lost" : "in_progress",
+          attempts: solvedRoundAttempts,
+          finishedAt: isLost ? new Date().toISOString() : null,
+          resultSynced: false,
+        };
+        setInfiniteState(nextState);
+
+        if (isLost) {
           pushToast(
             `Run over. You used all ${infiniteState.maxAttemptsPerRound} attempts.`,
           );
+          void saveMarathonScore(nextState);
         }
       } finally {
         setIsSubmitting(false);
@@ -1184,6 +1383,7 @@ export function GameShell({ initialState }: GameShellProps) {
       infiniteState,
       marathonTransition,
       pushToast,
+      saveMarathonScore,
       selectedExerciseId,
     ],
   );
@@ -1217,25 +1417,19 @@ export function GameShell({ initialState }: GameShellProps) {
       marathonNextTimeoutRef.current = null;
     }
 
-    setIsSubmitting(true);
-    try {
-      const state = await startMarathonRunRequest();
-      setInfiniteState(toInfiniteStateFromPublic(state));
-      setMarathonTransition(null);
-      setShowMarathonCelebration(false);
-      setQuery("");
-      setSelectedExerciseId(null);
-      setRevealingAttemptId(null);
-    } catch (error) {
-      pushToast(
-        error instanceof Error ? error.message : "Failed to reset marathon run.",
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (infiniteState?.status === "in_progress") {
+      void saveMarathonScore({
+        ...infiniteState,
+        status: "lost",
+        finishedAt: new Date().toISOString(),
+        resultSynced: false,
+      });
     }
-  }, [exercises.length, pushToast]);
 
-  const surrenderInfiniteMode = useCallback(async () => {
+    await startMarathonRun();
+  }, [exercises.length, infiniteState, saveMarathonScore, startMarathonRun]);
+
+  const surrenderInfiniteMode = useCallback(() => {
     if (!infiniteState || infiniteState.status !== "in_progress") {
       return;
     }
@@ -1250,31 +1444,22 @@ export function GameShell({ initialState }: GameShellProps) {
       marathonNextTimeoutRef.current = null;
     }
 
-    setIsSubmitting(true);
-    const previousState = infiniteState;
+    const finishedState: InfiniteGameState = {
+      ...infiniteState,
+      status: "lost",
+      finishedAt: new Date().toISOString(),
+      resultSynced: false,
+    };
 
     // Keep the defeat recap visible immediately.
-    setInfiniteState({
-      ...previousState,
-      status: "lost",
-    });
+    setInfiniteState(finishedState);
     setMarathonTransition(null);
     setQuery("");
     setSelectedExerciseId(null);
     setRevealingAttemptId(null);
-
-    try {
-      await surrenderMarathonRunRequest();
-      pushToast("Marathon surrendered.");
-    } catch (error) {
-      setInfiniteState(previousState);
-      pushToast(
-        error instanceof Error ? error.message : "Failed to surrender marathon run.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [infiniteState, pushToast]);
+    pushToast("Marathon surrendered.");
+    void saveMarathonScore(finishedState);
+  }, [infiniteState, pushToast, saveMarathonScore]);
 
   const isDailyWon = gameState?.status === "won";
   const winningAttempt =
@@ -1565,10 +1750,12 @@ export function GameShell({ initialState }: GameShellProps) {
                     ? "Start with any exercise."
                     : "Use colors to refine your next guess."}
                 </p>
-                <DailyHints
-                  attempts={gameState?.attempts ?? []}
-                  targetExercise={dailyTargetExercise}
-                />
+                <div className="daily-hints-host daily-hints-host--desktop">
+                  <DailyHints
+                    attempts={gameState?.attempts ?? []}
+                    targetExercise={dailyTargetExercise}
+                  />
+                </div>
               </div>
             ) : null}
 
@@ -1853,6 +2040,15 @@ export function GameShell({ initialState }: GameShellProps) {
                 </section>
               ) : null}
             </div>
+          ) : null}
+
+          {mode === "daily" && shouldShowDailyPrompt ? (
+            <section className="daily-hints-host daily-hints-host--mobile" aria-label="Daily hints">
+              <DailyHints
+                attempts={gameState?.attempts ?? []}
+                targetExercise={dailyTargetExercise}
+              />
+            </section>
           ) : null}
 
           {mode === "daily" ? (

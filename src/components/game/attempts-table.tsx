@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { AttemptRow } from "@/components/game/attempt-row";
 import { ExerciseIconCell } from "@/components/game/exercise-icon-cell";
 import { FeedbackCell } from "@/components/game/feedback-cell";
@@ -22,6 +22,14 @@ const mobileColumnKeys: FeedbackColumnKey[] = [
   "goal",
   "ego",
 ];
+
+function isMobileViewport(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.matchMedia("(max-width: 768px)").matches;
+}
 
 function MobileAttemptCard({
   attempt,
@@ -144,30 +152,14 @@ export function AttemptsTable({
 }: AttemptsTableProps) {
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const previousAttemptsCountRef = useRef(attempts.length);
-  const [isMobile, setIsMobile] = useState(
-    () => (typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)").matches : false),
-  );
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (loading || attempts.length === 0) {
+      previousAttemptsCountRef.current = attempts.length;
       return;
     }
 
-    const query = window.matchMedia("(max-width: 768px)");
-    const sync = () => setIsMobile(query.matches);
-    sync();
-
-    if (typeof query.addEventListener === "function") {
-      query.addEventListener("change", sync);
-      return () => query.removeEventListener("change", sync);
-    }
-
-    query.addListener(sync);
-    return () => query.removeListener(sync);
-  }, []);
-
-  useEffect(() => {
-    if (!isMobile || loading || attempts.length === 0) {
+    if (!isMobileViewport()) {
       previousAttemptsCountRef.current = attempts.length;
       return;
     }
@@ -190,74 +182,76 @@ export function AttemptsTable({
         behavior: "smooth",
       });
     });
-  }, [attempts, isMobile, loading]);
+  }, [attempts, loading]);
 
   if (loading) {
-    if (isMobile) {
-      return (
-        <div className="attempts-mobile-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
-          {Array.from({ length: 2 }).map((_, index) => (
-            <article key={index} className="attempts-mobile-card attempts-mobile-card--loading">
-              <div className="attempts-mobile-grid attempts-mobile-grid--loading">
-                <div className="attempts-mobile-row">
-                  {Array.from({ length: 4 }).map((__, cellIndex) => (
-                    <div key={`top-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
-                      <span className="attempts-mobile-slot__label-skeleton" />
-                      <span className="attempts-mobile-slot__body-skeleton" />
-                    </div>
-                  ))}
-                </div>
-                <div className="attempts-mobile-row">
-                  {Array.from({ length: 4 }).map((__, cellIndex) => (
-                    <div key={`bottom-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
-                      <span className="attempts-mobile-slot__label-skeleton" />
-                      <span className="attempts-mobile-slot__body-skeleton" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      );
-    }
-
     return (
-      <div className="attempts-table-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
-        <div className="attempts-table attempts-loading">
-          <div className="attempts-grid attempts-grid--header attempts-grid--skeleton-header">
-            {columns.map((column) => (
-              <div key={column} className="attempts-header-cell attempts-header-cell--skeleton">
-                {column}
-              </div>
-            ))}
-          </div>
-
-          <div className="attempts-body">
-            {Array.from({ length: 3 }).map((_, rowIndex) => (
-              <div key={rowIndex} className="attempts-grid attempts-loading__grid-row" aria-hidden>
-                {Array.from({ length: columns.length }).map((__, cellIndex) => (
-                  <div
-                    key={`${rowIndex}-${cellIndex}`}
-                    className={`attempts-loading__cell ${cellIndex === 0 ? "attempts-loading__cell--icon" : ""}`}
-                  >
-                    {cellIndex === 0 ? (
-                      <div className="attempts-loading__exercise-skeleton">
-                        <span className="attempts-loading__exercise-glyph" />
-                        <span className="attempts-loading__exercise-line attempts-loading__exercise-line--main" />
-                      </div>
-                    ) : (
-                      <div className="attempts-loading__value-skeleton">
-                        <span className="attempts-loading__value-line" />
-                      </div>
-                    )}
+      <>
+        <div className="attempts-layout attempts-layout--desktop">
+          <div className="attempts-table-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
+            <div className="attempts-table attempts-loading">
+              <div className="attempts-grid attempts-grid--header attempts-grid--skeleton-header">
+                {columns.map((column) => (
+                  <div key={column} className="attempts-header-cell attempts-header-cell--skeleton">
+                    {column}
                   </div>
                 ))}
               </div>
+
+              <div className="attempts-body">
+                {Array.from({ length: 3 }).map((_, rowIndex) => (
+                  <div key={rowIndex} className="attempts-grid attempts-loading__grid-row" aria-hidden>
+                    {Array.from({ length: columns.length }).map((__, cellIndex) => (
+                      <div
+                        key={`${rowIndex}-${cellIndex}`}
+                        className={`attempts-loading__cell ${cellIndex === 0 ? "attempts-loading__cell--icon" : ""}`}
+                      >
+                        {cellIndex === 0 ? (
+                          <div className="attempts-loading__exercise-skeleton">
+                            <span className="attempts-loading__exercise-glyph" />
+                            <span className="attempts-loading__exercise-line attempts-loading__exercise-line--main" />
+                          </div>
+                        ) : (
+                          <div className="attempts-loading__value-skeleton">
+                            <span className="attempts-loading__value-line" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="attempts-layout attempts-layout--mobile">
+          <div className="attempts-mobile-scroll" role="status" aria-live="polite" aria-label="Loading attempts">
+            {Array.from({ length: 2 }).map((_, index) => (
+              <article key={index} className="attempts-mobile-card attempts-mobile-card--loading">
+                <div className="attempts-mobile-grid attempts-mobile-grid--loading">
+                  <div className="attempts-mobile-row">
+                    {Array.from({ length: 4 }).map((__, cellIndex) => (
+                      <div key={`top-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
+                        <span className="attempts-mobile-slot__label-skeleton" />
+                        <span className="attempts-mobile-slot__body-skeleton" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="attempts-mobile-row">
+                    {Array.from({ length: 4 }).map((__, cellIndex) => (
+                      <div key={`bottom-${cellIndex}`} className="attempts-mobile-slot attempts-mobile-slot--loading">
+                        <span className="attempts-mobile-slot__label-skeleton" />
+                        <span className="attempts-mobile-slot__body-skeleton" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -265,43 +259,45 @@ export function AttemptsTable({
     return <p className="attempts-empty">No attempts yet. Make your first guess.</p>;
   }
 
-  if (isMobile) {
-    return (
-      <div
-        ref={mobileScrollRef}
-        className="attempts-mobile-scroll"
-        role="region"
-        aria-label="Attempts carousel"
-        tabIndex={0}
-      >
-        {attempts.map((attempt) => (
-          <MobileAttemptCard
-            key={attempt.id}
-            attempt={attempt}
-            isRevealing={attempt.id === revealingAttemptId}
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <div className="attempts-table-scroll" role="region" aria-label="Attempts table" tabIndex={0}>
-      <div className="attempts-table" role="table" aria-rowcount={attempts.length + 1}>
-        <div className="attempts-grid attempts-grid--header" role="row">
-          {columns.map((column) => (
-            <div key={column} className="attempts-header-cell" role="columnheader">
-              {column}
+    <>
+      <div className="attempts-layout attempts-layout--desktop">
+        <div className="attempts-table-scroll" role="region" aria-label="Attempts table" tabIndex={0}>
+          <div className="attempts-table" role="table" aria-rowcount={attempts.length + 1}>
+            <div className="attempts-grid attempts-grid--header" role="row">
+              {columns.map((column) => (
+                <div key={column} className="attempts-header-cell" role="columnheader">
+                  {column}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div className="attempts-body" role="rowgroup">
+            <div className="attempts-body" role="rowgroup">
+              {attempts.map((attempt) => (
+                <AttemptRow key={attempt.id} attempt={attempt} isRevealing={attempt.id === revealingAttemptId} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="attempts-layout attempts-layout--mobile">
+        <div
+          ref={mobileScrollRef}
+          className="attempts-mobile-scroll"
+          role="region"
+          aria-label="Attempts carousel"
+          tabIndex={0}
+        >
           {attempts.map((attempt) => (
-            <AttemptRow key={attempt.id} attempt={attempt} isRevealing={attempt.id === revealingAttemptId} />
+            <MobileAttemptCard
+              key={attempt.id}
+              attempt={attempt}
+              isRevealing={attempt.id === revealingAttemptId}
+            />
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }

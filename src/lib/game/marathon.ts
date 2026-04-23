@@ -54,6 +54,17 @@ type LiveMarathonExerciseRow = {
   ego: string[] | null;
 };
 
+type RecordMarathonScoreInput = {
+  status: "won" | "lost";
+  score: number;
+  solvedRounds: number;
+  runSeed: number | null;
+  exerciseOrderIds: string[];
+  maxAttemptsPerRound: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+};
+
 // Temporary testing override.
 const TEST_MARATHON_EXERCISE_COUNT = 100;
 
@@ -543,4 +554,45 @@ export async function surrenderMarathonRun(): Promise<PublicMarathonState> {
   });
 
   return toPublicState(null, []);
+}
+
+export async function recordMarathonScore(input: RecordMarathonScoreInput): Promise<void> {
+  const userId = await getAuthenticatedUserId();
+  const admin = createAdminClient();
+
+  const startedAt =
+    input.startedAt && Number.isFinite(new Date(input.startedAt).getTime())
+      ? input.startedAt
+      : new Date().toISOString();
+  const finishedAt =
+    input.finishedAt && Number.isFinite(new Date(input.finishedAt).getTime())
+      ? input.finishedAt
+      : new Date().toISOString();
+
+  const { error } = await admin.from("marathon_runs").insert({
+    user_id: userId,
+    status: input.status,
+    score: Math.max(0, Math.floor(input.score)),
+    current_index: Math.max(0, Math.floor(input.solvedRounds)),
+    max_attempts_per_round: Math.max(1, Math.floor(input.maxAttemptsPerRound)),
+    exercise_order_ids: input.exerciseOrderIds ?? [],
+    run_seed: input.runSeed,
+    started_at: startedAt,
+    finished_at: finishedAt,
+  });
+
+  if (error) {
+    throw new Error(`Failed to save marathon score: ${error.message}`);
+  }
+
+  void trackEvent({
+    userId,
+    eventName: "marathon_score_saved",
+    payload: {
+      status: input.status,
+      score: input.score,
+      solvedRounds: input.solvedRounds,
+      runSeed: input.runSeed,
+    },
+  });
 }

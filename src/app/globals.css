@@ -218,6 +218,10 @@ input {
   max-width: 100%;
 }
 
+.daily-hints-host--mobile {
+  display: none;
+}
+
 .daily-hints__tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1391,6 +1395,14 @@ button.game-quick-tools__item:active {
 .marathon-stage {
   position: relative;
   width: min(100%, 940px);
+}
+
+.attempts-layout--desktop {
+  display: block;
+}
+
+.attempts-layout--mobile {
+  display: none;
 }
 
 .attempts-table-scroll {
@@ -3117,6 +3129,42 @@ button.game-quick-tools__item:active {
 }
 
 @media (max-width: 768px) {
+  .brand-logo__wordmark {
+    font-size: clamp(2.7rem, 12.8vw, 3.9rem);
+  }
+
+  .game-hero__home-link {
+    width: min(100%, 15rem);
+  }
+
+  .game-hero__home-link .brand-logo {
+    width: 100%;
+  }
+
+  .game-hero__home-link .brand-logo__wordmark,
+  .game-hero__home-link .brand-logo__tagline {
+    width: 100%;
+    text-align: center;
+  }
+
+  .daily-hints-host--desktop {
+    display: none;
+  }
+
+  .daily-hints-host--mobile {
+    display: block;
+    width: min(100%, 560px);
+    max-width: 100%;
+  }
+
+  .attempts-layout--desktop {
+    display: none;
+  }
+
+  .attempts-layout--mobile {
+    display: block;
+  }
+
   .game-shell {
     gap: 0.82rem;
   }

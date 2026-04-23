@@ -1,10 +1,8 @@
 import type {
   PublicDailyTracker,
   PublicGameStats,
-  PublicMarathonState,
   PublicTodayGameState,
   SubmitGuessResponse,
-  SubmitMarathonGuessResponse,
 } from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
 import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps } from "@/types/exercise";
@@ -24,6 +22,17 @@ export type LiveExerciseSuggestion = {
   reps: Reps[];
   goal: Goal[];
   ego: Ego[];
+};
+
+export type SaveMarathonScoreInput = {
+  status: "won" | "lost";
+  score: number;
+  solvedRounds: number;
+  runSeed: number | null;
+  exerciseOrderIds: string[];
+  maxAttemptsPerRound: number;
+  startedAt: string | null;
+  finishedAt: string | null;
 };
 
 type ErrorPayload = {
@@ -149,63 +158,19 @@ export async function fetchDailyTracker(): Promise<PublicDailyTracker> {
   );
 }
 
-export async function fetchMarathonState(): Promise<PublicMarathonState> {
+export async function saveMarathonScoreRequest(input: SaveMarathonScoreInput): Promise<void> {
   const authHeaders = await getAuthHeaders();
-  const response = await fetch("/api/game/marathon", {
-    method: "GET",
-    cache: "no-store",
-    headers: authHeaders,
-  });
-
-  return parseOrThrow<PublicMarathonState>(response, `Failed to load marathon state (${response.status}).`);
-}
-
-export async function startMarathonRunRequest(): Promise<PublicMarathonState> {
-  const authHeaders = await getAuthHeaders();
-  const response = await fetch("/api/game/marathon/start", {
-    method: "POST",
-    cache: "no-store",
-    headers: authHeaders,
-  });
-
-  return parseOrThrow<PublicMarathonState>(response, `Failed to start marathon run (${response.status}).`);
-}
-
-export async function submitMarathonGuessRequest(guessExerciseId: string): Promise<SubmitMarathonGuessResponse> {
-  const authHeaders = await getAuthHeaders();
-  const response = await fetch("/api/game/marathon/guess", {
+  const response = await fetch("/api/game/marathon/score", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       ...authHeaders,
     },
-    body: JSON.stringify({ guessExerciseId }),
+    body: JSON.stringify(input),
   });
 
-  return parseOrThrow<SubmitMarathonGuessResponse>(
+  await parseOrThrow<{ ok: true }>(
     response,
-    `Failed to submit marathon guess (${response.status}).`,
+    `Failed to save marathon score (${response.status}).`,
   );
-}
-
-export async function resetMarathonRunRequest(): Promise<PublicMarathonState> {
-  const authHeaders = await getAuthHeaders();
-  const response = await fetch("/api/game/marathon/reset", {
-    method: "POST",
-    cache: "no-store",
-    headers: authHeaders,
-  });
-
-  return parseOrThrow<PublicMarathonState>(response, `Failed to reset marathon run (${response.status}).`);
-}
-
-export async function surrenderMarathonRunRequest(): Promise<PublicMarathonState> {
-  const authHeaders = await getAuthHeaders();
-  const response = await fetch("/api/game/marathon/surrender", {
-    method: "POST",
-    cache: "no-store",
-    headers: authHeaders,
-  });
-
-  return parseOrThrow<PublicMarathonState>(response, `Failed to surrender marathon run (${response.status}).`);
 }
