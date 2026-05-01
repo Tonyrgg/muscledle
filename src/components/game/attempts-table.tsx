@@ -185,8 +185,9 @@ export function AttemptsTable({
 }: AttemptsTableProps) {
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const previousAttemptsCountRef = useRef(attempts.length);
+  const programmaticMobileScrollRef = useRef(false);
   const [currentMobileIndex, setCurrentMobileIndex] = useState(0);
-  const mobileAttempts = [...attempts].reverse();
+  const mobileAttempts = attempts;
   const visibleMobileIndex = Math.min(currentMobileIndex, Math.max(0, mobileAttempts.length - 1));
   const visibleAttemptNumber = Math.max(1, mobileAttempts.length - visibleMobileIndex);
 
@@ -214,9 +215,14 @@ export function AttemptsTable({
     }
 
     requestAnimationFrame(() => {
+      programmaticMobileScrollRef.current = true;
+      setCurrentMobileIndex(0);
       container.scrollTo({
         left: 0,
-        behavior: "smooth",
+        behavior: "auto",
+      });
+      window.requestAnimationFrame(() => {
+        programmaticMobileScrollRef.current = false;
       });
     });
   }, [attempts, loading]);
@@ -228,6 +234,10 @@ export function AttemptsTable({
     }
 
     const syncIndex = () => {
+      if (programmaticMobileScrollRef.current) {
+        return;
+      }
+
       const nextIndex = Math.max(
         0,
         Math.min(attempts.length - 1, Math.round(container.scrollLeft / Math.max(container.clientWidth, 1))),
@@ -384,7 +394,7 @@ export function AttemptsTable({
         >
           {mobileAttempts.map((attempt) => (
             <MobileAttemptCard
-              key={attempt.id}
+              key={`${attempt.id}-${attempt.id === revealingAttemptId ? "revealing" : "idle"}`}
               attempt={attempt}
               isRevealing={attempt.id === revealingAttemptId}
             />

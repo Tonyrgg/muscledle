@@ -3402,7 +3402,19 @@ button.game-quick-tools__item:active {
   }
 
   .guess-input__dropdown {
+    top: auto;
+    bottom: calc(100% + 0.4rem);
+    flex-direction: column-reverse;
     max-height: min(42dvh, 14rem);
+  }
+
+  .guess-input__option {
+    border-top: 0;
+    border-bottom: 1px solid #2e2e2e;
+  }
+
+  .guess-input__option:last-child {
+    border-bottom: 0;
   }
 
   .attempts-mobile-card {
@@ -3480,6 +3492,10 @@ button.game-quick-tools__item:active {
     padding: 0.2rem;
     letter-spacing: 0.03em;
     line-height: 1.08;
+  }
+
+  .attempts-mobile-slot .feedback-cell--reveal {
+    animation-duration: 1060ms;
   }
 
   .attempts-mobile-slot .feedback-cell > span {
