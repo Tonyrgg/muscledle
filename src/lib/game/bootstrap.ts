@@ -1,6 +1,6 @@
 import { trackEvent } from "@/lib/analytics/track";
 import { resolveDailySelection, resolveYesterdaySelection } from "@/lib/game/daily-target";
-import { gameDateRome } from "@/lib/game/date";
+import { gameDateRome, shiftIsoDate } from "@/lib/game/date";
 import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -209,4 +209,29 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     guessCount: game.guess_count,
     attempts,
   };
+}
+
+export async function getPreviewGameStateForDate(gameDate: string): Promise<PublicTodayGameState> {
+  const dailySelection = await resolveDailySelection(gameDate);
+  const yesterdaySelection = await resolveYesterdaySelection(gameDate);
+
+  return {
+    gameDate,
+    yesterdayExerciseName: yesterdaySelection.exerciseName,
+    dailySecretExerciseId: dailySelection.exerciseId,
+    status: "in_progress",
+    guessCount: 0,
+    attempts: [],
+  };
+}
+
+export async function getYesterdayPreviewGameState(): Promise<PublicTodayGameState> {
+  const yesterdayDate = shiftIsoDate(gameDateRome(), -1);
+  return getPreviewGameStateForDate(yesterdayDate);
+}
+
+export async function getPreviewGameStateDaysAgo(daysAgo: number): Promise<PublicTodayGameState> {
+  const normalizedDaysAgo = Math.max(1, Math.floor(daysAgo));
+  const targetDate = shiftIsoDate(gameDateRome(), -normalizedDaysAgo);
+  return getPreviewGameStateForDate(targetDate);
 }

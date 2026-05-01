@@ -866,7 +866,7 @@ button.game-quick-tools__item:active {
 .marathon-current-exercise__label {
   margin: 0;
   color: #b7b7b7;
-  font-size: 0.56rem;
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -876,7 +876,7 @@ button.game-quick-tools__item:active {
   margin: 0.24rem 0 0;
   color: #f1f1f1;
   font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: 1rem;
+  font-size: 1.24rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   line-height: 1.2;
@@ -884,13 +884,178 @@ button.game-quick-tools__item:active {
   text-align: center;
 }
 
+.side-hints-column {
+  display: none;
+}
+
+.daily-scripted-hints {
+  border: 1px solid #414141;
+  background: #1f1f1f;
+  padding: 0.48rem 0.52rem;
+}
+
+.daily-scripted-hints__label {
+  margin: 0;
+  color: #b7b7b7;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.daily-scripted-hints__list {
+  margin: 0.44rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.daily-scripted-hints__item {
+  border: 1px solid #363636;
+  background: #222;
+  padding: 0.34rem 0.38rem;
+}
+
+.daily-scripted-hints__item--active {
+  border-color: #f97316;
+}
+
+.daily-scripted-hints__item--completed {
+  border-color: #495549;
+}
+
+.daily-scripted-hints__time {
+  margin: 0;
+  color: #ffb16f;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.daily-scripted-hints__headline {
+  margin: 0.16rem 0 0;
+  color: #f2f2f2;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.18;
+}
+
+.daily-scripted-hints__reasoning {
+  margin: 0.12rem 0 0;
+  color: #c8c8c8;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+.daily-scripted-hints__suggested {
+  margin: 0.14rem 0 0;
+  color: #ffcb96;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.daily-scripted-hints__guess {
+  margin: 0.14rem 0 0;
+  color: #e8e8e8;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.marathon-scripted-hints .daily-scripted-hints__list {
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+  padding-right: 0.14rem;
+}
+
+.marathon-scripted-hints__attempt {
+  margin: 0;
+  color: #ffb16f;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+
+.marathon-scripted-hints .daily-scripted-hints__suggested {
+  margin-top: 0.14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+}
+
+.marathon-scripted-hints .daily-scripted-hints__suggested-label {
+  color: #ffcb96;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.05;
+}
+
+.marathon-scripted-hints .daily-scripted-hints__suggested-name {
+  color: #ffd7ac;
+  font-size: 1.04rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.1;
+}
+
+.daily-scripted-hints__reset {
+  margin-top: 0.5rem;
+  width: 100%;
+  border: 1px solid #4a4a4a;
+  background: #242424;
+  color: #f0f0f0;
+  padding: 0.45rem 0.48rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.daily-scripted-hints__reset:hover,
+.daily-scripted-hints__reset:focus-visible {
+  border-color: var(--accent);
+  color: #ffcf9d;
+}
+
+.daily-scripted-hints__reset:disabled {
+  opacity: 0.64;
+  cursor: not-allowed;
+}
+
 @media (min-width: 1200px) {
-  .marathon-current-exercise {
+  .side-hints-column {
     position: fixed;
     right: clamp(1rem, 3vw, 2.5rem);
     top: 50%;
     transform: translateY(-50%);
     width: min(16vw, 170px);
+    max-height: calc(100vh - 1.5rem);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.48rem;
+    z-index: 12;
+  }
+
+  .side-hints-column .marathon-current-exercise {
+    position: static;
+    transform: none;
+    width: 100%;
     min-height: 58px;
     padding: 0.45rem 0.5rem;
     display: flex;
@@ -899,7 +1064,6 @@ button.game-quick-tools__item:active {
     justify-content: center;
     border: 1px solid #414141;
     background: #1f1f1f;
-    z-index: 12;
   }
 }
 

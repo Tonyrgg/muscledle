@@ -91,6 +91,74 @@ const MARATHON_CONFETTI_SETTLE_MS = 4200;
 const DAILY_TRACKER_POLL_MS = 15000;
 const MARATHON_EXERCISE_COUNT = 100;
 const LOCAL_MARATHON_STATE_KEY = "liftdle:marathon-state:v1";
+const DAILY_VIDEO_SCRIPT = [
+  {
+    timeRange: "2-6 sec",
+    headline: "Bad start 😬",
+    reasoning: "Apro con un guess troppo generico.",
+  },
+  {
+    timeRange: "6-10 sec",
+    headline: "Now I understand",
+    reasoning: "Correggo attrezzo e pattern in base ai colori.",
+  },
+  {
+    timeRange: "10-14 sec",
+    headline: "This has to be it…",
+    reasoning: "Allineo muscolo + reps e stringo il target.",
+  },
+  {
+    timeRange: "14-17 sec",
+    headline: "Solved in 4 😳",
+    reasoning: "Chiudo con il guess specifico.",
+  },
+] as const;
+const MARATHON_VIDEO_SCRIPT = [
+  { attempt: 1, headline: "Cold open", reasoning: "Guess largo per mappare il terreno." },
+  { attempt: 2, headline: "Narrow tool", reasoning: "Correggo l'attrezzo dominante." },
+  { attempt: 3, headline: "Movement check", reasoning: "Allineo push/pull/isolation/core." },
+  { attempt: 4, headline: "Pattern focus", reasoning: "Stringo sul pattern principale." },
+  { attempt: 5, headline: "Rep profile", reasoning: "Aggiusto il range ripetizioni." },
+  { attempt: 6, headline: "Goal alignment", reasoning: "Convergo sull'obiettivo training." },
+  { attempt: 7, headline: "Ego/risk tune", reasoning: "Rifinisco intensita e rischio." },
+  { attempt: 8, headline: "Near lock", reasoning: "Quasi allineato su tutte le colonne." },
+  { attempt: 9, headline: "Final shortlist", reasoning: "Ultimo controllo su muscolo + pattern." },
+  { attempt: 10, headline: "All in", reasoning: "Guess finale del round." },
+] as const;
+
+type DailyScriptSuggestion = {
+  exerciseId: string;
+  exerciseName: string;
+} | null;
+
+const FEEDBACK_KEYS: Array<keyof PublicGameAttempt["feedback"]> = [
+  "muscle",
+  "equipment",
+  "movement",
+  "pattern",
+  "reps",
+  "goal",
+  "ego",
+];
+
+function countFeedbackColors(feedback: PublicGameAttempt["feedback"]): {
+  green: number;
+  yellow: number;
+  red: number;
+} {
+  let green = 0;
+  let yellow = 0;
+  let red = 0;
+
+  for (const key of FEEDBACK_KEYS) {
+    const value = feedback[key];
+    if (value === "green") green += 1;
+    if (value === "yellow") yellow += 1;
+    if (value === "red") red += 1;
+  }
+
+  return { green, yellow, red };
+}
 
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -357,7 +425,7 @@ function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNod
           <RollingNumber value={tracker.playersTried} />
         </span>
       </span>{" "}
-      <span className="daily-tracker-copy__chunk">players stepped in, and only</span>
+      <span className="daily-tracker-copy__chunk">players stepped in, and</span>
       <span className="daily-tracker-copy__metric">
         <span className="daily-tracker-copy__number">
           <RollingNumber value={tracker.successRate} />
@@ -536,6 +604,133 @@ export function GameShell({ initialState }: GameShellProps) {
         : (infiniteState?.attempts ?? []),
     [gameState?.attempts, infiniteState?.attempts, mode],
   );
+  const dailyAttemptsChrono = useMemo(
+    () => [...(gameState?.attempts ?? [])].reverse(),
+    [gameState?.attempts],
+  );
+  const marathonAttemptsChrono = useMemo(
+    () => [...(infiniteState?.attempts ?? [])].reverse(),
+    [infiniteState?.attempts],
+  );
+  const dailyScriptSuggestions = useMemo<DailyScriptSuggestion[]>(() => {
+    if (!dailyTargetExercise || exercises.length === 0) {
+      return DAILY_VIDEO_SCRIPT.map(() => null);
+    }
+
+    const targetModel = toExerciseModel(dailyTargetExercise);
+    const used = new Set<string>();
+    const suggestions: DailyScriptSuggestion[] = [];
+
+    const pickForPhase = (phaseIndex: number): DailyScriptSuggestion => {
+      if (phaseIndex === DAILY_VIDEO_SCRIPT.length - 1) {
+        return {
+          exerciseId: dailyTargetExercise.id,
+          exerciseName: dailyTargetExercise.display_name || dailyTargetExercise.name,
+        };
+      }
+
+      const desiredGreensByPhase = [1, 3, 5];
+      const desiredGreens = desiredGreensByPhase[phaseIndex] ?? 3;
+      let best: { exercise: LiveExerciseSuggestion; score: number } | null = null;
+
+      for (const candidate of exercises) {
+        if (used.has(candidate.id)) continue;
+        if (candidate.id === dailyTargetExercise.id) continue;
+
+        const feedback = evaluateGuess(toExerciseModel(candidate), targetModel);
+        const correct = isCorrectGuess(feedback);
+        if (correct) continue;
+
+        const { green, yellow, red } = countFeedbackColors(feedback);
+        const greenDistance = Math.abs(green - desiredGreens);
+        const scoreBase = 240 - greenDistance * 40 + yellow * 4;
+        const phaseBias =
+          phaseIndex === 0
+            ? red * 4
+            : phaseIndex === 1
+              ? yellow * 2
+              : green * 6 + yellow;
+        const score = scoreBase + phaseBias;
+
+        if (!best || score > best.score) {
+          best = { exercise: candidate, score };
+        }
+      }
+
+      if (!best) return null;
+
+      return {
+        exerciseId: best.exercise.id,
+        exerciseName: best.exercise.display_name || best.exercise.name,
+      };
+    };
+
+    for (let index = 0; index < DAILY_VIDEO_SCRIPT.length; index += 1) {
+      const suggestion = pickForPhase(index);
+      suggestions.push(suggestion);
+      if (suggestion?.exerciseId) {
+        used.add(suggestion.exerciseId);
+      }
+    }
+
+    return suggestions;
+  }, [dailyTargetExercise, exercises]);
+  const marathonScriptSuggestions = useMemo<DailyScriptSuggestion[]>(() => {
+    if (!activeInfiniteTarget || exercises.length === 0) {
+      return MARATHON_VIDEO_SCRIPT.map(() => null);
+    }
+
+    const targetModel = toExerciseModel(activeInfiniteTarget);
+    const used = new Set<string>();
+    const suggestions: DailyScriptSuggestion[] = [];
+    const desiredGreensByPhase = [0, 1, 1, 2, 2, 3, 4, 5, 6];
+
+    const pickForPhase = (phaseIndex: number): DailyScriptSuggestion => {
+      if (phaseIndex === MARATHON_VIDEO_SCRIPT.length - 1) {
+        return {
+          exerciseId: activeInfiniteTarget.id,
+          exerciseName: activeInfiniteTarget.display_name || activeInfiniteTarget.name,
+        };
+      }
+
+      const desiredGreens = desiredGreensByPhase[phaseIndex] ?? 3;
+      let best: { exercise: LiveExerciseSuggestion; score: number } | null = null;
+
+      for (const candidate of exercises) {
+        if (used.has(candidate.id)) continue;
+        if (candidate.id === activeInfiniteTarget.id) continue;
+
+        const feedback = evaluateGuess(toExerciseModel(candidate), targetModel);
+        if (isCorrectGuess(feedback)) continue;
+
+        const { green, yellow, red } = countFeedbackColors(feedback);
+        const greenDistance = Math.abs(green - desiredGreens);
+        const phaseBias = phaseIndex <= 2 ? red * 4 : phaseIndex >= 7 ? green * 7 : yellow * 2;
+        const score = 260 - greenDistance * 42 + phaseBias;
+
+        if (!best || score > best.score) {
+          best = { exercise: candidate, score };
+        }
+      }
+
+      if (!best) return null;
+
+      return {
+        exerciseId: best.exercise.id,
+        exerciseName: best.exercise.display_name || best.exercise.name,
+      };
+    };
+
+    for (let index = 0; index < MARATHON_VIDEO_SCRIPT.length; index += 1) {
+      const suggestion = pickForPhase(index);
+      suggestions.push(suggestion);
+      if (suggestion?.exerciseId) {
+        used.add(suggestion.exerciseId);
+      }
+    }
+
+    return suggestions;
+  }, [activeInfiniteTarget, exercises]);
 
   const displayedAttempts = useMemo(() => {
     if (mode !== "infinite" || !marathonTransition) {
@@ -562,6 +757,14 @@ export function GameShell({ initialState }: GameShellProps) {
     window.setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
     }, 3600);
+  }, []);
+
+  const isRecordingPath = useCallback((): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.location.pathname.startsWith("/recording/");
   }, []);
 
   useEffect(() => {
@@ -1147,6 +1350,11 @@ export function GameShell({ initialState }: GameShellProps) {
 
       // Fallback path for legacy sessions missing client-side secret or local exercise cache.
       if (!guessed || !target) {
+        if (isRecordingPath()) {
+          pushToast("Recording mode needs local exercise data loaded.");
+          return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -1210,6 +1418,10 @@ export function GameShell({ initialState }: GameShellProps) {
       setQuery("");
       setSelectedExerciseId(null);
 
+      if (isRecordingPath()) {
+        return;
+      }
+
       dailySyncQueueRef.current = dailySyncQueueRef.current
         .then(async () => {
           const synced = await submitGuessRequest(exerciseId);
@@ -1229,8 +1441,17 @@ export function GameShell({ initialState }: GameShellProps) {
           void loadDailyTracker();
         })
         .catch((error) => {
+          const message =
+            error instanceof Error ? error.message : "Failed to sync guess.";
+          if (
+            isRecordingPath() &&
+            message.toLowerCase().includes("game is already finished for today")
+          ) {
+            return;
+          }
+
           pushToast(
-            error instanceof Error ? error.message : "Failed to sync guess.",
+            message,
           );
         });
     },
@@ -1238,6 +1459,7 @@ export function GameShell({ initialState }: GameShellProps) {
       attemptedExerciseIds,
       exerciseById,
       gameState,
+      isRecordingPath,
       pushToast,
       refreshStatsAfterDailySubmit,
       loadDailyTracker,
@@ -1401,6 +1623,33 @@ export function GameShell({ initialState }: GameShellProps) {
     },
     [handleSubmitDaily, handleSubmitInfinite, mode],
   );
+
+  const handleResetDailyRun = useCallback(async () => {
+    if (isSubmitting || !isRecordingPath()) {
+      return;
+    }
+
+    setGameState((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        status: "in_progress",
+        guessCount: 0,
+        attempts: [],
+      };
+    });
+    setDailyVictoryPhase("idle");
+    setShowDailyCelebration(false);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setRevealingAttemptId(null);
+    setToast(null);
+    pushToast("Daily run reset (local).");
+  }, [
+    isSubmitting,
+    isRecordingPath,
+    pushToast,
+  ]);
 
   const restartInfiniteMode = useCallback(async () => {
     if (exercises.length === 0) {
@@ -1759,7 +2008,59 @@ export function GameShell({ initialState }: GameShellProps) {
               </div>
             ) : null}
 
+            {mode === "daily" && dailyTargetExercise ? (
+              <aside className="side-hints-column" aria-label="Daily side hints">
+                <section className="marathon-current-exercise" aria-label="Daily correct exercise">
+                  <p className="marathon-current-exercise__label">Exercise</p>
+                  <p className="marathon-current-exercise__name">{dailyTargetExercise.name}</p>
+                </section>
+
+                <section className="daily-scripted-hints" aria-label="Recording progression hints">
+                  <p className="daily-scripted-hints__label">Recording Script</p>
+                  <ol className="daily-scripted-hints__list">
+                    {DAILY_VIDEO_SCRIPT.map((step, index) => {
+                      const guess = dailyAttemptsChrono[index] ?? null;
+                      const suggested = dailyScriptSuggestions[index] ?? null;
+                      const isCompleted = Boolean(guess);
+                      const isActive =
+                        !isCompleted && (gameState?.guessCount ?? 0) === index;
+
+                      return (
+                        <li
+                          key={`${step.timeRange}-${step.headline}`}
+                          className={`daily-scripted-hints__item ${isCompleted ? "daily-scripted-hints__item--completed" : ""} ${isActive ? "daily-scripted-hints__item--active" : ""}`}
+                        >
+                          <p className="daily-scripted-hints__time">{step.timeRange}</p>
+                          <p className="daily-scripted-hints__headline">{step.headline}</p>
+                          <p className="daily-scripted-hints__reasoning">{step.reasoning}</p>
+                          <p className="daily-scripted-hints__suggested">
+                            {suggested ? `Suggested: ${suggested.exerciseName}` : "Suggested: ..."}
+                          </p>
+                          <p className="daily-scripted-hints__guess">
+                            {guess ? `Guess ${index + 1}: ${guess.guessName}` : `Guess ${index + 1}: ...`}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                  {isRecordingPath() ? (
+                    <button
+                      type="button"
+                      className="daily-scripted-hints__reset"
+                      onClick={() => {
+                        void handleResetDailyRun();
+                      }}
+                      disabled={isSubmitting}
+                    >
+                      Reset Daily Run
+                    </button>
+                  ) : null}
+                </section>
+              </aside>
+            ) : null}
+
             {mode === "infinite" ? (
+              <>
               <div
                 className="game-prompt-panel game-prompt-panel--infinite"
                 role="status"
@@ -1920,6 +2221,41 @@ export function GameShell({ initialState }: GameShellProps) {
                   </>
                 )}
               </div>
+                {activeInfiniteTarget && infiniteState?.status !== "not_started" ? (
+                  <aside className="side-hints-column" aria-label="Current marathon exercise">
+                    <section className="marathon-current-exercise">
+                      <p className="marathon-current-exercise__label">Exercise</p>
+                      <p className="marathon-current-exercise__name">{activeInfiniteTarget.name}</p>
+                    </section>
+                    <section className="daily-scripted-hints marathon-scripted-hints" aria-label="Marathon attempt suggestions">
+                      <p className="daily-scripted-hints__label">Marathon Script</p>
+                      <ol className="daily-scripted-hints__list">
+                        {MARATHON_VIDEO_SCRIPT.map((step, index) => {
+                          const suggested = marathonScriptSuggestions[index] ?? null;
+                          const isCompleted = Boolean(marathonAttemptsChrono[index] ?? null);
+                          const isActive =
+                            !isCompleted && (infiniteState?.attempts.length ?? 0) === index;
+
+                          return (
+                            <li
+                              key={`marathon-step-${step.attempt}`}
+                              className={`daily-scripted-hints__item ${isCompleted ? "daily-scripted-hints__item--completed" : ""} ${isActive ? "daily-scripted-hints__item--active" : ""}`}
+                            >
+                              <p className="marathon-scripted-hints__attempt">Attempt {step.attempt}</p>
+                              <p className="daily-scripted-hints__suggested">
+                                <span className="daily-scripted-hints__suggested-label">Suggested</span>
+                                <span className="daily-scripted-hints__suggested-name">
+                                  {suggested ? suggested.exerciseName : "..."}
+                                </span>
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </section>
+                  </aside>
+                ) : null}
+              </>
             ) : null}
           </header>
 
