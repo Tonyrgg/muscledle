@@ -33,6 +33,7 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
+  overflow-x: clip;
 }
 
 button,
@@ -44,12 +45,16 @@ input {
   display: flex;
   flex: 1;
   justify-content: center;
+  width: 100%;
+  overflow-x: clip;
   padding: 1rem 0.75rem;
 }
 
 .game-shell {
   display: flex;
-  width: min(100%, 980px);
+  width: 100%;
+  max-width: 980px;
+  min-width: 0;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
@@ -470,8 +475,9 @@ input {
 }
 
 .daily-tracker-copy {
-  margin: 1rem 0;
-  width: min(100%, 940px);
+  margin: 1rem auto 0;
+  width: 100%;
+  max-width: 940px;
   color: var(--text-muted);
   font-size: clamp(0.72rem, 1.5vw, 0.9rem);
   font-weight: 700;
@@ -3242,8 +3248,9 @@ button.game-quick-tools__item:active {
   }
 
   .daily-tracker-copy {
-    margin: 1rem;
-    width: min(100%, 940px);
+    margin: 1rem auto 0;
+    width: 100%;
+    max-width: 940px;
     line-height: 1.3;
     column-gap: 0.34rem;
     row-gap: 0.14rem;
