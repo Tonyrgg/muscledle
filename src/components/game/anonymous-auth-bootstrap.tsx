@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AnonymousAuthBootstrapProps = {
@@ -9,7 +9,6 @@ type AnonymousAuthBootstrapProps = {
 
 export function AnonymousAuthBootstrap({ onReady }: AnonymousAuthBootstrapProps) {
   const hasRunRef = useRef(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (hasRunRef.current) {
@@ -47,7 +46,6 @@ export function AnonymousAuthBootstrap({ onReady }: AnonymousAuthBootstrapProps)
 
       if (error) {
         console.error("Failed to read auth session:", error.message);
-        setIsLoading(false);
         onReady?.();
         return;
       }
@@ -66,16 +64,10 @@ export function AnonymousAuthBootstrap({ onReady }: AnonymousAuthBootstrapProps)
         }
       }
 
-      setIsLoading(false);
       onReady?.();
     }
 
     void bootstrapAuth();
   }, [onReady]);
-
-  if (!isLoading) {
-    return null;
-  }
-
-  return <p className="auth-bootstrap-note">AUTHENTICATING...</p>;
+  return null;
 }
