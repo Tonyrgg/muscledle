@@ -3339,6 +3339,63 @@ button.game-quick-tools__item:active {
     touch-action: pan-x;
   }
 
+  .attempts-mobile-progress {
+    display: grid;
+    gap: 0.42rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .attempts-mobile-progress__tracks {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+    width: 100%;
+    padding: 0.18rem 0;
+  }
+
+  .attempts-mobile-progress__track {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 0.34rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--text-muted);
+    opacity: 0.78;
+    box-shadow: inset 0 0 0 1px rgba(15, 15, 15, 0.28);
+    transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .attempts-mobile-progress__track--red {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--yellow {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--green {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--active {
+    background: var(--accent);
+    opacity: 1;
+    transform: scaleY(1.35);
+    box-shadow: 0 0 0 1px rgba(245, 245, 245, 0.2);
+  }
+
+  .attempts-mobile-progress__label {
+    margin: 0;
+    color: #f0f0f0;
+    font-family: var(--font-display), "Oswald", sans-serif;
+    font-size: 0.92rem;
+    font-style: italic;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
   .guess-input__field {
     font-size: 16px;
     line-height: 1.2;
