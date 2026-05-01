@@ -1693,6 +1693,13 @@ export function GameShell({ initialState }: GameShellProps) {
               >
                 Marathon
               </button>
+              <Link
+                href="/loadguess"
+                className="mode-switch__button mode-switch__button--link"
+                aria-label="Open LoadGuess mode"
+              >
+                LoadGuess
+              </Link>
             </div>
             {mode === "daily" ? (
               <>
