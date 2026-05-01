@@ -33,6 +33,7 @@ body {
   background: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
+  overflow-x: clip;
 }
 
 button,
@@ -44,12 +45,16 @@ input {
   display: flex;
   flex: 1;
   justify-content: center;
+  width: 100%;
+  overflow-x: clip;
   padding: 1rem 0.75rem;
 }
 
 .game-shell {
   display: flex;
-  width: min(100%, 980px);
+  width: 100%;
+  max-width: 980px;
+  min-width: 0;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
@@ -470,8 +475,9 @@ input {
 }
 
 .daily-tracker-copy {
-  margin: 1rem 0;
-  width: min(100%, 940px);
+  margin: 1rem auto;
+  width: 100%;
+  max-width: 940px;
   color: var(--text-muted);
   font-size: clamp(0.72rem, 1.5vw, 0.9rem);
   font-weight: 700;
@@ -3382,7 +3388,7 @@ button.game-quick-tools__item:active {
   }
 
   .game-prompt-panel {
-    margin-top: 0.56rem;
+    margin-top: 0;
     border-radius: 0.58rem;
     padding: 0.66rem 0.72rem;
     width: min(100%, 560px);
@@ -3406,8 +3412,9 @@ button.game-quick-tools__item:active {
   }
 
   .daily-tracker-copy {
-    margin: 1rem;
-    width: min(100%, 940px);
+    margin: 1rem auto;
+    width: 100%;
+    max-width: 940px;
     line-height: 1.3;
     column-gap: 0.34rem;
     row-gap: 0.14rem;
@@ -3503,13 +3510,82 @@ button.game-quick-tools__item:active {
     touch-action: pan-x;
   }
 
+  .attempts-mobile-progress {
+    display: grid;
+    gap: 0.42rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .attempts-mobile-progress__tracks {
+    display: flex;
+    align-items: center;
+    gap: 0.42rem;
+    width: 100%;
+    padding: 0.18rem 0;
+  }
+
+  .attempts-mobile-progress__track {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 0.34rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--text-muted);
+    opacity: 0.78;
+    box-shadow: inset 0 0 0 1px rgba(15, 15, 15, 0.28);
+    transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .attempts-mobile-progress__track--red {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--yellow {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--green {
+    background: var(--text-muted);
+  }
+
+  .attempts-mobile-progress__track--active {
+    background: var(--accent);
+    opacity: 1;
+    transform: scaleY(1.35);
+    box-shadow: 0 0 0 1px rgba(245, 245, 245, 0.2);
+  }
+
+  .attempts-mobile-progress__label {
+    margin: 0;
+    color: #f0f0f0;
+    font-family: var(--font-display), "Oswald", sans-serif;
+    font-size: 0.92rem;
+    font-style: italic;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
   .guess-input__field {
     font-size: 16px;
     line-height: 1.2;
   }
 
   .guess-input__dropdown {
+    top: auto;
+    bottom: calc(100% + 0.4rem);
+    flex-direction: column-reverse;
     max-height: min(42dvh, 14rem);
+  }
+
+  .guess-input__option {
+    border-top: 0;
+    border-bottom: 1px solid #2e2e2e;
+  }
+
+  .guess-input__option:last-child {
+    border-bottom: 0;
   }
 
   .attempts-mobile-card {
@@ -3587,6 +3663,10 @@ button.game-quick-tools__item:active {
     padding: 0.2rem;
     letter-spacing: 0.03em;
     line-height: 1.08;
+  }
+
+  .attempts-mobile-slot .feedback-cell--reveal {
+    animation-duration: 1060ms;
   }
 
   .attempts-mobile-slot .feedback-cell > span {

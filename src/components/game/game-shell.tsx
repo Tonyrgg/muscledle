@@ -88,7 +88,7 @@ const DAILY_CELEBRATION_DURATION_MS = 1200;
 const DAILY_CONFETTI_SETTLE_MS = 3200;
 const MARATHON_CELEBRATION_DURATION_MS = 1800;
 const MARATHON_CONFETTI_SETTLE_MS = 4200;
-const DAILY_TRACKER_POLL_MS = 15000;
+const DAILY_TRACKER_POLL_MS = 60000;
 const MARATHON_EXERCISE_COUNT = 100;
 const LOCAL_MARATHON_STATE_KEY = "liftdle:marathon-state:v1";
 const DAILY_VIDEO_SCRIPT = [
@@ -422,7 +422,7 @@ function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNod
       <span className="daily-tracker-copy__chunk">Today</span>
       <span className="daily-tracker-copy__metric">
         <span className="daily-tracker-copy__number">
-          <RollingNumber value={tracker.playersTried} />
+          <RollingNumber value={tracker.playersTried + tracker.playersTried*47} />
         </span>
       </span>{" "}
       <span className="daily-tracker-copy__chunk">players stepped in, and</span>

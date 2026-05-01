@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttemptRow } from "@/components/game/attempt-row";
 import { ExerciseIconCell } from "@/components/game/exercise-icon-cell";
 import { FeedbackCell } from "@/components/game/feedback-cell";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
+import type { FeedbackColor } from "@/types/exercise";
 import type { PublicGameAttempt } from "@/types/game";
 
 type AttemptsTableProps = {
@@ -29,6 +30,38 @@ function isMobileViewport(): boolean {
   }
 
   return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function resolveAttemptIndicatorColor(attempt: PublicGameAttempt): FeedbackColor {
+  if (attempt.isCorrect) {
+    return "green";
+  }
+
+  const feedbackValues: FeedbackColor[] = [
+    attempt.feedback.muscle,
+    attempt.feedback.equipment,
+    attempt.feedback.movement,
+    attempt.feedback.pattern,
+    attempt.feedback.reps,
+    attempt.feedback.goal,
+    attempt.feedback.ego,
+  ];
+
+  const score = feedbackValues.reduce((total, value) => {
+    if (value === "green") return total + 2;
+    if (value === "yellow") return total + 1;
+    return total;
+  }, 0);
+
+  if (score >= 7) {
+    return "green";
+  }
+
+  if (score >= 3) {
+    return "yellow";
+  }
+
+  return "red";
 }
 
 function MobileAttemptCard({
@@ -152,6 +185,11 @@ export function AttemptsTable({
 }: AttemptsTableProps) {
   const mobileScrollRef = useRef<HTMLDivElement | null>(null);
   const previousAttemptsCountRef = useRef(attempts.length);
+  const programmaticMobileScrollRef = useRef(false);
+  const [currentMobileIndex, setCurrentMobileIndex] = useState(0);
+  const mobileAttempts = attempts;
+  const visibleMobileIndex = Math.min(currentMobileIndex, Math.max(0, mobileAttempts.length - 1));
+  const visibleAttemptNumber = Math.max(1, mobileAttempts.length - visibleMobileIndex);
 
   useEffect(() => {
     if (loading || attempts.length === 0) {
@@ -177,12 +215,43 @@ export function AttemptsTable({
     }
 
     requestAnimationFrame(() => {
+      programmaticMobileScrollRef.current = true;
+      setCurrentMobileIndex(0);
       container.scrollTo({
         left: 0,
-        behavior: "smooth",
+        behavior: "auto",
+      });
+      window.requestAnimationFrame(() => {
+        programmaticMobileScrollRef.current = false;
       });
     });
   }, [attempts, loading]);
+
+  useEffect(() => {
+    const container = mobileScrollRef.current;
+    if (!container) {
+      return;
+    }
+
+    const syncIndex = () => {
+      if (programmaticMobileScrollRef.current) {
+        return;
+      }
+
+      const nextIndex = Math.max(
+        0,
+        Math.min(attempts.length - 1, Math.round(container.scrollLeft / Math.max(container.clientWidth, 1))),
+      );
+      setCurrentMobileIndex(nextIndex);
+    };
+
+    syncIndex();
+    container.addEventListener("scroll", syncIndex, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", syncIndex);
+    };
+  }, [attempts.length]);
 
   if (loading) {
     return (
@@ -282,6 +351,40 @@ export function AttemptsTable({
       </div>
 
       <div className="attempts-layout attempts-layout--mobile">
+        <div className="attempts-mobile-progress" aria-label="Attempt navigation">
+          <div className="attempts-mobile-progress__tracks" role="tablist" aria-label="Attempts order">
+            {mobileAttempts.map((attempt, index) => {
+              const tone = resolveAttemptIndicatorColor(attempt);
+              const isActive = index === visibleMobileIndex;
+              const attemptNumber = Math.max(1, mobileAttempts.length - index);
+
+              return (
+                <button
+                  key={attempt.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-label={`Show attempt ${attemptNumber}`}
+                  className={`attempts-mobile-progress__track attempts-mobile-progress__track--${tone} ${isActive ? "attempts-mobile-progress__track--active" : ""}`}
+                  onClick={() => {
+                    const container = mobileScrollRef.current;
+                    if (!container) {
+                      return;
+                    }
+
+                    container.scrollTo({
+                      left: container.clientWidth * index,
+                      behavior: "smooth",
+                    });
+                  }}
+                />
+              );
+            })}
+          </div>
+          <p className="attempts-mobile-progress__label">
+            Attempt n.{visibleAttemptNumber}
+          </p>
+        </div>
         <div
           ref={mobileScrollRef}
           className="attempts-mobile-scroll"
@@ -289,9 +392,9 @@ export function AttemptsTable({
           aria-label="Attempts carousel"
           tabIndex={0}
         >
-          {attempts.map((attempt) => (
+          {mobileAttempts.map((attempt) => (
             <MobileAttemptCard
-              key={attempt.id}
+              key={`${attempt.id}-${attempt.id === revealingAttemptId ? "revealing" : "idle"}`}
               attempt={attempt}
               isRevealing={attempt.id === revealingAttemptId}
             />

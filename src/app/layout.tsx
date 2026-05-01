@@ -95,9 +95,10 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-on-background font-body">
+      <body suppressHydrationWarning className="min-h-full bg-background text-on-background font-body">
         <GlobalOverlays />
         {children}
       </body>
