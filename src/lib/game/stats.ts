@@ -55,6 +55,7 @@ export async function getGameStats(): Promise<PublicGameStats> {
   let maxStreak = 0;
   let runningStreak = 0;
   let currentStreak = 0;
+  let lastWinDate: string | null = null;
   let prevDate: string | null = null;
   let prevWasWin = false;
   const todayGameDate = gameDateRome();
@@ -87,8 +88,13 @@ export async function getGameStats(): Promise<PublicGameStats> {
     }
 
     currentStreak = runningStreak;
+    lastWinDate = row.game_date;
     prevDate = row.game_date;
     prevWasWin = true;
+  }
+
+  if (currentStreak > 0 && lastWinDate !== null && dayDiff(lastWinDate, todayGameDate) > 1) {
+    currentStreak = 0;
   }
 
   const guessHistory: PublicGameStatsPoint[] = rows.slice(-30).map((row) => ({

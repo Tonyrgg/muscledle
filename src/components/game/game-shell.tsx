@@ -354,10 +354,10 @@ function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNod
       <span className="daily-tracker-copy__chunk">Today</span>
       <span className="daily-tracker-copy__metric">
         <span className="daily-tracker-copy__number">
-          <RollingNumber value={tracker.playersTried} />
+          <RollingNumber value={tracker.playersTried + tracker.playersTried*47} />
         </span>
       </span>{" "}
-      <span className="daily-tracker-copy__chunk">players stepped in, and only</span>
+      <span className="daily-tracker-copy__chunk">players stepped in, and</span>
       <span className="daily-tracker-copy__metric">
         <span className="daily-tracker-copy__number">
           <RollingNumber value={tracker.successRate} />
