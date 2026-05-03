@@ -9,6 +9,7 @@ type LoadGuessVideoProps = {
 
 type PiPVideoElement = HTMLVideoElement & {
   webkitSetPresentationMode?: (mode: "inline" | "picture-in-picture" | "fullscreen") => void;
+  webkitRequestFullscreen?: () => Promise<void> | void;
 };
 
 export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
@@ -19,6 +20,11 @@ export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
     (("pictureInPictureEnabled" in document && document.pictureInPictureEnabled) ||
       (typeof HTMLVideoElement !== "undefined" &&
         "webkitSetPresentationMode" in HTMLVideoElement.prototype));
+  const fullscreenSupported =
+    typeof document !== "undefined" &&
+    typeof HTMLVideoElement !== "undefined" &&
+    ("requestFullscreen" in HTMLVideoElement.prototype ||
+      "webkitRequestFullscreen" in HTMLVideoElement.prototype);
 
   async function handleTogglePlayback() {
     const player = videoRef.current;
@@ -56,6 +62,26 @@ export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
       if (typeof player.webkitSetPresentationMode === "function") {
         player.webkitSetPresentationMode("picture-in-picture");
         return;
+      }
+    } catch {
+      return;
+    }
+  }
+
+  async function handleFullscreen() {
+    const player = videoRef.current as PiPVideoElement | null;
+    if (!player) {
+      return;
+    }
+
+    try {
+      if (typeof player.requestFullscreen === "function") {
+        await player.requestFullscreen();
+        return;
+      }
+
+      if (typeof player.webkitRequestFullscreen === "function") {
+        await player.webkitRequestFullscreen();
       }
     } catch {
       return;
@@ -117,6 +143,23 @@ export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M4 6h16v12H4zM6 8v8h12V8zm7 4h5v5h-5z"
+                fill="currentColor"
+              />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="loadguess-video__control"
+            aria-label="Open fullscreen video"
+            disabled={!fullscreenSupported}
+            onClick={() => {
+              void handleFullscreen();
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 9V5h4v2H7v2zm10-4h4v4h-2V7h-2zm2 10h2v4h-4v-2h2zM7 17h2v2H5v-4h2z"
                 fill="currentColor"
               />
             </svg>

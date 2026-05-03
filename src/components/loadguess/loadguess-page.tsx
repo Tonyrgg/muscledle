@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { Logo } from "@/components/brand/logo";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -191,11 +192,10 @@ export function LoadGuessPage() {
         <header className="loadguess-hero">
           <Link
             href="/"
-            className="loadguess-hero__brand"
+            className="game-hero__home-link"
             aria-label="Go to Liftdle homepage"
           >
-            <span className="loadguess-hero__brand-main">Lift</span>
-            <span className="loadguess-hero__brand-accent">dle</span>
+            <Logo withTagline />
           </Link>
           <div className="mode-switch" aria-label="Game mode switch">
             <Link href="/" className="mode-switch__button mode-switch__button--link">

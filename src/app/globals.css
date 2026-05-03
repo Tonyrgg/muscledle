@@ -3700,11 +3700,13 @@ button.game-quick-tools__item:active {
 
 .loadguess-hero {
   width: min(100%, 740px);
-  padding-top: 1.45rem;
   display: grid;
   justify-items: center;
-  gap: 0.32rem;
   text-align: center;
+}
+
+.loadguess-hero .brand-logo__tagline {
+  letter-spacing: 0.65em;
 }
 
 .loadguess-hero__brand {
@@ -3744,6 +3746,8 @@ button.game-quick-tools__item:active {
 
 .loadguess-hero__title-row {
   width: 100%;
+  margin-top: 1rem;
+  margin-bottom: .5rem;
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
