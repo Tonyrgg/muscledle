@@ -2,21 +2,17 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { ExerciseMediaView } from "@/components/media/exercise-media-view";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
-import { getExerciseIconCandidates, getMuscleGroupIconKey, getMuscleGroupIconPath } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
-import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import type { FeedbackColor } from "@/types/exercise";
 import type { PublicGameAttempt } from "@/types/game";
-import type { ExerciseMedia } from "@/types/media";
 
 type DailyHintsProps = {
   attempts: PublicGameAttempt[];
   targetExercise: LiveExerciseSuggestion | null;
 };
 
-type HintId = "attribute" | "name" | "visual";
+type HintId = "attribute" | "name";
 
 type HintStatus = {
   id: HintId;
@@ -50,6 +46,8 @@ const COLUMN_ORDER: FeedbackColumnKey[] = [
   "ego",
 ];
 const ATTRIBUTE_HINT_COLUMN_ORDER: FeedbackColumnKey[] = COLUMN_ORDER.filter((key) => key !== "muscle");
+const ATTRIBUTE_HINT_THRESHOLD = 5;
+const NAME_HINT_THRESHOLD = 10;
 
 const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
   muscle: "Muscle",
@@ -64,7 +62,6 @@ const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
 const HINT_ICON_MAP: Record<HintId, string> = {
   attribute: "/hints/attribute-clue.svg",
   name: "/hints/name-clue.svg",
-  visual: "/hints/image-clue.svg",
 };
 
 function titleCaseValue(value: string): string {
@@ -170,89 +167,6 @@ function buildAttributeHintPlan(attempts: PublicGameAttempt[]): AttributeHintPla
   return { kind: "combo", keys: [comboCandidates[0].key, comboCandidates[1].key] };
 }
 
-function buildFallbackIconMedia(exercise: LiveExerciseSuggestion | null): ExerciseMedia[] {
-  const iconPath = exercise
-    ? (getExerciseIconCandidates(exercise)[0] ?? "/muscle-icons/full-body.svg")
-    : "/muscle-icons/full-body.svg";
-  const slug = exercise?.slug ?? "hint-fallback";
-
-  return [
-    {
-      id: `hint-fallback-icon-${slug}`,
-      exerciseId: slug,
-      mediaKind: "icon",
-      source: "local",
-      sourceId: slug,
-      url: iconPath,
-      thumbnailUrl: null,
-      posterUrl: null,
-      mimeType: "image/svg+xml",
-      width: null,
-      height: null,
-      durationSeconds: null,
-      isPrimary: true,
-      sortOrder: 0,
-      isActive: true,
-      attributionText: null,
-      attributionUrl: null,
-      license: null,
-      createdAt: new Date(0).toISOString(),
-      updatedAt: new Date(0).toISOString(),
-    },
-  ];
-}
-
-function VisualHint({ targetExercise }: { targetExercise: LiveExerciseSuggestion | null }) {
-  const fallbackMedia = useMemo(
-    () => buildFallbackIconMedia(targetExercise),
-    [targetExercise],
-  );
-  const { media } = useExerciseMediaAssets(targetExercise?.slug ?? "", fallbackMedia);
-  const splitIconPaths = useMemo(() => {
-    const muscles = targetExercise?.muscle ?? [];
-    if (muscles.length < 2) return null;
-
-    const first = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[0]));
-    const second = getMuscleGroupIconPath(getMuscleGroupIconKey(muscles[1]));
-    if (!first || !second || first === second) return null;
-
-    return [first, second] as const;
-  }, [targetExercise?.muscle]);
-
-  return (
-    <div className="daily-hints__visual" aria-label="Visual clue">
-      {splitIconPaths ? (
-        <span className="daily-hints__visual-split">
-          <Image
-            src={splitIconPaths[0]}
-            alt=""
-            className="daily-hints__visual-split-part daily-hints__visual-split-part--primary"
-            fill
-            sizes="132px"
-            loading="lazy"
-          />
-          <Image
-            src={splitIconPaths[1]}
-            alt=""
-            className="daily-hints__visual-split-part daily-hints__visual-split-part--secondary"
-            fill
-            sizes="132px"
-            loading="lazy"
-          />
-          <span className="daily-hints__visual-split-divider" />
-        </span>
-      ) : (
-        <ExerciseMediaView
-          media={media}
-          context="modal"
-          alt={targetExercise?.name ?? "Exercise visual hint"}
-          className="daily-hints__visual-media"
-        />
-      )}
-    </div>
-  );
-}
-
 function HintIcon({ id }: { id: HintId }) {
   return (
     <span className={`daily-hints__tile-icon daily-hints__tile-icon--${id}`} aria-hidden>
@@ -279,26 +193,18 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
       {
         id: "attribute",
         label: "Attribute clue",
-        threshold: 5,
-        unlocked: wrongCount >= 5,
-        remainingWrong: Math.max(0, 5 - wrongCount),
-        lockCopy: buildRemainingWrongCopy(Math.max(0, 5 - wrongCount)),
+        threshold: ATTRIBUTE_HINT_THRESHOLD,
+        unlocked: wrongCount >= ATTRIBUTE_HINT_THRESHOLD,
+        remainingWrong: Math.max(0, ATTRIBUTE_HINT_THRESHOLD - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, ATTRIBUTE_HINT_THRESHOLD - wrongCount)),
       },
       {
         id: "name",
         label: "Name clue",
-        threshold: 10,
-        unlocked: wrongCount >= 10,
-        remainingWrong: Math.max(0, 10 - wrongCount),
-        lockCopy: buildRemainingWrongCopy(Math.max(0, 10 - wrongCount)),
-      },
-      {
-        id: "visual",
-        label: "Visual clue",
-        threshold: 15,
-        unlocked: wrongCount >= 15,
-        remainingWrong: Math.max(0, 15 - wrongCount),
-        lockCopy: buildRemainingWrongCopy(Math.max(0, 15 - wrongCount)),
+        threshold: NAME_HINT_THRESHOLD,
+        unlocked: wrongCount >= NAME_HINT_THRESHOLD,
+        remainingWrong: Math.max(0, NAME_HINT_THRESHOLD - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, NAME_HINT_THRESHOLD - wrongCount)),
       },
     ],
     [wrongCount],
@@ -312,13 +218,18 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
     return null;
   }, [hints, selectedHint]);
 
-  const lockedAttributeAttempts = useMemo(
-    () => (wrongCount >= 5 ? wrongAttempts.slice(0, 5) : wrongAttempts),
+  const attributeUnlockAttempts = useMemo(
+    () => {
+      if (wrongCount < ATTRIBUTE_HINT_THRESHOLD) return wrongAttempts;
+
+      // Attempts are newest-first; the oldest five wrong guesses are the unlock snapshot.
+      return wrongAttempts.slice(-ATTRIBUTE_HINT_THRESHOLD);
+    },
     [wrongAttempts, wrongCount],
   );
   const attributePlan = useMemo(
-    () => buildAttributeHintPlan(lockedAttributeAttempts),
-    [lockedAttributeAttempts],
+    () => buildAttributeHintPlan(attributeUnlockAttempts),
+    [attributeUnlockAttempts],
   );
 
   const nameHint = useMemo(
@@ -393,10 +304,6 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
 
           {activeHint === "name" ? (
             <p className="daily-hints__name-mask">{nameHint || "Name clue unavailable"}</p>
-          ) : null}
-
-          {activeHint === "visual" ? (
-            <VisualHint targetExercise={targetExercise} />
           ) : null}
         </div>
       ) : null}

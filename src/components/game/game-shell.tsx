@@ -91,6 +91,20 @@ const MARATHON_CONFETTI_SETTLE_MS = 4200;
 const DAILY_TRACKER_POLL_MS = 60000;
 const MARATHON_EXERCISE_COUNT = 100;
 const LOCAL_MARATHON_STATE_KEY = "liftdle:marathon-state:v1";
+const DAILY_TRACKER_COPY_TEMPLATES = [
+  { prefix: "", suffix: "of players solved today's exercise." },
+  { prefix: "", suffix: "made it through today's Liftdle." },
+  { prefix: "", suffix: "beat today's exercise. Are you one of them?" },
+  { prefix: "Today's exercise got cracked by", suffix: "of players." },
+  { prefix: "", suffix: "survived today's gym knowledge test." },
+  { prefix: "", suffix: "figured it out. The rest are still guessing." },
+  { prefix: "Only", suffix: "solved today's hidden exercise." },
+  { prefix: "", suffix: "nailed today's exercise." },
+  { prefix: "Today's Liftdle was solved by", suffix: "of players." },
+  { prefix: "", suffix: "passed today's gym test." },
+  { prefix: "", suffix: "beat today's exercise. Are you one of them?" },
+  { prefix: "", suffix: "survived today's gym knowledge test." },
+] as const;
 
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
@@ -330,41 +344,25 @@ function RollingNumber({ value }: { value: number }) {
   );
 }
 
-function formatDailyTrackerMessage(tracker: PublicDailyTracker | null): ReactNode {
-  if (!tracker) {
-    return (
-      <>
-        <span className="daily-tracker-copy__chunk">Today is still wide open.</span>
-        <span className="daily-tracker-copy__chunk">Step in and set the pace.</span>
-      </>
-    );
-  }
-
-  if (tracker.playersTried <= 0) {
-    return (
-      <>
-        <span className="daily-tracker-copy__chunk">No one has stepped in yet today.</span>
-        <span className="daily-tracker-copy__chunk">Be the one who sets the bar.</span>
-      </>
-    );
-  }
+function formatDailyTrackerMessage(
+  tracker: PublicDailyTracker,
+  templateIndex: number,
+): ReactNode {
+  const template =
+    DAILY_TRACKER_COPY_TEMPLATES[templateIndex] ?? DAILY_TRACKER_COPY_TEMPLATES[0];
 
   return (
     <>
-      <span className="daily-tracker-copy__chunk">Today</span>
-      <span className="daily-tracker-copy__metric">
-        <span className="daily-tracker-copy__number">
-          <RollingNumber value={tracker.playersTried + tracker.playersTried*47} />
-        </span>
-      </span>{" "}
-      <span className="daily-tracker-copy__chunk">players stepped in, and</span>
+      {template.prefix ? (
+        <span className="daily-tracker-copy__chunk">{template.prefix}</span>
+      ) : null}
       <span className="daily-tracker-copy__metric">
         <span className="daily-tracker-copy__number">
           <RollingNumber value={tracker.successRate} />
         </span>
         <span className="daily-tracker-copy__symbol">%</span>
       </span>{" "}
-      <span className="daily-tracker-copy__chunk">cracked it.</span>
+      <span className="daily-tracker-copy__chunk">{template.suffix}</span>
     </>
   );
 }
@@ -397,6 +395,9 @@ export function GameShell({ initialState }: GameShellProps) {
   const [stats, setStats] = useState<PublicGameStats | null>(null);
   const [dailyTracker, setDailyTracker] = useState<PublicDailyTracker | null>(
     null,
+  );
+  const [dailyTrackerCopyIndex] = useState(
+    () => Math.floor(Math.random() * DAILY_TRACKER_COPY_TEMPLATES.length),
   );
   const [statsStatus, setStatsStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -1696,9 +1697,11 @@ export function GameShell({ initialState }: GameShellProps) {
             </div>
             {mode === "daily" ? (
               <>
-                <p className="daily-tracker-copy" aria-live="polite">
-                  {formatDailyTrackerMessage(dailyTracker)}
-                </p>
+                {dailyTracker ? (
+                  <p className="daily-tracker-copy" aria-live="polite">
+                    {formatDailyTrackerMessage(dailyTracker, dailyTrackerCopyIndex)}
+                  </p>
+                ) : null}
                 <section className="game-quick-tools game-quick-tools--desktop" aria-label="Game tools">
                   <button
                     type="button"
@@ -2052,58 +2055,60 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : null}
 
           {mode === "daily" ? (
-            <section
-              className="yesterday-exercise"
-              aria-label="Yesterday exercise"
-            >
-              <section className="game-quick-tools game-quick-tools--mobile" aria-label="Game tools">
-                <button
-                  type="button"
-                  className="game-quick-tools__item"
-                  onClick={() => setFooterModal("stats")}
-                  aria-label="Open statistics"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                    <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
-                  </svg>
-                  <span className="game-quick-tools__label">Stats</span>
-                </button>
-                <button
-                  type="button"
-                  className="game-quick-tools__item"
-                  onClick={() => setFooterModal("how-to-play")}
-                  aria-label="Open how to play"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                    <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
-                  </svg>
-                  <span className="game-quick-tools__label">How To Play</span>
-                </button>
-                <div
-                  className="game-quick-tools__item game-quick-tools__item--streak"
-                  aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
-                    <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
-                  </svg>
-                  <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
-                  <span className="game-quick-tools__label">Current Streak</span>
-                </div>
+            <>
+              <section
+                className="yesterday-exercise"
+                aria-label="Yesterday exercise"
+              >
+                <section className="game-quick-tools game-quick-tools--mobile" aria-label="Game tools">
+                  <button
+                    type="button"
+                    className="game-quick-tools__item"
+                    onClick={() => setFooterModal("stats")}
+                    aria-label="Open statistics"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                      <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
+                    </svg>
+                    <span className="game-quick-tools__label">Stats</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="game-quick-tools__item"
+                    onClick={() => setFooterModal("how-to-play")}
+                    aria-label="Open how to play"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
+                      <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
+                    </svg>
+                    <span className="game-quick-tools__label">How To Play</span>
+                  </button>
+                  <div
+                    className="game-quick-tools__item game-quick-tools__item--streak"
+                    aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
+                      <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
+                    </svg>
+                    <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
+                    <span className="game-quick-tools__label">Current Streak</span>
+                  </div>
+                </section>
+                <p className="yesterday-exercise__text">
+                  Yesterday&apos;s exercise was{" "}
+                  <span className="yesterday-exercise__name">
+                    {gameState?.yesterdayExerciseName ?? "Unknown"}
+                  </span>
+                  , visit{" "}
+                  <Link href="/archive" className="yesterday-exercise__archive-link">
+                    Archive
+                  </Link>{" "}
+                  to discover other exercises.
+                </p>
+                <div id="mobile-floating-pills-host" className="mobile-floating-pills-host" aria-hidden />
               </section>
-              <p className="yesterday-exercise__text">
-                Yesterday&apos;s exercise was{" "}
-                <span className="yesterday-exercise__name">
-                  {gameState?.yesterdayExerciseName ?? "Unknown"}
-                </span>
-                , visit{" "}
-                <Link href="/archive" className="yesterday-exercise__archive-link">
-                  Archive
-                </Link>{" "}
-                to discover other exercises.
-              </p>
-              <p className="yesterday-exercise__copy">© 2026 Liftdle. All rights reserved.</p>
-              <div id="mobile-floating-pills-host" className="mobile-floating-pills-host" aria-hidden />
-            </section>
+              <p className="game-footer-copy">&copy; 2026 Liftdle. All rights reserved.</p>
+            </>
           ) : null}
             </>
           )}
