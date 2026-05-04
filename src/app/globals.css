@@ -52,6 +52,7 @@ input {
 
 .game-shell {
   display: flex;
+  flex: 1 1 auto;
   width: 100%;
   max-width: 980px;
   min-width: 0;
@@ -229,7 +230,7 @@ input {
 
 .daily-hints__tiles {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -2046,8 +2047,9 @@ button.game-quick-tools__item:active {
   text-decoration: underline;
 }
 
-.yesterday-exercise__copy {
-  margin: 0.55rem 0 0;
+.game-footer-copy {
+  width: min(100%, 940px);
+  margin: auto 0 0;
   color: #adadad;
   font-size: 0.65rem;
   font-weight: 700;

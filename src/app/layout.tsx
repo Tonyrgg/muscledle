@@ -16,12 +16,11 @@ const oswald = Oswald({
 });
 
 const SITE_URL = "https://liftdle.com";
-const META_TITLE = "Liftdle - Guess the Daily Exercise";
+const META_TITLE = "Liftdle — The Daily Gym Guessing Game";
 const META_DESCRIPTION =
-  "Play Liftdle, the daily fitness guessing game. Identify gym exercises using clues like muscle group, equipment, movement pattern, reps, and goal.";
+  "Guess the hidden exercise using clues like muscle, equipment and movement type.";
 const GOOGLE_SITE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() ?? "";
-// Placeholder path for social previews; create this file in public/ when ready.
-const OG_IMAGE_PATH = "/og/liftdle-og.png";
+const OG_IMAGE_PATH = "/og-image.png";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -46,10 +45,12 @@ export const metadata: Metadata = {
     siteName: "Liftdle",
     description: META_DESCRIPTION,
     type: "website",
-    url: "/",
+    url: SITE_URL,
     images: [
       {
         url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
         alt: META_TITLE,
       },
     ],

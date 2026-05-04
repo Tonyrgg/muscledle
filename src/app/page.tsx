@@ -7,12 +7,13 @@ import type { PublicTodayGameState } from "@/types/game";
 export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://liftdle.com";
-const OG_IMAGE_PATH = "/og/liftdle-og.png";
-const META_TITLE = "Liftdle - Guess the Daily Exercise";
+const OG_IMAGE_PATH = "/og-image.png";
+const META_TITLE = "Liftdle — The Daily Gym Guessing Game";
 const SITE_DESCRIPTION =
-  "Play Liftdle, the daily fitness guessing game. Identify gym exercises using clues like muscle group, equipment, movement pattern, reps, and goal.";
+  "Guess the hidden exercise using clues like muscle, equipment and movement type.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: META_TITLE,
   description: SITE_DESCRIPTION,
   alternates: {
@@ -21,11 +22,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: META_TITLE,
     description: SITE_DESCRIPTION,
-    url: "/",
+    url: SITE_URL,
+    siteName: "Liftdle",
     type: "website",
     images: [
       {
         url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
         alt: META_TITLE,
       },
     ],
