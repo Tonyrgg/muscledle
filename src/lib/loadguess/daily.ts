@@ -4,18 +4,19 @@ import type {
   AttemptState,
   LoadGuessRoundState,
   LoadGuessSessionState,
-  LoadGuessVideo,
 } from "@/lib/loadguess/types";
 
 export const LOAD_GUESS_DAILY_ROUNDS = 4;
 export const LOAD_GUESS_MAX_ATTEMPTS = 5;
+export const LOAD_GUESS_START_KG = 60;
+export const LOAD_GUESS_STEP_KG = 5;
 export const LOAD_GUESS_STORAGE_KEY = "liftdle:weightguess:daily:v2";
 const AVAILABLE_VIDEO_IDS = new Set(LOAD_GUESS_VIDEOS.map((video) => video.id));
 export const LOAD_GUESS_LOCAL_ROUNDS = 4;
 
-export function createAttempts(video: LoadGuessVideo): AttemptState[] {
+export function createAttempts(): AttemptState[] {
   return Array.from({ length: LOAD_GUESS_MAX_ATTEMPTS }, () => ({
-    valueKg: video.startKg,
+    valueKg: LOAD_GUESS_START_KG,
     submitted: false,
   }));
 }
@@ -32,7 +33,7 @@ function buildRoundState(videoId: string): LoadGuessRoundState {
 
   return {
     videoId,
-    attempts: createAttempts(video),
+    attempts: createAttempts(),
     currentAttemptIndex: 0,
     status: "playing",
   };

@@ -1,5 +1,7 @@
 import type { LoadFeedback, Unit } from "@/lib/loadguess/types";
 
+const KG_TO_LB_RATIO = 2.205;
+
 export const LOAD_FEEDBACK_LABELS: Record<LoadFeedback, string> = {
   cold: "Cold",
   medium: "Medium",
@@ -27,10 +29,18 @@ export function getLoadDirection(guessKg: number, targetKg: number): string {
   return "Perfect";
 }
 
+export function convertKgToLb(valueKg: number): number {
+  return Math.round(valueKg * KG_TO_LB_RATIO);
+}
+
 export function formatLoadValue(valueKg: number, unit: Unit): string {
   if (unit === "lb") {
-    return `${Math.round(valueKg * 2.20462)} lb`;
+    return `${convertKgToLb(valueKg)} lb`;
   }
 
   return `${valueKg} kg`;
+}
+
+export function formatLoadSummary(valueKg: number): string {
+  return `${valueKg}kg / ${convertKgToLb(valueKg)}lbs`;
 }

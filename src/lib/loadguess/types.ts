@@ -11,9 +11,6 @@ export type LoadGuessVideo = {
   originalVideoUrl: string;
   posterUrl?: string;
   targetKg: number;
-  targetLb: number;
-  startKg: number;
-  stepKg: number;
   source?: {
     platform?: string;
     url?: string;

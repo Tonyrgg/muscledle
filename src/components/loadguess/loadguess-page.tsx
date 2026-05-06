@@ -6,11 +6,12 @@ import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
 import { LOAD_GUESS_VIDEOS } from "@/data/loadguess/videos";
-import { getLoadFeedback } from "@/lib/loadguess/feedback";
+import { formatLoadSummary, getLoadFeedback } from "@/lib/loadguess/feedback";
 import {
   createDailySessionState,
   LOAD_GUESS_DAILY_ROUNDS,
   LOAD_GUESS_MAX_ATTEMPTS,
+  LOAD_GUESS_STEP_KG,
 } from "@/lib/loadguess/daily";
 import type {
   LoadGuessRoundState,
@@ -169,10 +170,10 @@ export function LoadGuessPage() {
   const shouldShowRoundSummary = currentRound.status !== "playing";
   const roundSummaryVariant =
     currentRound.status === "won" ? "won" : "lost";
-  const summaryButtonLabel = isLastRound ? "Retry from 0" : "Next round";
+  const summaryButtonLabel = isLastRound ? "Retry" : "Next round";
   const summaryEyebrow =
     currentRound.status === "won"
-      ? `Round ${session.currentRoundIndex + 1} cleared`
+      ? `Round ${session.currentRoundIndex + 1} won`
       : `Round ${session.currentRoundIndex + 1} missed`;
   const bodyVerticalOffset = shouldShowRoundSummary ? 20 : 50;
 
@@ -221,7 +222,7 @@ export function LoadGuessPage() {
               <div className="loadguess-round-card__head">
                 <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
                 <h2 className="loadguess-round-card__title">
-                  {currentVideo.targetKg}kg
+                  {formatLoadSummary(currentVideo.targetKg)}
                 </h2>
               </div>
               <LoadGuessVideo
@@ -264,7 +265,7 @@ export function LoadGuessPage() {
                   attempts={currentRound.attempts}
                   currentAttemptIndex={currentRound.currentAttemptIndex}
                   gameStatus={currentRound.status}
-                  stepKg={currentVideo.stepKg}
+                  stepKg={LOAD_GUESS_STEP_KG}
                   unit={unit}
                   onAdjustAttempt={handleAdjustAttempt}
                   onSubmitAttempt={handleSubmitAttempt}
