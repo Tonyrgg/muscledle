@@ -3771,9 +3771,9 @@ button.game-quick-tools__item:active {
   width: 100%;
   flex: 1 1 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: clamp(1rem, 4vh, 2.4rem) 0;
+  padding: 0 0 1.2rem;
   box-sizing: border-box;
 }
 
@@ -4159,7 +4159,6 @@ button.game-quick-tools__item:active {
 
 .loadguess-input-block {
   align-items: flex-start;
-  min-height: 20.25rem;
 }
 
 .loadguess-attempt-row {
@@ -4384,7 +4383,7 @@ button.game-quick-tools__item:active {
   }
 
   .loadguess-body {
-    padding: 0.9rem 0 1.2rem;
+    padding: 0 0 1.2rem;
   }
 
   .loadguess-status-row {
@@ -4426,11 +4425,6 @@ button.game-quick-tools__item:active {
     min-height: 3.8rem;
     padding: 0.38rem;
   }
-
-  .loadguess-input-block {
-    min-height: 18.5rem;
-  }
-
   .loadguess-attempt-row__index {
     min-height: 2.45rem;
     font-size: 0.64rem;

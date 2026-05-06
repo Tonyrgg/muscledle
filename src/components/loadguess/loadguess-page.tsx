@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -35,6 +35,9 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
 export function LoadGuessPage() {
   const [unit, setUnit] = useState<Unit>("kg");
   const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
+  const bodyTopOffset = 50
+  const heroRef = useRef<HTMLElement | null>(null);
+  const shellRef = useRef<HTMLElement | null>(null);
 
   const currentRound = session.rounds[session.currentRoundIndex];
   const currentVideo = getVideoById(currentRound.videoId);
@@ -177,7 +180,7 @@ export function LoadGuessPage() {
 
   return (
     <main className="game-page loadguess-page">
-      <header className="loadguess-hero">
+      <header ref={heroRef} className="loadguess-hero">
         <div className="loadguess-hero__stack">
           <div className="loadguess-hero__byline">
             <span className="loadguess-hero__by">by</span>
@@ -201,8 +204,15 @@ export function LoadGuessPage() {
         </div>
       </header>
 
-      <div className="loadguess-body">
-        <section className="loadguess-shell" aria-label="WeightGuess mode">
+      <div
+        className="loadguess-body"
+        style={{ paddingTop: `${bodyTopOffset}px`, paddingBottom: `${bodyTopOffset}px` }}
+      >
+        <section
+          ref={shellRef}
+          className="loadguess-shell"
+          aria-label="WeightGuess mode"
+        >
           {shouldShowRoundSummary ? (
             <section
               className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
