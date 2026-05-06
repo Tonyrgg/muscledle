@@ -61,6 +61,9 @@ export const metadata: Metadata = {
     description: META_DESCRIPTION,
     images: [OG_IMAGE_PATH],
   },
+  other: {
+    "alldle-verify": "qtckClZUnAmWTsI1yy16EP5pYTJwRMEM",
+  },
   icons: {
     icon: [
       { url: "/favicon/favicon.ico" },
