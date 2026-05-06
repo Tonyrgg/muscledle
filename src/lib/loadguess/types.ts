@@ -7,7 +7,6 @@ export type LoadGuessStatus = "playing" | "won" | "lost";
 export type LoadGuessVideo = {
   id: string;
   title: string;
-  exercise: string;
   blurredVideoUrl: string;
   originalVideoUrl: string;
   posterUrl?: string;

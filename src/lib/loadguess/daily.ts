@@ -9,7 +9,7 @@ import type {
 
 export const LOAD_GUESS_DAILY_ROUNDS = 5;
 export const LOAD_GUESS_MAX_ATTEMPTS = 5;
-export const LOAD_GUESS_STORAGE_KEY = "liftdle:loadguess:daily:v1";
+export const LOAD_GUESS_STORAGE_KEY = "liftdle:weightguess:daily:v2";
 const AVAILABLE_VIDEO_IDS = new Set(LOAD_GUESS_VIDEOS.map((video) => video.id));
 
 function hashString(value: string): number {

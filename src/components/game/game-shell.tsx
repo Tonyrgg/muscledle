@@ -1695,11 +1695,14 @@ export function GameShell({ initialState }: GameShellProps) {
                 Marathon
               </button>
               <Link
-                href="/loadguess"
+                href="/weightGuess"
                 className="mode-switch__button mode-switch__button--link"
-                aria-label="Open LoadGuess mode"
+                aria-label="Open WeightGuess mode"
               >
-                LoadGuess
+                WeightGuess
+                <span className="mode-switch__badge" aria-hidden="true">
+                  try it
+                </span>
               </Link>
             </div>
             {mode === "daily" ? (

@@ -5,6 +5,7 @@ import type { LoadGuessVideo as LoadGuessVideoType } from "@/lib/loadguess/types
 
 type LoadGuessVideoProps = {
   video: LoadGuessVideoType;
+  sourceUrl?: string;
 };
 
 type PiPVideoElement = HTMLVideoElement & {
@@ -12,7 +13,10 @@ type PiPVideoElement = HTMLVideoElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
 };
 
-export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
+export function LoadGuessVideo({
+  video,
+  sourceUrl = video.blurredVideoUrl,
+}: LoadGuessVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const pipSupported =
@@ -89,10 +93,14 @@ export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
   }
 
   return (
-    <section key={video.id} className="loadguess-video" aria-label={video.exercise}>
+    <section
+      key={`${video.id}-${sourceUrl}`}
+      className="loadguess-video"
+      aria-label={video.exercise}
+    >
       <div className="loadguess-video__frame">
         <video
-          key={video.id}
+          key={`${video.id}-${sourceUrl}`}
           ref={videoRef}
           className="loadguess-video__player"
           autoPlay
@@ -107,7 +115,7 @@ export function LoadGuessVideo({ video }: LoadGuessVideoProps) {
           onPause={() => setIsPaused(true)}
           onPlay={() => setIsPaused(false)}
         >
-          <source src={video.blurredVideoUrl} type="video/mp4" />
+          <source src={sourceUrl} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
 

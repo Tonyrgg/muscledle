@@ -185,10 +185,11 @@ export function LoadGuessPage() {
     : `Round ${session.currentRoundIndex + 1} of ${LOAD_GUESS_DAILY_ROUNDS} - Attempt ${
         currentRound.currentAttemptIndex + 1
       } of ${LOAD_GUESS_MAX_ATTEMPTS}`;
+  const shouldShowWinSummary = currentRound.status === "won";
 
   return (
     <main className="game-page loadguess-page">
-      <section className="loadguess-shell" aria-label="Guess the Load mode">
+      <section className="loadguess-shell" aria-label="WeightGuess mode">
         <header className="loadguess-hero">
           <Link
             href="/"
@@ -211,37 +212,71 @@ export function LoadGuessPage() {
               className="mode-switch__button mode-switch__button--active"
               aria-current="page"
             >
-              LoadGuess
+              WeightGuess
             </span>
           </div>
           <div className="loadguess-hero__title-row">
-            <h1 className="loadguess-hero__title">Guess the Load</h1>
+            <h1 className="loadguess-hero__title">WeightGuess</h1>
           </div>
-          <p className="loadguess-hero__subtitle">
-            Daily run. Five rounds. Five attempts per round.
-          </p>
         </header>
 
-        <LoadGuessVideo video={currentVideo} />
+        {shouldShowWinSummary ? (
+          <section
+            className="loadguess-round-card loadguess-round-card--won"
+            aria-live="polite"
+          >
+            <div className="loadguess-round-card__head">
+              <p className="loadguess-round-card__eyebrow">
+                Round {session.currentRoundIndex + 1} cleared
+              </p>
+              <h2 className="loadguess-round-card__title">{currentVideo.exercise}</h2>
+            </div>
+            <LoadGuessVideo
+              video={currentVideo}
+              sourceUrl={currentVideo.originalVideoUrl}
+            />
+            <div className="loadguess-round-card__meta">
+              <p className="loadguess-round-card__line">
+                Correct load {formatLoadValue(currentVideo.targetKg, unit)}
+              </p>
+              <p className="loadguess-round-card__line">
+                Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
+              </p>
+            </div>
+            {!isLastRound ? (
+              <button
+                type="button"
+                className="loadguess-result__action loadguess-round-card__action"
+                onClick={handleAdvanceRound}
+              >
+                Next round
+              </button>
+            ) : null}
+          </section>
+        ) : (
+          <>
+            <LoadGuessVideo video={currentVideo} />
 
-        <div className="loadguess-status-row">
-          <div className="loadguess-status" aria-live="polite">
-            {statusLabel}
-          </div>
-          <UnitToggle unit={unit} onUnitChange={setUnit} />
-        </div>
+            <div className="loadguess-status-row">
+              <div className="loadguess-status" aria-live="polite">
+                {statusLabel}
+              </div>
+              <UnitToggle unit={unit} onUnitChange={setUnit} />
+            </div>
 
-        <LoadGuessAttempts
-          attempts={currentRound.attempts}
-          currentAttemptIndex={currentRound.currentAttemptIndex}
-          gameStatus={currentRound.status}
-          stepKg={currentVideo.stepKg}
-          unit={unit}
-          onAdjustAttempt={handleAdjustAttempt}
-          onSubmitAttempt={handleSubmitAttempt}
-        />
+            <LoadGuessAttempts
+              attempts={currentRound.attempts}
+              currentAttemptIndex={currentRound.currentAttemptIndex}
+              gameStatus={currentRound.status}
+              stepKg={currentVideo.stepKg}
+              unit={unit}
+              onAdjustAttempt={handleAdjustAttempt}
+              onSubmitAttempt={handleSubmitAttempt}
+            />
+          </>
+        )}
 
-        {isRoundComplete ? (
+        {isRoundComplete && !shouldShowWinSummary ? (
           <section
             className={`loadguess-result loadguess-result--${currentRound.status}`}
             aria-live="polite"

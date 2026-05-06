@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${SITE_URL}/loadguess`,
+      url: `${SITE_URL}/weightGuess`,
       lastModified: LAST_MODIFIED,
       changeFrequency: "daily",
       priority: 0.8,
