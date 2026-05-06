@@ -11,6 +11,7 @@
     "import:exercisedb": "tsx scripts/import-exercisedb-inventory.ts",
     "sync:gifs": "tsx scripts/sync-exercise-gif.ts",
     "sync:gifs:all": "tsx scripts/sync-exercise-gifs-batch.ts",
+    "cleanup:gifs:cache": "tsx scripts/cleanup-exercise-gif-cache.ts",
     "curate:live:dry": "tsx scripts/curate-live-exercises.ts --dry-run",
     "curate:live": "tsx scripts/curate-live-exercises.ts --apply",
     "curate:live:attributes:dry": "tsx scripts/curated-live-attribute-fixes.ts",

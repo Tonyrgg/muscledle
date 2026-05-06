@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
 import { getFallbackGifUrlByExerciseId } from "@/lib/exercise-media/fallback-gifs";
+import {
+  loadRuntimeCachedExerciseGif,
+  maybeCleanupExpiredRuntimeExerciseGifs,
+  storeRuntimeExerciseGif,
+} from "@/lib/exercise-media/runtime-cache";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED_RESOLUTIONS = new Set(["180", "360", "720", "1080"]);
 const UPSTREAM_TIMEOUT_MS = 4500;
+
+type GifPayload = {
+  bytes: Uint8Array;
+  contentType: string;
+  source: string;
+};
 
 function fallbackGifResponse(reason: string) {
   return new Response("GIF unavailable", {
@@ -17,7 +28,7 @@ function fallbackGifResponse(reason: string) {
   });
 }
 
-async function fetchFallbackGifByExerciseId(exerciseId: string): Promise<Response | null> {
+async function fetchFallbackGifByExerciseId(exerciseId: string): Promise<GifPayload | null> {
   const fallbackUrl = await getFallbackGifUrlByExerciseId(exerciseId);
   if (!fallbackUrl) {
     return null;
@@ -42,15 +53,44 @@ async function fetchFallbackGifByExerciseId(exerciseId: string): Promise<Respons
     throw new Error("fallback_empty_body");
   }
 
-  return new Response(payload, {
+  return {
+    bytes: new Uint8Array(payload),
+    contentType: "image/gif",
+    source: "github_dataset",
+  };
+}
+
+function buildGifResponse(payload: GifPayload): Response {
+  const responseBuffer = payload.bytes.buffer.slice(
+    payload.bytes.byteOffset,
+    payload.bytes.byteOffset + payload.bytes.byteLength,
+  ) as ArrayBuffer;
+
+  return new Response(new Blob([responseBuffer], { type: payload.contentType || "image/gif" }), {
     status: 200,
     headers: {
-      "Content-Type": "image/gif",
-      "Content-Length": String(payload.byteLength),
+      "Content-Type": payload.contentType || "image/gif",
+      "Content-Length": String(payload.bytes.byteLength),
       "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
-      "X-Media-Fallback": "github_dataset",
+      "X-Media-Fallback": payload.source,
     },
   });
+}
+
+async function persistRuntimeCache(
+  exerciseId: string,
+  resolution: string,
+  payload: GifPayload,
+): Promise<void> {
+  const stored = await storeRuntimeExerciseGif({
+    exerciseId,
+    resolution,
+    payload,
+  });
+
+  if (!stored.ok) {
+    console.error("[exercise-media] runtime cache persist failed", stored.error);
+  }
 }
 
 export async function GET(request: Request) {
@@ -63,6 +103,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing exerciseId" }, { status: 400 });
   }
 
+  await maybeCleanupExpiredRuntimeExerciseGifs();
+
+  const cached = await loadRuntimeCachedExerciseGif(exerciseId, resolution);
+  if (cached) {
+    return buildGifResponse(cached);
+  }
+
   const baseUrl = (process.env.EXERCISEDB_API_BASE_URL ?? "https://exercisedb.p.rapidapi.com").replace(/\/+$/, "");
   const host = process.env.EXERCISEDB_API_HOST ?? "exercisedb.p.rapidapi.com";
   const key = process.env.EXERCISEDB_API_KEY;
@@ -71,7 +118,8 @@ export async function GET(request: Request) {
     try {
       const fallback = await fetchFallbackGifByExerciseId(exerciseId);
       if (fallback) {
-        return fallback;
+        await persistRuntimeCache(exerciseId, resolution, fallback);
+        return buildGifResponse(fallback);
       }
     } catch (fallbackError) {
       console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
@@ -98,7 +146,8 @@ export async function GET(request: Request) {
       try {
         const fallback = await fetchFallbackGifByExerciseId(exerciseId);
         if (fallback) {
-          return fallback;
+          await persistRuntimeCache(exerciseId, resolution, fallback);
+          return buildGifResponse(fallback);
         }
       } catch (fallbackError) {
         console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
@@ -112,7 +161,8 @@ export async function GET(request: Request) {
       try {
         const fallback = await fetchFallbackGifByExerciseId(exerciseId);
         if (fallback) {
-          return fallback;
+          await persistRuntimeCache(exerciseId, resolution, fallback);
+          return buildGifResponse(fallback);
         }
       } catch (fallbackError) {
         console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
@@ -125,7 +175,8 @@ export async function GET(request: Request) {
       try {
         const fallback = await fetchFallbackGifByExerciseId(exerciseId);
         if (fallback) {
-          return fallback;
+          await persistRuntimeCache(exerciseId, resolution, fallback);
+          return buildGifResponse(fallback);
         }
       } catch (fallbackError) {
         console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
@@ -133,20 +184,20 @@ export async function GET(request: Request) {
       return fallbackGifResponse("upstream_empty_body");
     }
 
-    return new Response(payload, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/gif",
-        "Content-Length": String(payload.byteLength),
-        "Cache-Control": "public, max-age=86400",
-      },
-    });
+    const resolvedPayload: GifPayload = {
+      bytes: new Uint8Array(payload),
+      contentType: "image/gif",
+      source: "exercisedb_upstream",
+    };
+    await persistRuntimeCache(exerciseId, resolution, resolvedPayload);
+    return buildGifResponse(resolvedPayload);
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       try {
         const fallback = await fetchFallbackGifByExerciseId(exerciseId);
         if (fallback) {
-          return fallback;
+          await persistRuntimeCache(exerciseId, resolution, fallback);
+          return buildGifResponse(fallback);
         }
       } catch (fallbackError) {
         console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
@@ -157,7 +208,8 @@ export async function GET(request: Request) {
     try {
       const fallback = await fetchFallbackGifByExerciseId(exerciseId);
       if (fallback) {
-        return fallback;
+        await persistRuntimeCache(exerciseId, resolution, fallback);
+        return buildGifResponse(fallback);
       }
     } catch (fallbackError) {
       console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
