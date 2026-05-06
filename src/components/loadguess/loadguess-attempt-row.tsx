@@ -54,6 +54,10 @@ export function LoadGuessAttemptRow({
           : undefined
       }
     >
+      <div className="loadguess-attempt-row__index" aria-hidden="true">
+        #{attemptIndex + 1}
+      </div>
+
       <button
         type="button"
         className="loadguess-attempt-row__arrow"

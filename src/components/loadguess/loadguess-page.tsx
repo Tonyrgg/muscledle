@@ -6,7 +6,7 @@ import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
 import { LOAD_GUESS_VIDEOS } from "@/data/loadguess/videos";
-import { formatLoadValue, getLoadFeedback } from "@/lib/loadguess/feedback";
+import { getLoadFeedback } from "@/lib/loadguess/feedback";
 import {
   createDailySessionState,
   LOAD_GUESS_DAILY_ROUNDS,
@@ -165,13 +165,11 @@ export function LoadGuessPage() {
 
   const statusLabel = isRoundComplete
     ? `Round ${session.currentRoundIndex + 1} complete`
-    : `Round ${session.currentRoundIndex + 1} of ${LOAD_GUESS_DAILY_ROUNDS} - Attempt ${
-        currentRound.currentAttemptIndex + 1
-      } of ${LOAD_GUESS_MAX_ATTEMPTS}`;
+    : `Round ${session.currentRoundIndex + 1} of ${LOAD_GUESS_DAILY_ROUNDS}`;
   const shouldShowRoundSummary = currentRound.status !== "playing";
   const roundSummaryVariant =
     currentRound.status === "won" ? "won" : "lost";
-  const summaryButtonLabel = isLastRound ? "Retry" : "Next round";
+  const summaryButtonLabel = isLastRound ? "Retry from 0" : "Next round";
   const summaryEyebrow =
     currentRound.status === "won"
       ? `Round ${session.currentRoundIndex + 1} cleared`
@@ -203,68 +201,69 @@ export function LoadGuessPage() {
         </div>
       </header>
 
-      <section className="loadguess-shell" aria-label="WeightGuess mode">
-
-        {shouldShowRoundSummary ? (
-          <section
-            className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
-            aria-live="polite"
-          >
-            <div className="loadguess-round-card__head">
-              <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
-              <h2 className="loadguess-round-card__title">
-                {currentVideo.title ?? `Exercise ${session.currentRoundIndex + 1}`}
-              </h2>
-            </div>
-            <LoadGuessVideo
-              video={currentVideo}
-              sourceUrl={currentVideo.originalVideoUrl}
-            />
-            <div className="loadguess-round-card__meta">
-              <p className="loadguess-round-card__line">
-                Correct load {formatLoadValue(currentVideo.targetKg, unit)}
-              </p>
-              <p className="loadguess-round-card__line">
-                Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="loadguess-result__action loadguess-round-card__action"
-              onClick={isLastRound ? handleResetDaily : handleAdvanceRound}
+      <div className="loadguess-body">
+        <section className="loadguess-shell" aria-label="WeightGuess mode">
+          {shouldShowRoundSummary ? (
+            <section
+              className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
+              aria-live="polite"
             >
-              {summaryButtonLabel}
-            </button>
-          </section>
-        ) : (
-          <section className="loadguess-playfield" aria-label="WeightGuess round">
-            <div className="loadguess-media-block">
-              <LoadGuessVideo video={currentVideo} />
-            </div>
-
-            <div className="loadguess-status-block">
-              <div className="loadguess-status-row">
-                <div className="loadguess-status" aria-live="polite">
-                  {statusLabel}
+              <div className="loadguess-round-card__head">
+                <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
+                <h2 className="loadguess-round-card__title">
+                  {currentVideo.targetKg}kg
+                </h2>
+              </div>
+              <LoadGuessVideo
+                video={currentVideo}
+                sourceUrl={currentVideo.originalVideoUrl}
+              />
+              <div className="loadguess-round-card__meta">
+                <p className="loadguess-round-card__line">
+                  Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="loadguess-result__action loadguess-round-card__action"
+                onClick={isLastRound ? handleResetDaily : handleAdvanceRound}
+              >
+                {summaryButtonLabel}
+              </button>
+            </section>
+          ) : (
+            <section className="loadguess-playfield" aria-label="WeightGuess round">
+              <div className="loadguess-status-block">
+                <div className="loadguess-status-row">
+                  <div className="loadguess-status" aria-live="polite">
+                    {statusLabel}
+                  </div>
                 </div>
+              </div>
+
+              <div className="loadguess-media-block">
+                <LoadGuessVideo video={currentVideo} />
+              </div>
+
+              <div className="loadguess-status-toggle">
                 <UnitToggle unit={unit} onUnitChange={setUnit} />
               </div>
-            </div>
 
-            <div className="loadguess-input-block">
-              <LoadGuessAttempts
-                attempts={currentRound.attempts}
-                currentAttemptIndex={currentRound.currentAttemptIndex}
-                gameStatus={currentRound.status}
-                stepKg={currentVideo.stepKg}
-                unit={unit}
-                onAdjustAttempt={handleAdjustAttempt}
-                onSubmitAttempt={handleSubmitAttempt}
-              />
-            </div>
-          </section>
-        )}
-      </section>
+              <div className="loadguess-input-block">
+                <LoadGuessAttempts
+                  attempts={currentRound.attempts}
+                  currentAttemptIndex={currentRound.currentAttemptIndex}
+                  gameStatus={currentRound.status}
+                  stepKg={currentVideo.stepKg}
+                  unit={unit}
+                  onAdjustAttempt={handleAdjustAttempt}
+                  onSubmitAttempt={handleSubmitAttempt}
+                />
+              </div>
+            </section>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
