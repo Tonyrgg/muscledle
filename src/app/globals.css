@@ -1579,9 +1579,12 @@ button.game-quick-tools__item:active {
   height: 100%;
   border: 0;
   background: transparent;
-  padding: 12px;
   color: inherit;
   cursor: pointer;
+}
+
+.exercise-icon-cell--has-media {
+  padding: 0;
 }
 
 .exercise-icon-cell__icon-wrap {
@@ -1636,12 +1639,14 @@ button.game-quick-tools__item:active {
 }
 
 .exercise-icon-cell__gif {
-  position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.exercise-icon-cell--has-media .exercise-icon-cell__gif {
+  transform: scale(1.18);
+  transform-origin: center;
 }
 
 .exercise-icon-cell__gif--loading {
@@ -2582,6 +2587,19 @@ button.game-quick-tools__item:active {
   color: #b1b1b1;
   font-size: 0.56rem;
   letter-spacing: 0.08em;
+}
+
+.archive-table__link {
+  color: #ffd2ad;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 139, 58, 0.35);
+}
+
+.archive-table__link:hover,
+.archive-table__link:focus-visible {
+  color: #fff0e2;
+  border-bottom-color: rgba(255, 139, 58, 0.8);
+  outline: none;
 }
 
 .archive-table__props-cell {

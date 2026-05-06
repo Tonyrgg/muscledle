@@ -49,6 +49,7 @@ type ExerciseMediaRow = {
 
 type ExerciseEnrichmentRow = {
   exercise_slug: string;
+  provider_exercise_id: string | null;
   enrichment_status: "pending" | "enriched" | "not_found" | "match_failed" | "provider_error" | "db_error";
   provider_exercise_name: string | null;
   normalized_muscle: string | null;
@@ -130,7 +131,7 @@ export async function listExerciseArchive(): Promise<ExerciseArchiveRow[]> {
     admin
       .from("exercise_enrichment")
       .select(
-        "exercise_slug, enrichment_status, provider_exercise_name, normalized_muscle, normalized_equipment, normalized_movement, normalized_pattern, normalized_reps, normalized_goal, normalized_ego, last_enriched_at",
+        "exercise_slug, provider_exercise_id, enrichment_status, provider_exercise_name, normalized_muscle, normalized_equipment, normalized_movement, normalized_pattern, normalized_reps, normalized_goal, normalized_ego, last_enriched_at",
       )
       .returns<ExerciseEnrichmentRow[]>(),
   ]);
@@ -208,6 +209,7 @@ export async function listExerciseArchive(): Promise<ExerciseArchiveRow[]> {
       id: exercise.id,
       slug: exercise.slug,
       name: exercise.name,
+      exercisePagePath: `/exercise/${exercise.slug}`,
       aliases: exercise.aliases ?? [],
       muscleGroup: exercise.muscle_group,
       muscle: exercise.muscle ?? [],
@@ -226,6 +228,7 @@ export async function listExerciseArchive(): Promise<ExerciseArchiveRow[]> {
       },
       enrichment: {
         status: enrichment?.enrichment_status ?? null,
+        providerExerciseId: enrichment?.provider_exercise_id ?? null,
         providerExerciseName: enrichment?.provider_exercise_name ?? null,
         normalizedMuscle: enrichment?.normalized_muscle ?? null,
         normalizedEquipment: enrichment?.normalized_equipment ?? null,

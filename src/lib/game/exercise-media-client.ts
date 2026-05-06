@@ -52,13 +52,12 @@ export async function resolveExerciseMediaUrl(slug: string): Promise<string | nu
       });
       const payload = (await response.json().catch(() => null)) as ExerciseMediaResponse | null;
       const mediaUrl = response.ok && payload?.ok ? (payload.media?.mediaUrl ?? null) : null;
-      const blockedProviderProxy = typeof mediaUrl === "string" && mediaUrl.includes("/api/exercises/media-gif");
-      if (mediaUrl && !blockedProviderProxy) {
+      if (mediaUrl) {
         mediaUrlCache.set(slug, mediaUrl);
       } else {
         mediaUrlCache.delete(slug);
       }
-      return blockedProviderProxy ? null : mediaUrl;
+      return mediaUrl;
     } catch {
       mediaUrlCache.delete(slug);
       return null;

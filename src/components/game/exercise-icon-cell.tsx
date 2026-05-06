@@ -7,6 +7,11 @@ import {
   getMuscleGroupIconPath,
   resolveMuscleGroupIconKey,
 } from "@/lib/exercises/icons";
+import {
+  getCachedExerciseMediaUrl,
+  markExerciseMediaLoaded,
+  resolveExerciseMediaUrl,
+} from "@/lib/game/exercise-media-client";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
@@ -48,6 +53,11 @@ export function ExerciseIconCell({
 }: ExerciseIconCellProps) {
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [resolvedMedia, setResolvedMedia] = useState<{ slug: string; url: string | null }>({
+    slug: exerciseSlug,
+    url: null,
+  });
+  const [loadedMediaUrl, setLoadedMediaUrl] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const iconPath = useMemo(
     () => resolveColumnIconPath(exerciseSlug, exerciseName, exerciseMuscleGroup),
@@ -63,6 +73,24 @@ export function ExerciseIconCell({
 
     return [first, second] as const;
   }, [exerciseMuscleValues]);
+  const cachedMediaUrl = getCachedExerciseMediaUrl(exerciseSlug) ?? null;
+  const mediaUrl =
+    cachedMediaUrl ??
+    (resolvedMedia.slug === exerciseSlug ? resolvedMedia.url : null);
+  const mediaReady = mediaUrl !== null && loadedMediaUrl === mediaUrl;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void resolveExerciseMediaUrl(exerciseSlug).then((resolved) => {
+      if (cancelled) return;
+      setResolvedMedia({ slug: exerciseSlug, url: resolved });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exerciseSlug]);
 
   useEffect(() => {
     if (!touchOpen && !isModalOpen) {
@@ -106,7 +134,7 @@ export function ExerciseIconCell({
       <button
         ref={buttonRef}
         type="button"
-        className={`exercise-icon-cell ${touchOpen ? "exercise-icon-cell--touch-open" : ""}`}
+        className={`exercise-icon-cell ${mediaUrl ? "exercise-icon-cell--has-media" : ""} ${touchOpen ? "exercise-icon-cell--touch-open" : ""}`}
         aria-label={exerciseName}
         aria-pressed={touchOpen}
         onBlur={() => setTouchOpen(false)}
@@ -119,36 +147,57 @@ export function ExerciseIconCell({
         }}
       >
         <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {splitIconPaths ? (
-            <span className="exercise-icon-cell__split">
-              <img
-                src={splitIconPaths[0]}
-                alt=""
-                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--primary"
-                width={90}
-                height={90}
-                loading="lazy"
-              />
-              <img
-                src={splitIconPaths[1]}
-                alt=""
-                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--secondary"
-                width={90}
-                height={90}
-                loading="lazy"
-              />
-              <span className="exercise-icon-cell__split-divider" />
-            </span>
-          ) : (
+          {mediaUrl ? (
             <img
-              src={iconPath}
+              src={mediaUrl}
               alt=""
-              className="exercise-icon-cell__icon"
+              className={`exercise-icon-cell__gif ${mediaReady ? "exercise-icon-cell__gif--ready" : "exercise-icon-cell__gif--loading"}`}
               width={90}
               height={90}
               loading="lazy"
+              onLoad={() => {
+                markExerciseMediaLoaded(mediaUrl);
+                setLoadedMediaUrl(mediaUrl);
+              }}
+              onError={() => {
+                setResolvedMedia({ slug: exerciseSlug, url: null });
+                setLoadedMediaUrl(null);
+              }}
             />
-          )}
+          ) : null}
+
+          {!mediaReady ? (
+            splitIconPaths ? (
+              <span className="exercise-icon-cell__split">
+                <img
+                  src={splitIconPaths[0]}
+                  alt=""
+                  className="exercise-icon-cell__split-part exercise-icon-cell__split-part--primary"
+                  width={90}
+                  height={90}
+                  loading="lazy"
+                />
+                <img
+                  src={splitIconPaths[1]}
+                  alt=""
+                  className="exercise-icon-cell__split-part exercise-icon-cell__split-part--secondary"
+                  width={90}
+                  height={90}
+                  loading="lazy"
+                />
+                <span className="exercise-icon-cell__split-divider" />
+              </span>
+            ) : (
+              <img
+                src={iconPath}
+                alt=""
+                className="exercise-icon-cell__icon"
+                width={90}
+                height={90}
+                loading="lazy"
+              />
+            )
+          ) : null}
         </span>
 
         <span className="exercise-icon-cell__overlay">{exerciseName}</span>
@@ -175,7 +224,15 @@ export function ExerciseIconCell({
                   </button>
                 </div>
 
-                {splitIconPaths ? (
+                {mediaUrl ? (
+                  <img
+                    src={mediaUrl}
+                    alt={`Demo ${exerciseName}`}
+                    className="exercise-media-preview__media"
+                    width={720}
+                    height={460}
+                  />
+                ) : splitIconPaths ? (
                   <div className="exercise-media-preview__split" aria-label={`Icone muscolari ${exerciseName}`}>
                     <img
                       src={splitIconPaths[0]}

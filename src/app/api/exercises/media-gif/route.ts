@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getFallbackGifUrlByExerciseId } from "@/lib/exercise-media/fallback-gifs";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,42 @@ function fallbackGifResponse(reason: string) {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=60",
       "X-Media-Fallback": reason,
+    },
+  });
+}
+
+async function fetchFallbackGifByExerciseId(exerciseId: string): Promise<Response | null> {
+  const fallbackUrl = await getFallbackGifUrlByExerciseId(exerciseId);
+  if (!fallbackUrl) {
+    return null;
+  }
+
+  const response = await fetch(fallbackUrl, {
+    method: "GET",
+    cache: "force-cache",
+  });
+
+  if (!response.ok) {
+    throw new Error(`fallback_http_${response.status}`);
+  }
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("image/gif")) {
+    throw new Error("fallback_not_gif");
+  }
+
+  const payload = await response.arrayBuffer();
+  if (payload.byteLength === 0) {
+    throw new Error("fallback_empty_body");
+  }
+
+  return new Response(payload, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/gif",
+      "Content-Length": String(payload.byteLength),
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+      "X-Media-Fallback": "github_dataset",
     },
   });
 }
@@ -31,6 +68,14 @@ export async function GET(request: Request) {
   const key = process.env.EXERCISEDB_API_KEY;
 
   if (!key) {
+    try {
+      const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+      if (fallback) {
+        return fallback;
+      }
+    } catch (fallbackError) {
+      console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+    }
     return fallbackGifResponse("missing_api_key");
   }
 
@@ -50,17 +95,41 @@ export async function GET(request: Request) {
     });
     if (!upstream.ok) {
       await upstream.body?.cancel().catch(() => undefined);
+      try {
+        const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+        if (fallback) {
+          return fallback;
+        }
+      } catch (fallbackError) {
+        console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+      }
       return fallbackGifResponse(`upstream_${upstream.status}`);
     }
 
     const contentType = upstream.headers.get("content-type") ?? "";
     if (!contentType.toLowerCase().includes("image/gif")) {
       await upstream.body?.cancel().catch(() => undefined);
+      try {
+        const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+        if (fallback) {
+          return fallback;
+        }
+      } catch (fallbackError) {
+        console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+      }
       return fallbackGifResponse("upstream_not_gif");
     }
 
     const payload = await upstream.arrayBuffer();
     if (payload.byteLength === 0) {
+      try {
+        const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+        if (fallback) {
+          return fallback;
+        }
+      } catch (fallbackError) {
+        console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+      }
       return fallbackGifResponse("upstream_empty_body");
     }
 
@@ -74,9 +143,25 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
+      try {
+        const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+        if (fallback) {
+          return fallback;
+        }
+      } catch (fallbackError) {
+        console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+      }
       return fallbackGifResponse("upstream_timeout");
     }
     console.error("GET /api/exercises/media-gif failed", error);
+    try {
+      const fallback = await fetchFallbackGifByExerciseId(exerciseId);
+      if (fallback) {
+        return fallback;
+      }
+    } catch (fallbackError) {
+      console.error("GET /api/exercises/media-gif fallback fetch failed", fallbackError);
+    }
     return fallbackGifResponse("fetch_error");
   } finally {
     clearTimeout(timeout);
