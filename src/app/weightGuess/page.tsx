@@ -5,7 +5,7 @@ const SITE_URL = "https://liftdle.com";
 const OG_IMAGE_PATH = "/og/liftdle-og.png";
 const META_TITLE = "Liftdle WeightGuess Daily";
 const META_DESCRIPTION =
-  "Play Liftdle WeightGuess Daily. Five rounds per day, five attempts per round, and a final recap of every lift.";
+  "Play Liftdle WeightGuess. Four rounds, five attempts per round, and a clean clip reveal after every result.";
 
 export const metadata: Metadata = {
   title: META_TITLE,

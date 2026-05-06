@@ -35,6 +35,7 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
 
 export function LoadGuessPage() {
   const [unit, setUnit] = useState<Unit>("kg");
+  const [hasStarted, setHasStarted] = useState(false);
   const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
 
   const currentRound = session.rounds[session.currentRoundIndex];
@@ -42,6 +43,7 @@ export function LoadGuessPage() {
   const submittedCount = getSubmittedCount(currentRound);
   const isRoundComplete = currentRound.status !== "playing";
   const isLastRound = session.currentRoundIndex === session.rounds.length - 1;
+  const shouldShowIntro = !hasStarted;
 
   function setSessionState(
     updater: (current: LoadGuessSessionState) => LoadGuessSessionState,
@@ -175,7 +177,7 @@ export function LoadGuessPage() {
     currentRound.status === "won"
       ? `Round ${session.currentRoundIndex + 1} won`
       : `Round ${session.currentRoundIndex + 1} missed`;
-  const bodyVerticalOffset = shouldShowRoundSummary ? 20 : 50;
+  const bodyVerticalOffset = shouldShowRoundSummary || shouldShowIntro ? 20 : 50;
 
   return (
     <main className="game-page loadguess-page">
@@ -204,7 +206,9 @@ export function LoadGuessPage() {
       </header>
 
       <div
-        className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""}`}
+        className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""} ${
+          shouldShowIntro ? "loadguess-body--intro" : ""
+        }`}
         style={{
           paddingTop: `${bodyVerticalOffset}px`,
           paddingBottom: `${bodyVerticalOffset}px`,
@@ -214,7 +218,36 @@ export function LoadGuessPage() {
           className="loadguess-shell"
           aria-label="WeightGuess mode"
         >
-          {shouldShowRoundSummary ? (
+          {shouldShowIntro ? (
+            <section className="loadguess-intro" aria-label="WeightGuess introduction">
+              <div className="loadguess-intro__head">
+                <p className="loadguess-intro__eyebrow">New mode</p>
+                <h2 className="loadguess-intro__title">Guess the exact load before the blur wins.</h2>
+              </div>
+
+              <div className="loadguess-intro__stats" aria-hidden="true">
+                <p className="loadguess-intro__stat">
+                  <span>4</span> rounds
+                </p>
+                <p className="loadguess-intro__stat">
+                  <span>5</span> attempts
+                </p>
+                <p className="loadguess-intro__stat">
+                  <span>kg / lbs</span> anytime
+                </p>
+              </div>
+              <h3 className="loadguess-intro__title loadguess-intro__title--sub">
+                Dial the weight up or down, lock in your guess.
+              </h3>
+              <button
+                type="button"
+                className="loadguess-result__action loadguess-intro__action"
+                onClick={() => setHasStarted(true)}
+              >
+                Start
+              </button>
+            </section>
+          ) : shouldShowRoundSummary ? (
             <section
               className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
               aria-live="polite"

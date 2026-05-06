@@ -3789,6 +3789,10 @@ button.game-quick-tools__item:active {
   align-items: center;
 }
 
+.loadguess-body--intro {
+  align-items: center;
+}
+
 .loadguess-shell {
   width: 100%;
   max-width: 860px;
@@ -3964,6 +3968,102 @@ button.game-quick-tools__item:active {
   width: 100%;
   display: flex;
   justify-content: center;
+}
+
+.loadguess-intro {
+  width: min(100%, 580px);
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  border: 1px solid rgba(249, 115, 22, 0.42);
+  border-radius: 0.82rem;
+  background:
+    linear-gradient(180deg, rgba(255, 139, 58, 0.1), rgba(255, 139, 58, 0) 38%),
+    #1d1d1d;
+  padding: clamp(1rem, 2.8vw, 1.35rem);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.loadguess-intro__head {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.loadguess-intro__eyebrow {
+  margin: 0;
+  color: #ffb16f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.loadguess-intro__title {
+  margin: 0;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.32rem, 4vw, 2.3rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.loadguess-intro__title--sub {
+  color: #d8d8d8;
+  font-size: clamp(0.96rem, 2.5vw, 1.28rem);
+  font-style: normal;
+  line-height: 1.18;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.loadguess-intro__copy {
+  margin: 0 auto;
+  max-width: 48ch;
+  color: #cfcfcf;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.55;
+}
+
+.loadguess-intro__stats {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.loadguess-intro__stat {
+  margin: 0;
+  min-width: 9.4rem;
+  flex: 1 1 0;
+  border: 1px solid rgba(255, 139, 58, 0.24);
+  background: rgba(255, 139, 58, 0.06);
+  padding: 0.72rem 0.8rem;
+  color: #d6d6d6;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.loadguess-intro__stat span {
+  display: block;
+  margin-bottom: 0.24rem;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.05rem, 3.3vw, 1.56rem);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+
+.loadguess-intro__action {
+  min-width: 10.5rem;
 }
 
 .loadguess-round-card {
@@ -4419,6 +4519,26 @@ button.game-quick-tools__item:active {
 
   .loadguess-round-card {
     padding: 0.78rem;
+  }
+
+  .loadguess-intro {
+    gap: 0.86rem;
+    padding: 0.9rem;
+  }
+
+  .loadguess-intro__copy {
+    font-size: 0.8rem;
+  }
+
+  .loadguess-intro__stats {
+    gap: 0.46rem;
+  }
+
+  .loadguess-intro__stat {
+    min-width: 0;
+    width: 100%;
+    font-size: 0.58rem;
+    letter-spacing: 0.14em;
   }
 
   .loadguess-unit-toggle {
