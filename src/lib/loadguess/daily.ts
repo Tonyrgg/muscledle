@@ -7,35 +7,11 @@ import type {
   LoadGuessVideo,
 } from "@/lib/loadguess/types";
 
-export const LOAD_GUESS_DAILY_ROUNDS = 5;
+export const LOAD_GUESS_DAILY_ROUNDS = 4;
 export const LOAD_GUESS_MAX_ATTEMPTS = 5;
 export const LOAD_GUESS_STORAGE_KEY = "liftdle:weightguess:daily:v2";
 const AVAILABLE_VIDEO_IDS = new Set(LOAD_GUESS_VIDEOS.map((video) => video.id));
-
-function hashString(value: string): number {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function seededShuffle<T>(items: T[], seed: number): T[] {
-  const output = [...items];
-  let state = seed || 1;
-
-  for (let index = output.length - 1; index > 0; index -= 1) {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    const swapIndex = state % (index + 1);
-    const current = output[index];
-    output[index] = output[swapIndex];
-    output[swapIndex] = current;
-  }
-
-  return output;
-}
+export const LOAD_GUESS_LOCAL_ROUNDS = 4;
 
 export function createAttempts(video: LoadGuessVideo): AttemptState[] {
   return Array.from({ length: LOAD_GUESS_MAX_ATTEMPTS }, () => ({
@@ -44,13 +20,8 @@ export function createAttempts(video: LoadGuessVideo): AttemptState[] {
   }));
 }
 
-function buildRoundOrder(gameDate: string): string[] {
-  const ordered = seededShuffle(LOAD_GUESS_VIDEOS, hashString(gameDate));
-
-  return Array.from({ length: LOAD_GUESS_DAILY_ROUNDS }, (_, index) => {
-    const video = ordered[index % ordered.length];
-    return video.id;
-  });
+function buildRoundOrder(): string[] {
+  return LOAD_GUESS_VIDEOS.slice(0, LOAD_GUESS_LOCAL_ROUNDS).map((video) => video.id);
 }
 
 function buildRoundState(videoId: string): LoadGuessRoundState {
@@ -70,7 +41,7 @@ function buildRoundState(videoId: string): LoadGuessRoundState {
 export function createDailySessionState(
   gameDate = gameDateRome(),
 ): LoadGuessSessionState {
-  const roundVideoIds = buildRoundOrder(gameDate);
+  const roundVideoIds = buildRoundOrder();
 
   return {
     gameDate,
@@ -104,8 +75,8 @@ export function readStoredDailySession(): LoadGuessSessionState | null {
     const hasExpectedRoundCount =
       Array.isArray(parsed.roundVideoIds) &&
       Array.isArray(parsed.rounds) &&
-      parsed.roundVideoIds.length === LOAD_GUESS_DAILY_ROUNDS &&
-      parsed.rounds.length === LOAD_GUESS_DAILY_ROUNDS;
+      parsed.roundVideoIds.length === LOAD_GUESS_LOCAL_ROUNDS &&
+      parsed.rounds.length === LOAD_GUESS_LOCAL_ROUNDS;
     const hasAvailableVideos = parsed.roundVideoIds.every((videoId) =>
       AVAILABLE_VIDEO_IDS.has(videoId),
     );

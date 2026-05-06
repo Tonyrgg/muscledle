@@ -195,7 +195,6 @@ input {
   position: relative;
 }
 
-
 .game-prompt-panel__title {
   margin: 0;
   color: var(--text-primary);
@@ -246,7 +245,10 @@ input {
   gap: 0.3rem;
   text-align: center;
   cursor: pointer;
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .daily-hints__tile:not(:disabled):hover,
@@ -294,7 +296,8 @@ input {
   width: 1.15rem;
   height: 1.15rem;
   opacity: 0.9;
-  filter: brightness(0) saturate(100%) invert(92%) sepia(0%) saturate(0%) hue-rotate(194deg) brightness(96%) contrast(90%);
+  filter: brightness(0) saturate(100%) invert(92%) sepia(0%) saturate(0%)
+    hue-rotate(194deg) brightness(96%) contrast(90%);
 }
 
 .daily-hints__tile--active .daily-hints__tile-icon {
@@ -302,7 +305,8 @@ input {
 }
 
 .daily-hints__tile--active .daily-hints__tile-icon-image {
-  filter: brightness(0) saturate(100%) invert(58%) sepia(96%) saturate(2531%) hue-rotate(352deg) brightness(101%) contrast(95%);
+  filter: brightness(0) saturate(100%) invert(58%) sepia(96%) saturate(2531%)
+    hue-rotate(352deg) brightness(101%) contrast(95%);
 }
 
 .daily-hints__tile--locked .daily-hints__tile-icon-image {
@@ -565,7 +569,9 @@ input {
   letter-spacing: 0;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-feature-settings:
+    "tnum" 1,
+    "lnum" 1;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   font-smooth: always;
@@ -639,7 +645,10 @@ input {
   justify-content: center;
   gap: 0.28rem;
   text-transform: uppercase;
-  transition: border-color 140ms ease, background-color 140ms ease, transform 140ms ease;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    transform 140ms ease;
 }
 
 button.game-quick-tools__item {
@@ -1678,10 +1687,14 @@ button.game-quick-tools__item:active {
   line-height: 1.15;
   text-align: center;
   text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 8px rgba(0, 0, 0, 0.75);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 8px rgba(0, 0, 0, 0.75);
   opacity: 0;
   transform: scale(0.98);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
 }
 
 .exercise-icon-cell:hover .exercise-icon-cell__overlay,
@@ -1950,7 +1963,12 @@ button.game-quick-tools__item:active {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0)
+  );
   animation: skeleton-sweep 1.7s ease-in-out infinite;
 }
 
@@ -2615,7 +2633,10 @@ button.game-quick-tools__item:active {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
 }
 
 .archive-card--interactive:hover,
@@ -3412,7 +3433,11 @@ button.game-quick-tools__item:active {
     background: var(--text-muted);
     opacity: 0.78;
     box-shadow: inset 0 0 0 1px rgba(15, 15, 15, 0.28);
-    transition: transform 160ms ease, opacity 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+    transition:
+      transform 160ms ease,
+      opacity 160ms ease,
+      background-color 160ms ease,
+      box-shadow 160ms ease;
   }
 
   .attempts-mobile-progress__track--red {
@@ -3622,8 +3647,10 @@ button.game-quick-tools__item:active {
   }
 
   .marathon-transition {
-    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
-      max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
   }
 
   .marathon-transition__panel {
@@ -3646,8 +3673,10 @@ button.game-quick-tools__item:active {
   }
 
   .info-sheet {
-    padding: max(0.6rem, env(safe-area-inset-top)) max(0.6rem, env(safe-area-inset-right))
-      max(0.6rem, env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left));
+    padding: max(0.6rem, env(safe-area-inset-top))
+      max(0.6rem, env(safe-area-inset-right))
+      max(0.6rem, env(safe-area-inset-bottom))
+      max(0.6rem, env(safe-area-inset-left));
   }
 
   .info-sheet__panel {
@@ -3677,8 +3706,10 @@ button.game-quick-tools__item:active {
 
   .exercise-media-modal,
   .archive-detail-modal {
-    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
-      max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+    padding: max(0.5rem, env(safe-area-inset-top))
+      max(0.5rem, env(safe-area-inset-right))
+      max(0.5rem, env(safe-area-inset-bottom))
+      max(0.5rem, env(safe-area-inset-left));
   }
 
   .exercise-media-modal__header,
@@ -3721,61 +3752,96 @@ button.game-quick-tools__item:active {
   .game-hero__home-link:focus-visible .brand-logo__wordmark {
     transform: none;
   }
-
 }
 
 /* LoadGuess mode */
 .loadguess-page {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
   padding-bottom: 2.6rem;
 }
 
 .loadguess-shell {
-  width: min(100%, 860px);
+  width: 100%;
+  max-width: 860px;
   min-width: 0;
-  display: grid;
-  gap: 0.92rem;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .loadguess-hero {
-  width: min(100%, 740px);
-  display: grid;
-  justify-items: center;
-  text-align: center;
+  width: 100%;
+  max-width: none;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.loadguess-hero .brand-logo__tagline {
-  letter-spacing: 0.65em;
-}
-
-.loadguess-hero__brand {
+.loadguess-hero__stack {
   display: inline-flex;
-  color: inherit;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
+}
+
+.loadguess-hero__byline,
+.loadguess-hero__title-row {
+  display: flex;
+  align-items: center;
+}
+
+.loadguess-hero__byline {
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.loadguess-hero__by {
+  color: #a8a8a8;
+  font-size: 0.76rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.loadguess-hero__home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #f5f5f5;
   font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(1.3rem, 4vw, 2rem);
+  font-size: clamp(1.05rem, 3vw, 1.5rem);
   font-style: italic;
   font-weight: 900;
-  line-height: 0.9;
+  letter-spacing: 0.08em;
+  line-height: 1;
   text-decoration: none;
   text-transform: uppercase;
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.loadguess-hero__brand-main {
-  color: #f5f5f5;
+.loadguess-hero__word {
+  display: inline-block;
 }
 
-.loadguess-hero__brand-accent {
+.loadguess-hero__word--accent {
   color: var(--accent);
 }
 
-.loadguess-hero__brand:hover,
-.loadguess-hero__brand:focus-visible {
-  color: inherit;
+.loadguess-hero__home-link:hover,
+.loadguess-hero__home-link:focus-visible {
+  color: #f5f5f5;
   transform: scale(1.04);
 }
 
-.loadguess-hero__brand:focus-visible,
+.loadguess-hero__home-link:focus-visible,
 .loadguess-unit-toggle__button:focus-visible,
 .loadguess-attempt-row__arrow:focus-visible,
 .loadguess-attempt-row__submit:focus-visible {
@@ -3784,13 +3850,9 @@ button.game-quick-tools__item:active {
 }
 
 .loadguess-hero__title-row {
-  width: 100%;
-  margin-top: 1rem;
-  margin-bottom: .5rem;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
 }
 
 .loadguess-hero__title {
@@ -3801,17 +3863,24 @@ button.game-quick-tools__item:active {
   font-style: italic;
   font-weight: 900;
   line-height: 0.92;
+  text-align: center;
   text-transform: uppercase;
 }
 
-.loadguess-hero__subtitle {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: clamp(0.68rem, 1.45vw, 0.84rem);
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  line-height: 1.3;
-  text-transform: uppercase;
+.loadguess-playfield {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.loadguess-media-block,
+.loadguess-status-block,
+.loadguess-input-block {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .loadguess-unit-toggle {
@@ -3853,19 +3922,24 @@ button.game-quick-tools__item:active {
 }
 
 .loadguess-video {
-  width: min(100%, 352px);
-  display: block;
+  width: min(100%, 560px);
+  display: flex;
+  justify-content: center;
 }
 
 .loadguess-round-card {
-  width: min(100%, 700px);
+  width: min(100%, 520px);
   display: grid;
   gap: 0.78rem;
   justify-items: center;
   border: 1px solid #3f3f3f;
   border-radius: 0.75rem;
   background:
-    linear-gradient(180deg, rgba(255, 139, 58, 0.08), rgba(255, 139, 58, 0) 34%),
+    linear-gradient(
+      180deg,
+      rgba(255, 139, 58, 0.08),
+      rgba(255, 139, 58, 0) 34%
+    ),
     #1d1d1d;
   padding: 0.9rem;
   text-align: center;
@@ -3874,6 +3948,10 @@ button.game-quick-tools__item:active {
 
 .loadguess-round-card--won {
   border-color: rgba(43, 191, 90, 0.72);
+}
+
+.loadguess-round-card--lost {
+  border-color: rgba(249, 115, 22, 0.72);
 }
 
 .loadguess-round-card .loadguess-video {
@@ -3902,6 +3980,10 @@ button.game-quick-tools__item:active {
 
 .loadguess-round-card__eyebrow {
   color: #95f0ad;
+}
+
+.loadguess-round-card--lost .loadguess-round-card__eyebrow {
+  color: #ffb16f;
 }
 
 .loadguess-round-card__title {
@@ -3934,8 +4016,12 @@ button.game-quick-tools__item:active {
 .loadguess-video__frame {
   position: relative;
   width: 100%;
-  max-height: min(46vh, 490px);
-  aspect-ratio: 9 / 16;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(54vh, 580px);
+  max-height: min(54vh, 580px);
   border: 1px solid #3f3f3f;
   background: #101010;
   overflow: hidden;
@@ -3943,10 +4029,11 @@ button.game-quick-tools__item:active {
 
 .loadguess-video__player {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   height: 100%;
   background: #101010;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .loadguess-video__controls {
@@ -4007,7 +4094,8 @@ button.game-quick-tools__item:active {
 }
 
 .loadguess-status-row {
-  width: min(100%, 700px);
+  width: 100%;
+  max-width: 700px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4027,7 +4115,8 @@ button.game-quick-tools__item:active {
 }
 
 .loadguess-attempts {
-  width: min(100%, 700px);
+  width: 100%;
+  max-width: 700px;
 }
 
 .loadguess-attempts__list {
@@ -4048,7 +4137,10 @@ button.game-quick-tools__item:active {
   border-radius: 0.5rem;
   background: #202020;
   padding: 0.48rem;
-  transition: border-color 160ms ease, opacity 160ms ease, background-color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    opacity 160ms ease,
+    background-color 160ms ease;
 }
 
 .loadguess-attempt-row--active {
@@ -4210,42 +4302,6 @@ button.game-quick-tools__item:active {
   letter-spacing: 0.06em;
 }
 
-.loadguess-result {
-  width: min(100%, 700px);
-  border: 1px solid #3f3f3f;
-  border-radius: 0.5rem;
-  background: #1d1d1d;
-  padding: 0.82rem;
-  text-align: center;
-}
-
-.loadguess-result--won {
-  border-color: rgba(43, 191, 90, 0.72);
-}
-
-.loadguess-result--lost {
-  border-color: rgba(249, 115, 22, 0.64);
-}
-
-.loadguess-result h2 {
-  margin: 0;
-  color: #f4f4f4;
-  font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: 1.28rem;
-  font-style: italic;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.loadguess-result p {
-  margin: 0.28rem 0 0;
-  color: #cfcfcf;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .loadguess-result__action {
   margin-top: 0.72rem;
   min-width: 10rem;
@@ -4268,108 +4324,9 @@ button.game-quick-tools__item:active {
   outline-offset: 2px;
 }
 
-.loadguess-recap {
-  width: min(100%, 700px);
-  border: 1px solid #3f3f3f;
-  border-radius: 0.5rem;
-  background: #1d1d1d;
-  padding: 0.82rem;
-}
-
-.loadguess-recap__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.loadguess-recap__title,
-.loadguess-recap__date {
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.loadguess-recap__title {
-  color: #f4f4f4;
-  font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: 1.24rem;
-  font-style: italic;
-  letter-spacing: 0.06em;
-}
-
-.loadguess-recap__date {
-  color: #a8a8a8;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-}
-
-.loadguess-recap__list {
-  margin: 0.78rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-  list-style: none;
-}
-
-.loadguess-recap__item {
-  border: 1px solid #343434;
-  background: #202020;
-  padding: 0.62rem;
-}
-
-.loadguess-recap__item-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.loadguess-recap__item-head strong,
-.loadguess-recap__line {
-  text-transform: uppercase;
-}
-
-.loadguess-recap__item-head strong {
-  color: #f2f2f2;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-}
-
-.loadguess-recap__line {
-  margin: 0.3rem 0 0;
-  color: #cacaca;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.loadguess-recap__badge {
-  border: 1px solid #3f3f3f;
-  padding: 0.2rem 0.4rem;
-  font-size: 0.54rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.loadguess-recap__badge--won {
-  border-color: rgba(43, 191, 90, 0.72);
-  color: #95f0ad;
-}
-
-.loadguess-recap__badge--lost {
-  border-color: rgba(249, 115, 22, 0.72);
-  color: #ffb16f;
-}
-
 @media (max-width: 700px) {
   .loadguess-shell {
     gap: 0.78rem;
-  }
-
-  .loadguess-hero__title-row {
-    gap: 0.55rem;
   }
 
   .loadguess-status-row {
@@ -4381,12 +4338,8 @@ button.game-quick-tools__item:active {
     letter-spacing: 0.08em;
   }
 
-  .loadguess-hero__subtitle {
-    letter-spacing: 0.12em;
-  }
-
   .loadguess-video {
-    width: min(100%, 328px);
+    width: min(100%, 100%);
   }
 
   .loadguess-round-card {
@@ -4406,7 +4359,10 @@ button.game-quick-tools__item:active {
   }
 
   .loadguess-attempt-row {
-    grid-template-columns: 2.25rem minmax(4.6rem, 1fr) 2.25rem minmax(5.7rem, 6.2rem);
+    grid-template-columns: 2.25rem minmax(4.6rem, 1fr) 2.25rem minmax(
+        5.7rem,
+        6.2rem
+      );
     gap: 0.38rem;
     min-height: 3.8rem;
     padding: 0.38rem;
@@ -4437,10 +4393,25 @@ button.game-quick-tools__item:active {
     padding: 0.28rem 0.3rem;
   }
 
-  .loadguess-recap__head,
-  .loadguess-recap__item-head {
-    align-items: flex-start;
-    flex-direction: column;
+  .loadguess-hero {
+    padding: 0 0.8rem;
+  }
+
+  .loadguess-hero__stack {
+    gap: 0.22rem;
+  }
+
+  .loadguess-hero__home-link {
+    font-size: 0.95rem;
+  }
+
+  .loadguess-hero__title {
+    font-size: clamp(1.55rem, 8vw, 2.5rem);
+  }
+
+  .loadguess-video__frame {
+    min-height: min(50vh, 480px);
+    max-height: min(50vh, 480px);
   }
 }
 
@@ -4449,7 +4420,7 @@ button.game-quick-tools__item:active {
     animation: none;
   }
 
-  .loadguess-hero__brand,
+  .loadguess-hero__home-link,
   .loadguess-attempt-row {
     transition: none;
   }
@@ -4479,7 +4450,10 @@ button.game-quick-tools__item:active {
   text-transform: uppercase;
   cursor: pointer;
   transform: scale(1);
-  transition: transform 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out;
+  transition:
+    transform 120ms ease-out,
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
 }
 
 .consent-fab:hover {
@@ -4487,7 +4461,9 @@ button.game-quick-tools__item:active {
   background: #161616;
 }
 
-.consent-fab:active { transform: scale(0.97); }
+.consent-fab:active {
+  transform: scale(0.97);
+}
 
 .consent-overlay {
   position: fixed;
@@ -4559,11 +4535,15 @@ button.game-quick-tools__item:active {
   align-items: stretch;
 }
 
-.feedback-popover .feedback-modal__actions--submit .feedback-modal__action-send {
+.feedback-popover
+  .feedback-modal__actions--submit
+  .feedback-modal__action-send {
   width: 100%;
 }
 
-.feedback-popover .feedback-modal__actions--submit .feedback-modal__action-reset {
+.feedback-popover
+  .feedback-modal__actions--submit
+  .feedback-modal__action-reset {
   width: 100%;
   display: inline-flex;
   align-items: center;
@@ -4749,7 +4729,10 @@ button.game-quick-tools__item:active {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 0.48rem 0.7rem;
-  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease;
 }
 
 .legal-page__cta:hover,
@@ -5086,7 +5069,10 @@ button.game-quick-tools__item:active {
   text-transform: uppercase;
   cursor: pointer;
   transform: scale(1);
-  transition: transform 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out;
+  transition:
+    transform 120ms ease-out,
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
 }
 
 .feedback-fab:hover {
@@ -5283,12 +5269,26 @@ button.game-quick-tools__item:active {
   white-space: nowrap;
 }
 
-.feedback-modal__badge--new { color: #f2f2f2; }
-.feedback-modal__badge--triaged { color: #8fd2ff; border-color: rgba(143, 210, 255, 0.45); }
-.feedback-modal__badge--in_progress { color: #ffd282; border-color: rgba(255, 210, 130, 0.42); }
-.feedback-modal__badge--waiting_user { color: #d3c6ff; border-color: rgba(211, 198, 255, 0.4); }
+.feedback-modal__badge--new {
+  color: #f2f2f2;
+}
+.feedback-modal__badge--triaged {
+  color: #8fd2ff;
+  border-color: rgba(143, 210, 255, 0.45);
+}
+.feedback-modal__badge--in_progress {
+  color: #ffd282;
+  border-color: rgba(255, 210, 130, 0.42);
+}
+.feedback-modal__badge--waiting_user {
+  color: #d3c6ff;
+  border-color: rgba(211, 198, 255, 0.4);
+}
 .feedback-modal__badge--resolved,
-.feedback-modal__badge--closed { color: #9ae6b1; border-color: rgba(154, 230, 177, 0.42); }
+.feedback-modal__badge--closed {
+  color: #9ae6b1;
+  border-color: rgba(154, 230, 177, 0.42);
+}
 
 .feedback-modal__attachments {
   display: flex;

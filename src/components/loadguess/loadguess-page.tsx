@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { Logo } from "@/components/brand/logo";
+import { useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -12,8 +11,6 @@ import {
   createDailySessionState,
   LOAD_GUESS_DAILY_ROUNDS,
   LOAD_GUESS_MAX_ATTEMPTS,
-  readStoredDailySession,
-  writeStoredDailySession,
 } from "@/lib/loadguess/daily";
 import type {
   LoadGuessRoundState,
@@ -37,27 +34,13 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
 
 export function LoadGuessPage() {
   const [unit, setUnit] = useState<Unit>("kg");
-  const [session, setSession] = useState<LoadGuessSessionState>(() =>
-    readStoredDailySession() ?? createDailySessionState(),
-  );
-  const hasPersistedRef = useRef(false);
-
-  useEffect(() => {
-    if (!hasPersistedRef.current) {
-      hasPersistedRef.current = true;
-      return;
-    }
-
-    writeStoredDailySession(session);
-  }, [session]);
+  const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
 
   const currentRound = session.rounds[session.currentRoundIndex];
   const currentVideo = getVideoById(currentRound.videoId);
   const submittedCount = getSubmittedCount(currentRound);
   const isRoundComplete = currentRound.status !== "playing";
   const isLastRound = session.currentRoundIndex === session.rounds.length - 1;
-  const isSessionComplete =
-    isLastRound && session.rounds[session.currentRoundIndex].status !== "playing";
 
   function setSessionState(
     updater: (current: LoadGuessSessionState) => LoadGuessSessionState,
@@ -185,51 +168,53 @@ export function LoadGuessPage() {
     : `Round ${session.currentRoundIndex + 1} of ${LOAD_GUESS_DAILY_ROUNDS} - Attempt ${
         currentRound.currentAttemptIndex + 1
       } of ${LOAD_GUESS_MAX_ATTEMPTS}`;
-  const shouldShowWinSummary = currentRound.status === "won";
+  const shouldShowRoundSummary = currentRound.status !== "playing";
+  const roundSummaryVariant =
+    currentRound.status === "won" ? "won" : "lost";
+  const summaryButtonLabel = isLastRound ? "Retry" : "Next round";
+  const summaryEyebrow =
+    currentRound.status === "won"
+      ? `Round ${session.currentRoundIndex + 1} cleared`
+      : `Round ${session.currentRoundIndex + 1} missed`;
 
   return (
     <main className="game-page loadguess-page">
-      <section className="loadguess-shell" aria-label="WeightGuess mode">
-        <header className="loadguess-hero">
-          <Link
-            href="/"
-            className="game-hero__home-link"
-            aria-label="Go to Liftdle homepage"
-          >
-            <Logo withTagline />
-          </Link>
-          <div className="mode-switch" aria-label="Game mode switch">
-            <Link href="/" className="mode-switch__button mode-switch__button--link">
-              Daily
-            </Link>
+      <header className="loadguess-hero">
+        <div className="loadguess-hero__stack">
+          <div className="loadguess-hero__byline">
+            <span className="loadguess-hero__by">by</span>
             <Link
-              href="/marathon"
-              className="mode-switch__button mode-switch__button--link"
+              href="/"
+              className="loadguess-hero__home-link"
+              aria-label="Go to Liftdle homepage"
             >
-              Marathon
+              <span className="loadguess-hero__word">Lift</span>
+              <span className="loadguess-hero__word loadguess-hero__word--accent">dle</span>
             </Link>
-            <span
-              className="mode-switch__button mode-switch__button--active"
-              aria-current="page"
-            >
-              WeightGuess
-            </span>
           </div>
           <div className="loadguess-hero__title-row">
-            <h1 className="loadguess-hero__title">WeightGuess</h1>
+            <h1 className="loadguess-hero__title">
+              <span className="loadguess-hero__word">Weight</span>
+              <span className="loadguess-hero__word loadguess-hero__word--accent">
+                Guess
+              </span>
+            </h1>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {shouldShowWinSummary ? (
+      <section className="loadguess-shell" aria-label="WeightGuess mode">
+
+        {shouldShowRoundSummary ? (
           <section
-            className="loadguess-round-card loadguess-round-card--won"
+            className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
             aria-live="polite"
           >
             <div className="loadguess-round-card__head">
-              <p className="loadguess-round-card__eyebrow">
-                Round {session.currentRoundIndex + 1} cleared
-              </p>
-              <h2 className="loadguess-round-card__title">{currentVideo.exercise}</h2>
+              <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
+              <h2 className="loadguess-round-card__title">
+                {currentVideo.title ?? `Exercise ${session.currentRoundIndex + 1}`}
+              </h2>
             </div>
             <LoadGuessVideo
               video={currentVideo}
@@ -243,108 +228,42 @@ export function LoadGuessPage() {
                 Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
               </p>
             </div>
-            {!isLastRound ? (
-              <button
-                type="button"
-                className="loadguess-result__action loadguess-round-card__action"
-                onClick={handleAdvanceRound}
-              >
-                Next round
-              </button>
-            ) : null}
-          </section>
-        ) : (
-          <>
-            <LoadGuessVideo video={currentVideo} />
-
-            <div className="loadguess-status-row">
-              <div className="loadguess-status" aria-live="polite">
-                {statusLabel}
-              </div>
-              <UnitToggle unit={unit} onUnitChange={setUnit} />
-            </div>
-
-            <LoadGuessAttempts
-              attempts={currentRound.attempts}
-              currentAttemptIndex={currentRound.currentAttemptIndex}
-              gameStatus={currentRound.status}
-              stepKg={currentVideo.stepKg}
-              unit={unit}
-              onAdjustAttempt={handleAdjustAttempt}
-              onSubmitAttempt={handleSubmitAttempt}
-            />
-          </>
-        )}
-
-        {isRoundComplete && !shouldShowWinSummary ? (
-          <section
-            className={`loadguess-result loadguess-result--${currentRound.status}`}
-            aria-live="polite"
-          >
-            <h2>
-              {currentRound.status === "won" ? "Round cleared" : "Round missed"}
-            </h2>
-            <p>
-              {currentVideo.exercise} - Correct load{" "}
-              {formatLoadValue(currentVideo.targetKg, unit)}
-            </p>
-            <p>
-              Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
-            </p>
-            {!isLastRound ? (
-              <button
-                type="button"
-                className="loadguess-result__action"
-                onClick={handleAdvanceRound}
-              >
-                Next round
-              </button>
-            ) : null}
-          </section>
-        ) : null}
-
-        {isSessionComplete ? (
-          <section className="loadguess-recap" aria-label="Daily recap">
-            <div className="loadguess-recap__head">
-              <h2 className="loadguess-recap__title">Daily recap</h2>
-              <p className="loadguess-recap__date">{session.gameDate} - Europe/Rome</p>
-            </div>
-
-            <ol className="loadguess-recap__list">
-              {session.rounds.map((round, index) => {
-                const video = getVideoById(round.videoId);
-                const attemptsUsed = getSubmittedCount(round);
-
-                return (
-                  <li key={`${round.videoId}-${index}`} className="loadguess-recap__item">
-                    <div className="loadguess-recap__item-head">
-                      <strong>Round {index + 1}</strong>
-                      <span
-                        className={`loadguess-recap__badge loadguess-recap__badge--${round.status}`}
-                      >
-                        {round.status === "won" ? "Solved" : "Missed"}
-                      </span>
-                    </div>
-                    <p className="loadguess-recap__line">
-                      {video.exercise} - {formatLoadValue(video.targetKg, unit)}
-                    </p>
-                    <p className="loadguess-recap__line">
-                      Attempts used {attemptsUsed} / {LOAD_GUESS_MAX_ATTEMPTS}
-                    </p>
-                  </li>
-                );
-              })}
-            </ol>
-
             <button
               type="button"
-              className="loadguess-result__action"
-              onClick={handleResetDaily}
+              className="loadguess-result__action loadguess-round-card__action"
+              onClick={isLastRound ? handleResetDaily : handleAdvanceRound}
             >
-              Replay local daily
+              {summaryButtonLabel}
             </button>
           </section>
-        ) : null}
+        ) : (
+          <section className="loadguess-playfield" aria-label="WeightGuess round">
+            <div className="loadguess-media-block">
+              <LoadGuessVideo video={currentVideo} />
+            </div>
+
+            <div className="loadguess-status-block">
+              <div className="loadguess-status-row">
+                <div className="loadguess-status" aria-live="polite">
+                  {statusLabel}
+                </div>
+                <UnitToggle unit={unit} onUnitChange={setUnit} />
+              </div>
+            </div>
+
+            <div className="loadguess-input-block">
+              <LoadGuessAttempts
+                attempts={currentRound.attempts}
+                currentAttemptIndex={currentRound.currentAttemptIndex}
+                gameStatus={currentRound.status}
+                stepKg={currentVideo.stepKg}
+                unit={unit}
+                onAdjustAttempt={handleAdjustAttempt}
+                onSubmitAttempt={handleSubmitAttempt}
+              />
+            </div>
+          </section>
+        )}
       </section>
     </main>
   );

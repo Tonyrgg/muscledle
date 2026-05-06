@@ -96,7 +96,7 @@ export function LoadGuessVideo({
     <section
       key={`${video.id}-${sourceUrl}`}
       className="loadguess-video"
-      aria-label={video.exercise}
+      aria-label={video.title}
     >
       <div className="loadguess-video__frame">
         <video
