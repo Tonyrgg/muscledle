@@ -170,7 +170,7 @@ export function LoadGuessPage() {
   const shouldShowRoundSummary = currentRound.status !== "playing";
   const roundSummaryVariant =
     currentRound.status === "won" ? "won" : "lost";
-  const summaryButtonLabel = isLastRound ? "Retry" : "Next round";
+  const summaryButtonLabel = isLastRound ? "Retry from start" : "Next round";
   const summaryEyebrow =
     currentRound.status === "won"
       ? `Round ${session.currentRoundIndex + 1} won`
