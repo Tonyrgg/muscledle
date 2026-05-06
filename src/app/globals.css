@@ -3804,6 +3804,28 @@ button.game-quick-tools__item:active {
   gap: 0.75rem;
 }
 
+.loadguess-shell--summary {
+  max-width: 100%;
+}
+
+.loadguess-intro-stack {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+}
+
+.loadguess-summary-layout {
+  width: min(100%, 520px);
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+.loadguess-summary-layout--with-feedback {
+  min-height: 100%;
+}
+
 .loadguess-hero {
   width: 100%;
   max-width: none;
@@ -3874,7 +3896,9 @@ button.game-quick-tools__item:active {
 .loadguess-hero__home-link:focus-visible,
 .loadguess-unit-toggle__button:focus-visible,
 .loadguess-attempt-row__arrow:focus-visible,
-.loadguess-attempt-row__submit:focus-visible {
+.loadguess-attempt-row__submit:focus-visible,
+.loadguess-feedback-card__star:focus-visible,
+.loadguess-feedback-card__mode:focus-visible {
   outline: 2px solid rgba(249, 115, 22, 0.86);
   outline-offset: 2px;
 }
@@ -3985,6 +4009,63 @@ button.game-quick-tools__item:active {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
+.loadguess-feedback-card {
+  width: min(100%, 580px);
+  display: grid;
+  gap: 0.88rem;
+  justify-items: center;
+  border: 1px solid rgba(249, 115, 22, 0.34);
+  border-radius: 0.82rem;
+  background:
+    linear-gradient(180deg, rgba(255, 139, 58, 0.08), rgba(255, 139, 58, 0) 34%),
+    #1d1d1d;
+  padding: clamp(1rem, 2.8vw, 1.35rem);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+  transition:
+    border-color 220ms ease,
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.loadguess-feedback-card--summary {
+  width: 360px;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 30px);
+    transform: translateY(-75%);
+}
+
+.loadguess-feedback-card--submitting {
+  border-color: rgba(255, 177, 111, 0.72);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.28);
+}
+
+.loadguess-feedback-card--summary.loadguess-feedback-card--submitting {
+  transform: translateY(calc(-50% - 2px));
+}
+
+.loadguess-feedback-card__head {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.loadguess-feedback-card__complete {
+  display: grid;
+  gap: 0.46rem;
+  justify-items: center;
+}
+
+.loadguess-feedback-card__eyebrow {
+  margin: 0;
+  color: #ffb16f;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
 .loadguess-intro__head {
   display: grid;
   gap: 0.48rem;
@@ -4011,6 +4092,7 @@ button.game-quick-tools__item:active {
 }
 
 .loadguess-intro__title--sub {
+  max-width: 38ch;
   color: #d8d8d8;
   font-size: clamp(0.96rem, 2.5vw, 1.28rem);
   font-style: normal;
@@ -4029,6 +4111,19 @@ button.game-quick-tools__item:active {
   line-height: 1.55;
 }
 
+.loadguess-intro__copy-emphasis {
+  display: inline-block;
+  color: #f5f5f5;
+  font-size: 1.08em;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.loadguess-intro__copy--secondary {
+  color: #b4b4b4;
+}
+
 .loadguess-intro__stats {
   width: 100%;
   display: flex;
@@ -4042,8 +4137,9 @@ button.game-quick-tools__item:active {
   margin: 0;
   min-width: 9.4rem;
   flex: 1 1 0;
-  border: 1px solid rgba(255, 139, 58, 0.24);
-  background: rgba(255, 139, 58, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #181818 0%, #121212 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
   padding: 0.72rem 0.8rem;
   color: #d6d6d6;
   font-size: 0.66rem;
@@ -4064,6 +4160,166 @@ button.game-quick-tools__item:active {
 
 .loadguess-intro__action {
   min-width: 10.5rem;
+}
+
+.loadguess-feedback-card__complete-title {
+  max-width: 20ch;
+}
+
+.loadguess-feedback-card__complete-copy {
+  margin: 0;
+  max-width: 34ch;
+  color: #cfcfcf;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.loadguess-feedback-card__stars {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+}
+
+.loadguess-feedback-card__star {
+  position: relative;
+  --loadguess-feedback-star-size: 2.2rem;
+  width: var(--loadguess-feedback-star-size);
+  height: var(--loadguess-feedback-star-size);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.loadguess-feedback-card__star-base,
+.loadguess-feedback-card__star-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  height: 100%;
+}
+
+.loadguess-feedback-card__star-base {
+  color: #4f4f4f;
+}
+
+.loadguess-feedback-card__star-fill {
+  overflow: hidden;
+  color: #ff9a43;
+  text-shadow: 0 0 18px rgba(255, 154, 67, 0.18);
+}
+
+.loadguess-feedback-card__star-icon {
+  display: block;
+  width: var(--loadguess-feedback-star-size);
+  height: var(--loadguess-feedback-star-size);
+}
+
+.loadguess-feedback-card__star-icon path {
+  fill: currentColor;
+}
+
+.loadguess-feedback-card__rating {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.loadguess-feedback-card__action {
+  min-width: 10.5rem;
+}
+
+.loadguess-feedback-card__action:disabled {
+  border-color: #3b3b3b;
+  background: #242424;
+  color: #8d8d8d;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.loadguess-feedback-card__message {
+  margin: -0.16rem 0 0;
+  color: #cfcfcf;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.loadguess-feedback-card__followup {
+  width: 100%;
+  display: grid;
+  gap: 0.62rem;
+  padding-top: 0.3rem;
+  animation: loadguess-feedback-followup-in 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.loadguess-feedback-card__followup-title {
+  margin: 0;
+  color: #f5f5f5;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.loadguess-feedback-card__modes {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.56rem;
+}
+
+.loadguess-feedback-card__mode {
+  min-height: 4.25rem;
+  border: 1px solid rgba(255, 139, 58, 0.22);
+  background: rgba(255, 139, 58, 0.05);
+  padding: 0.82rem 0.72rem;
+  color: #d5d5d5;
+  cursor: pointer;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.loadguess-feedback-card__mode:hover,
+.loadguess-feedback-card__mode:focus-visible {
+  border-color: rgba(255, 139, 58, 0.56);
+  background: rgba(255, 139, 58, 0.1);
+  color: #f5f5f5;
+  transform: translateY(-1px);
+}
+
+.loadguess-feedback-card__mode--active {
+  border-color: rgba(255, 139, 58, 0.82);
+  background: rgba(255, 139, 58, 0.16);
+  color: #fff2e4;
+}
+
+@keyframes loadguess-feedback-followup-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loadguess-round-card {
@@ -4485,7 +4741,29 @@ button.game-quick-tools__item:active {
   outline-offset: 2px;
 }
 
+@media (max-width: 1240px) {
+  .loadguess-feedback-card--summary {
+    width: min(100%, 580px);
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+  }
+
+  .loadguess-feedback-card--summary.loadguess-feedback-card--submitting {
+    transform: translateY(-2px);
+  }
+}
+
 @media (max-width: 700px) {
+  .loadguess-feedback-card--summary {
+    width: min(100%, 580px);
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+  }
+
   .mode-switch__badge {
     right: 0.38rem;
     min-width: 4.4rem;
@@ -4526,6 +4804,11 @@ button.game-quick-tools__item:active {
     padding: 0.9rem;
   }
 
+  .loadguess-feedback-card {
+    gap: 0.82rem;
+    padding: 0.9rem;
+  }
+
   .loadguess-intro__copy {
     font-size: 0.8rem;
   }
@@ -4539,6 +4822,19 @@ button.game-quick-tools__item:active {
     width: 100%;
     font-size: 0.58rem;
     letter-spacing: 0.14em;
+  }
+
+  .loadguess-feedback-card__star {
+    --loadguess-feedback-star-size: 1.9rem;
+  }
+
+  .loadguess-feedback-card__modes {
+    grid-template-columns: 1fr;
+  }
+
+  .loadguess-feedback-card__mode {
+    min-height: 3.55rem;
+    font-size: 0.58rem;
   }
 
   .loadguess-unit-toggle {

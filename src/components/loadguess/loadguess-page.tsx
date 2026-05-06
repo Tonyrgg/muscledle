@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -33,10 +33,51 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
   return round.attempts.filter((attempt) => attempt.submitted).length;
 }
 
+type IntroFeedbackPhase = "idle" | "submitted" | "submitting" | "complete";
+const LOAD_GUESS_FEEDBACK_SESSION_KEY = "liftdle:weightguess:feedback:v1";
+
+const INTRO_MODE_OPTIONS = [
+  "one daily video",
+  "a series of 4 videos daily",
+  "infinite mode",
+] as const;
+const FEEDBACK_STAR_PATH =
+  "M12 1.8 15.09 8.07 22 9.08 17 13.95 18.18 20.82 12 17.57 5.82 20.82 7 13.95 2 9.08 8.91 8.07 12 1.8Z";
+type IntroModeOption = (typeof INTRO_MODE_OPTIONS)[number];
+
+function getStarValueFromPointer(
+  starIndex: number,
+  target: HTMLButtonElement,
+  clientX: number,
+) {
+  const bounds = target.getBoundingClientRect();
+  const isLeftHalf = clientX - bounds.left <= bounds.width / 2;
+
+  return starIndex + (isLeftHalf ? 0.5 : 1);
+}
+
+function getStarFillPercent(starIndex: number, rating: number) {
+  const diff = rating - starIndex;
+
+  if (diff >= 1) return 100;
+  if (diff >= 0.5) return 50;
+  return 0;
+}
+
 export function LoadGuessPage() {
   const [unit, setUnit] = useState<Unit>("kg");
   const [hasStarted, setHasStarted] = useState(false);
+  const [feedbackStorageReady, setFeedbackStorageReady] = useState(false);
+  const [, setFeedbackCompletedThisSession] = useState(false);
+  const [showFeedbackCard, setShowFeedbackCard] = useState(false);
+  const [introFeedbackRating, setIntroFeedbackRating] = useState(0);
+  const [introFeedbackHover, setIntroFeedbackHover] = useState<number | null>(null);
+  const [introFeedbackPhase, setIntroFeedbackPhase] =
+    useState<IntroFeedbackPhase>("idle");
+  const [introFeedbackModes, setIntroFeedbackModes] = useState<IntroModeOption[]>([]);
   const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
+  const introFeedbackTimerRef = useRef<number | null>(null);
+  const introFeedbackDismissTimerRef = useRef<number | null>(null);
 
   const currentRound = session.rounds[session.currentRoundIndex];
   const currentVideo = getVideoById(currentRound.videoId);
@@ -44,6 +85,55 @@ export function LoadGuessPage() {
   const isRoundComplete = currentRound.status !== "playing";
   const isLastRound = session.currentRoundIndex === session.rounds.length - 1;
   const shouldShowIntro = !hasStarted;
+  const displayedIntroFeedbackRating =
+    introFeedbackHover ?? introFeedbackRating;
+  const isIntroFeedbackComplete = introFeedbackPhase === "complete";
+  const shouldRenderFeedbackCard = feedbackStorageReady && showFeedbackCard;
+
+  useEffect(() => {
+    try {
+      const storedValue = window.sessionStorage.getItem(LOAD_GUESS_FEEDBACK_SESSION_KEY);
+      const isComplete = storedValue === "complete";
+
+      setFeedbackCompletedThisSession(isComplete);
+      setShowFeedbackCard(!isComplete);
+    } catch {
+      setFeedbackCompletedThisSession(false);
+      setShowFeedbackCard(true);
+    } finally {
+      setFeedbackStorageReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (introFeedbackTimerRef.current !== null) {
+        window.clearTimeout(introFeedbackTimerRef.current);
+      }
+
+      if (introFeedbackDismissTimerRef.current !== null) {
+        window.clearTimeout(introFeedbackDismissTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isIntroFeedbackComplete || !showFeedbackCard) {
+      return;
+    }
+
+    introFeedbackDismissTimerRef.current = window.setTimeout(() => {
+      setShowFeedbackCard(false);
+      introFeedbackDismissTimerRef.current = null;
+    }, 2600);
+
+    return () => {
+      if (introFeedbackDismissTimerRef.current !== null) {
+        window.clearTimeout(introFeedbackDismissTimerRef.current);
+        introFeedbackDismissTimerRef.current = null;
+      }
+    };
+  }, [isIntroFeedbackComplete, showFeedbackCard]);
 
   function setSessionState(
     updater: (current: LoadGuessSessionState) => LoadGuessSessionState,
@@ -163,7 +253,67 @@ export function LoadGuessPage() {
   }
 
   function handleResetDaily() {
+    setHasStarted(false);
     setSession(createDailySessionState());
+  }
+
+  function handleIntroFeedbackPreview(
+    starIndex: number,
+    target: HTMLButtonElement,
+    clientX: number,
+  ) {
+    setIntroFeedbackHover(getStarValueFromPointer(starIndex, target, clientX));
+  }
+
+  function handleIntroFeedbackSelect(
+    starIndex: number,
+    target: HTMLButtonElement,
+    clientX: number,
+  ) {
+    const nextRating = getStarValueFromPointer(starIndex, target, clientX);
+
+    setIntroFeedbackRating(nextRating);
+    setIntroFeedbackHover(nextRating);
+
+    if (introFeedbackPhase === "idle") {
+      setIntroFeedbackPhase("submitted");
+    }
+
+    if (introFeedbackPhase !== "submitting") {
+      setIntroFeedbackModes([]);
+    }
+  }
+
+  function handleIntroFeedbackModeToggle(option: IntroModeOption) {
+    setIntroFeedbackModes((current) =>
+      current.includes(option)
+        ? current.filter((entry) => entry !== option)
+        : [...current, option],
+    );
+  }
+
+  function handleIntroFeedbackSubmit() {
+    if (
+      introFeedbackRating <= 0 ||
+      introFeedbackPhase === "submitting" ||
+      introFeedbackModes.length === 0
+    ) {
+      return;
+    }
+
+    if (introFeedbackTimerRef.current !== null) {
+      window.clearTimeout(introFeedbackTimerRef.current);
+    }
+
+    setIntroFeedbackPhase("submitting");
+    introFeedbackTimerRef.current = window.setTimeout(() => {
+      setIntroFeedbackPhase("complete");
+      setFeedbackCompletedThisSession(true);
+      try {
+        window.sessionStorage.setItem(LOAD_GUESS_FEEDBACK_SESSION_KEY, "complete");
+      } catch {}
+      introFeedbackTimerRef.current = null;
+    }, 720);
   }
 
   const statusLabel = isRoundComplete
@@ -178,6 +328,153 @@ export function LoadGuessPage() {
       ? `Round ${session.currentRoundIndex + 1} won`
       : `Round ${session.currentRoundIndex + 1} missed`;
   const bodyVerticalOffset = shouldShowRoundSummary || shouldShowIntro ? 20 : 50;
+
+  function renderFeedbackCard(
+    variant: "intro" | "summary",
+    extraClassName?: string,
+  ) {
+    const className = `loadguess-feedback-card ${
+      introFeedbackPhase === "submitting"
+        ? "loadguess-feedback-card--submitting"
+        : ""
+    } ${extraClassName ?? ""}`.trim();
+    const eyebrowCopy =
+      variant === "summary" ? "Rate the mode" : "...or leave a feedback";
+    const unratedCopy =
+      variant === "summary" ? "Rate this mode" : "Choose a rating";
+
+    return (
+      <section className={className} aria-label="WeightGuess feedback">
+        {isIntroFeedbackComplete ? (
+          <div className="loadguess-feedback-card__complete" aria-live="polite">
+            <p className="loadguess-feedback-card__eyebrow">Feedback received</p>
+            <h3 className="loadguess-intro__title loadguess-intro__title--sub loadguess-feedback-card__complete-title">
+              Thank you for the feedback.
+            </h3>
+            <p className="loadguess-feedback-card__complete-copy">
+              Your input helps shape the next version of WeightGuess.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="loadguess-feedback-card__head">
+              <p className="loadguess-feedback-card__eyebrow">{eyebrowCopy}</p>
+            </div>
+
+            <div
+              className="loadguess-feedback-card__stars"
+              onMouseLeave={() => setIntroFeedbackHover(null)}
+            >
+              {Array.from({ length: 5 }, (_, starIndex) => {
+                const fillPercent = getStarFillPercent(
+                  starIndex,
+                  displayedIntroFeedbackRating,
+                );
+
+                return (
+                  <button
+                    key={`intro-feedback-star-${starIndex}`}
+                    type="button"
+                    className="loadguess-feedback-card__star"
+                    aria-label={`Rate ${
+                      fillPercent === 50 ? starIndex + 0.5 : starIndex + 1
+                    } stars`}
+                    aria-pressed={displayedIntroFeedbackRating >= starIndex + 0.5}
+                    onMouseMove={(event) =>
+                      handleIntroFeedbackPreview(
+                        starIndex,
+                        event.currentTarget,
+                        event.clientX,
+                      )
+                    }
+                    onFocus={() => setIntroFeedbackHover(starIndex + 1)}
+                    onBlur={() => setIntroFeedbackHover(null)}
+                    onClick={(event) =>
+                      handleIntroFeedbackSelect(
+                        starIndex,
+                        event.currentTarget,
+                        event.clientX,
+                      )
+                    }
+                  >
+                    <span className="loadguess-feedback-card__star-base" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="loadguess-feedback-card__star-icon"
+                      >
+                        <path d={FEEDBACK_STAR_PATH} />
+                      </svg>
+                    </span>
+                    <span
+                      className="loadguess-feedback-card__star-fill"
+                      aria-hidden="true"
+                      style={{ width: `${fillPercent}%` }}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="loadguess-feedback-card__star-icon"
+                      >
+                        <path d={FEEDBACK_STAR_PATH} />
+                      </svg>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="loadguess-feedback-card__rating" aria-live="polite">
+              {introFeedbackRating > 0
+                ? `${introFeedbackRating.toFixed(1)} / 5`
+                : unratedCopy}
+            </p>
+
+            {introFeedbackPhase === "submitted" ? (
+              <div className="loadguess-feedback-card__followup">
+                <p className="loadguess-feedback-card__followup-title">
+                  in which mode?
+                </p>
+                <div className="loadguess-feedback-card__modes">
+                  {INTRO_MODE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`loadguess-feedback-card__mode ${
+                        introFeedbackModes.includes(option)
+                          ? "loadguess-feedback-card__mode--active"
+                          : ""
+                      }`}
+                      onClick={() => handleIntroFeedbackModeToggle(option)}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              className="loadguess-result__action loadguess-feedback-card__action"
+              onClick={handleIntroFeedbackSubmit}
+              disabled={
+                introFeedbackRating <= 0 ||
+                introFeedbackPhase === "submitting" ||
+                introFeedbackModes.length === 0
+              }
+            >
+              {introFeedbackPhase === "submitting" ? "Sending..." : "Submit"}
+            </button>
+
+            {introFeedbackPhase === "submitting" ? (
+              <p className="loadguess-feedback-card__message" aria-live="polite">
+                Saving your feedback...
+              </p>
+            ) : null}
+          </>
+        )}
+      </section>
+    );
+  }
 
   return (
     <main className="game-page loadguess-page">
@@ -215,66 +512,104 @@ export function LoadGuessPage() {
         }}
       >
         <section
-          className="loadguess-shell"
+          className={`loadguess-shell ${
+            shouldShowRoundSummary && shouldRenderFeedbackCard
+              ? "loadguess-shell--summary"
+              : ""
+          }`}
           aria-label="WeightGuess mode"
         >
           {shouldShowIntro ? (
-            <section className="loadguess-intro" aria-label="WeightGuess introduction">
-              <div className="loadguess-intro__head">
-                <p className="loadguess-intro__eyebrow">New mode</p>
-                <h2 className="loadguess-intro__title">Guess the exact load before the blur wins.</h2>
-              </div>
+            <div className="loadguess-intro-stack">
+              <section className="loadguess-intro" aria-label="WeightGuess introduction">
+                <div className="loadguess-intro__head">
+                  <p className="loadguess-intro__eyebrow">Test mode</p>
+                  <h2 className="loadguess-intro__title">
+                    Guess the exact load before the blur wins.
+                  </h2>
+                  <p className="loadguess-intro__copy">
+                    WeightGuess is live only as a{" "}
+                    <span className="loadguess-intro__copy-emphasis">test</span>. It is
+                    here to help us understand whether this mode is actually worth
+                    keeping, and to collect early{" "}
+                    <span className="loadguess-intro__copy-emphasis">feedback</span> on
+                    how it feels.
+                  </p>
+                  <p className="loadguess-intro__copy loadguess-intro__copy--secondary">
+                    If the response is{" "}
+                    <span className="loadguess-intro__copy-emphasis">strong</span>, we
+                    will source more clips and expand it. If the{" "}
+                    <span className="loadguess-intro__copy-emphasis">feedback</span> is{" "}
+                    <span className="loadguess-intro__copy-emphasis">negative</span>, this
+                    mode will be deprecated.
+                  </p>
+                </div>
 
-              <div className="loadguess-intro__stats" aria-hidden="true">
-                <p className="loadguess-intro__stat">
-                  <span>4</span> rounds
-                </p>
-                <p className="loadguess-intro__stat">
-                  <span>5</span> attempts
-                </p>
-                <p className="loadguess-intro__stat">
-                  <span>kg / lbs</span> anytime
-                </p>
-              </div>
-              <h3 className="loadguess-intro__title loadguess-intro__title--sub">
-                Dial the weight up or down, lock in your guess.
-              </h3>
-              <button
-                type="button"
-                className="loadguess-result__action loadguess-intro__action"
-                onClick={() => setHasStarted(true)}
-              >
-                Start
-              </button>
-            </section>
+                <div className="loadguess-intro__stats" aria-hidden="true">
+                  <p className="loadguess-intro__stat">
+                    <span>4</span> rounds
+                  </p>
+                  <p className="loadguess-intro__stat">
+                    <span>5</span> attempts
+                  </p>
+                  <p className="loadguess-intro__stat">
+                    <span>kg / lbs</span> anytime
+                  </p>
+                </div>
+                <h3 className="loadguess-intro__title loadguess-intro__title--sub">
+                  Dial the weight up or down, lock in your guess.
+                </h3>
+                <button
+                  type="button"
+                  className="loadguess-result__action loadguess-intro__action"
+                  onClick={() => setHasStarted(true)}
+                >
+                  Start
+                </button>
+              </section>
+
+              {shouldRenderFeedbackCard ? renderFeedbackCard("intro") : null}
+            </div>
           ) : shouldShowRoundSummary ? (
-            <section
-              className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
-              aria-live="polite"
+            <div
+              className={`loadguess-summary-layout ${
+                shouldRenderFeedbackCard
+                  ? "loadguess-summary-layout--with-feedback"
+                  : ""
+              }`}
             >
-              <div className="loadguess-round-card__head">
-                <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
-                <h2 className="loadguess-round-card__title">
-                  {formatLoadSummary(currentVideo.targetKg)}
-                </h2>
-              </div>
-              <LoadGuessVideo
-                video={currentVideo}
-                sourceUrl={currentVideo.originalVideoUrl}
-              />
-              <div className="loadguess-round-card__meta">
-                <p className="loadguess-round-card__line">
-                  Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="loadguess-result__action loadguess-round-card__action"
-                onClick={isLastRound ? handleResetDaily : handleAdvanceRound}
+              <section
+                className={`loadguess-round-card loadguess-round-card--${roundSummaryVariant}`}
+                aria-live="polite"
               >
-                {summaryButtonLabel}
-              </button>
-            </section>
+                <div className="loadguess-round-card__head">
+                  <p className="loadguess-round-card__eyebrow">{summaryEyebrow}</p>
+                  <h2 className="loadguess-round-card__title">
+                    {formatLoadSummary(currentVideo.targetKg)}
+                  </h2>
+                </div>
+                <LoadGuessVideo
+                  video={currentVideo}
+                  sourceUrl={currentVideo.originalVideoUrl}
+                />
+                <div className="loadguess-round-card__meta">
+                  <p className="loadguess-round-card__line">
+                    Attempts used {submittedCount} / {LOAD_GUESS_MAX_ATTEMPTS}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="loadguess-result__action loadguess-round-card__action"
+                  onClick={isLastRound ? handleResetDaily : handleAdvanceRound}
+                >
+                  {summaryButtonLabel}
+                </button>
+              </section>
+
+              {shouldRenderFeedbackCard
+                ? renderFeedbackCard("summary", "loadguess-feedback-card--summary")
+                : null}
+            </div>
           ) : (
             <section className="loadguess-playfield" aria-label="WeightGuess round">
               <div className="loadguess-status-block">
