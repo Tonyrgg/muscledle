@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/admin/", "/hidden-archive", "/hidden-archive/"],
+        disallow: ["/api/", "/admin/", "/hidden-archive", "/hidden-archive/", "/hidden-pulse-room", "/hidden-pulse-room/"],
       },
     ],
     host: SITE_URL,

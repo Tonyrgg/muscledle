@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import {
   createFeedbackReportRequest,
+  ensureFeedbackVisitorId,
   getOrCreateFeedbackVisitorId,
   uploadFeedbackAttachmentRequest,
 } from "@/lib/feedback/client";
@@ -91,6 +92,7 @@ export function FeedbackCenter() {
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [visitorId, setVisitorId] = useState("");
 
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
@@ -162,10 +164,21 @@ export function FeedbackCenter() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [open]);
 
-  const visitorId = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return getOrCreateFeedbackVisitorId();
-  }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const existing = getOrCreateFeedbackVisitorId();
+    if (existing) {
+      setVisitorId(existing);
+      return;
+    }
+
+    void ensureFeedbackVisitorId(pathname || "/")
+      .then(setVisitorId)
+      .catch(() => {
+        setVisitorId("");
+      });
+  }, [pathname]);
 
   const activeSteps = useMemo<FieldId[]>(() => {
     if (!category) return [];
@@ -229,11 +242,6 @@ export function FeedbackCenter() {
   const handleSubmit = async () => {
     setSubmitMessage(null);
 
-    if (!visitorId) {
-      setSubmitMessage("Missing visitor id.");
-      return;
-    }
-
     const validationError = validateClient();
     if (validationError) {
       setSubmitMessage(validationError);
@@ -248,8 +256,11 @@ export function FeedbackCenter() {
     setSubmitting(true);
 
     try {
+      const ensuredVisitorId = visitorId || (await ensureFeedbackVisitorId(pathname || "/"));
+      setVisitorId(ensuredVisitorId);
+
       const payload: CreateFeedbackReportInput = {
-        visitorId,
+        visitorId: ensuredVisitorId,
         category,
         module: moduleValue,
         severity: severity || null,
@@ -274,7 +285,7 @@ export function FeedbackCenter() {
       for (const file of files.slice(0, 5)) {
         await uploadFeedbackAttachmentRequest({
           reportId: created.id,
-          visitorId,
+          visitorId: ensuredVisitorId,
           file,
         });
       }
