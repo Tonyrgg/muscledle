@@ -12,6 +12,7 @@ export type ConsentChoice = {
 
 export const CONSENT_STORAGE_KEY = "liftdle_consent_choice";
 export const CONSENT_VISITOR_ID_KEY = "liftdle_visitor_id";
+export const CONSENT_SESSION_ID_KEY = "liftdle_session_id";
 export const CONSENT_POLICY_VERSION = "2026-04-16";
 
 export const DEFAULT_CONSENT_PREFERENCES: ConsentPreferences = {

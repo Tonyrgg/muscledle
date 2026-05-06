@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
 import { LOAD_GUESS_VIDEOS } from "@/data/loadguess/videos";
+import { getOrCreateFeedbackVisitorId } from "@/lib/feedback/client";
+import { createWeightGuessFeedbackRequest } from "@/lib/loadguess/feedback-api";
 import { formatLoadSummary, getLoadFeedback } from "@/lib/loadguess/feedback";
 import {
   createDailySessionState,
@@ -19,6 +22,12 @@ import type {
   LoadGuessStatus,
   Unit,
 } from "@/lib/loadguess/types";
+import {
+  WEIGHT_GUESS_FEEDBACK_MODE_LABELS,
+  WEIGHT_GUESS_FEEDBACK_MODE_OPTIONS,
+  type WeightGuessFeedbackModeOption,
+  type WeightGuessFeedbackSurface,
+} from "@/types/weightguess-feedback";
 
 function getVideoById(videoId: string) {
   const video = LOAD_GUESS_VIDEOS.find((entry) => entry.id === videoId);
@@ -35,15 +44,8 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
 
 type IntroFeedbackPhase = "idle" | "submitted" | "submitting" | "complete";
 const LOAD_GUESS_FEEDBACK_SESSION_KEY = "liftdle:weightguess:feedback:v1";
-
-const INTRO_MODE_OPTIONS = [
-  "one daily video",
-  "a series of 4 videos daily",
-  "infinite mode",
-] as const;
 const FEEDBACK_STAR_PATH =
   "M12 1.8 15.09 8.07 22 9.08 17 13.95 18.18 20.82 12 17.57 5.82 20.82 7 13.95 2 9.08 8.91 8.07 12 1.8Z";
-type IntroModeOption = (typeof INTRO_MODE_OPTIONS)[number];
 
 function getStarValueFromPointer(
   starIndex: number,
@@ -65,6 +67,7 @@ function getStarFillPercent(starIndex: number, rating: number) {
 }
 
 export function LoadGuessPage() {
+  const pathname = usePathname();
   const [unit, setUnit] = useState<Unit>("kg");
   const [hasStarted, setHasStarted] = useState(false);
   const [feedbackStorageReady, setFeedbackStorageReady] = useState(false);
@@ -74,9 +77,11 @@ export function LoadGuessPage() {
   const [introFeedbackHover, setIntroFeedbackHover] = useState<number | null>(null);
   const [introFeedbackPhase, setIntroFeedbackPhase] =
     useState<IntroFeedbackPhase>("idle");
-  const [introFeedbackModes, setIntroFeedbackModes] = useState<IntroModeOption[]>([]);
+  const [introFeedbackModes, setIntroFeedbackModes] = useState<
+    WeightGuessFeedbackModeOption[]
+  >([]);
+  const [introFeedbackError, setIntroFeedbackError] = useState<string | null>(null);
   const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
-  const introFeedbackTimerRef = useRef<number | null>(null);
   const introFeedbackDismissTimerRef = useRef<number | null>(null);
 
   const currentRound = session.rounds[session.currentRoundIndex];
@@ -107,10 +112,6 @@ export function LoadGuessPage() {
 
   useEffect(() => {
     return () => {
-      if (introFeedbackTimerRef.current !== null) {
-        window.clearTimeout(introFeedbackTimerRef.current);
-      }
-
       if (introFeedbackDismissTimerRef.current !== null) {
         window.clearTimeout(introFeedbackDismissTimerRef.current);
       }
@@ -282,9 +283,12 @@ export function LoadGuessPage() {
     if (introFeedbackPhase !== "submitting") {
       setIntroFeedbackModes([]);
     }
+
+    setIntroFeedbackError(null);
   }
 
-  function handleIntroFeedbackModeToggle(option: IntroModeOption) {
+  function handleIntroFeedbackModeToggle(option: WeightGuessFeedbackModeOption) {
+    setIntroFeedbackError(null);
     setIntroFeedbackModes((current) =>
       current.includes(option)
         ? current.filter((entry) => entry !== option)
@@ -292,7 +296,23 @@ export function LoadGuessPage() {
     );
   }
 
-  function handleIntroFeedbackSubmit() {
+  function buildFeedbackDiagnostics(surface: WeightGuessFeedbackSurface) {
+    return {
+      pathname: pathname || "/weightGuess",
+      surface,
+      submittedAt: new Date().toISOString(),
+      language: navigator.language,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      },
+      currentRoundIndex: session.currentRoundIndex,
+      currentRoundStatus: currentRound.status,
+    };
+  }
+
+  async function handleIntroFeedbackSubmit(surface: WeightGuessFeedbackSurface) {
     if (
       introFeedbackRating <= 0 ||
       introFeedbackPhase === "submitting" ||
@@ -301,19 +321,40 @@ export function LoadGuessPage() {
       return;
     }
 
-    if (introFeedbackTimerRef.current !== null) {
-      window.clearTimeout(introFeedbackTimerRef.current);
-    }
-
+    setIntroFeedbackError(null);
     setIntroFeedbackPhase("submitting");
-    introFeedbackTimerRef.current = window.setTimeout(() => {
+
+    try {
+      await createWeightGuessFeedbackRequest({
+        visitorId: getOrCreateFeedbackVisitorId(),
+        rating: introFeedbackRating,
+        selectedModes: introFeedbackModes,
+        surface,
+        roundNumber: surface === "summary" ? session.currentRoundIndex + 1 : null,
+        roundOutcome:
+          surface === "summary"
+            ? currentRound.status === "won"
+              ? "won"
+              : "lost"
+            : null,
+        attemptsUsed: surface === "summary" ? submittedCount : null,
+        pagePath: pathname || "/weightGuess",
+        diagnostics: buildFeedbackDiagnostics(surface),
+      });
+
       setIntroFeedbackPhase("complete");
       setFeedbackCompletedThisSession(true);
       try {
         window.sessionStorage.setItem(LOAD_GUESS_FEEDBACK_SESSION_KEY, "complete");
       } catch {}
-      introFeedbackTimerRef.current = null;
-    }, 720);
+    } catch (error) {
+      setIntroFeedbackPhase("submitted");
+      setIntroFeedbackError(
+        error instanceof Error
+          ? error.message
+          : "Failed to send feedback. Please try again.",
+      );
+    }
   }
 
   const statusLabel = isRoundComplete
@@ -434,7 +475,7 @@ export function LoadGuessPage() {
                   in which mode?
                 </p>
                 <div className="loadguess-feedback-card__modes">
-                  {INTRO_MODE_OPTIONS.map((option) => (
+                  {WEIGHT_GUESS_FEEDBACK_MODE_OPTIONS.map((option) => (
                     <button
                       key={option}
                       type="button"
@@ -445,7 +486,7 @@ export function LoadGuessPage() {
                       }`}
                       onClick={() => handleIntroFeedbackModeToggle(option)}
                     >
-                      {option}
+                      {WEIGHT_GUESS_FEEDBACK_MODE_LABELS[option]}
                     </button>
                   ))}
                 </div>
@@ -455,7 +496,7 @@ export function LoadGuessPage() {
             <button
               type="button"
               className="loadguess-result__action loadguess-feedback-card__action"
-              onClick={handleIntroFeedbackSubmit}
+              onClick={() => void handleIntroFeedbackSubmit(variant)}
               disabled={
                 introFeedbackRating <= 0 ||
                 introFeedbackPhase === "submitting" ||
@@ -468,6 +509,11 @@ export function LoadGuessPage() {
             {introFeedbackPhase === "submitting" ? (
               <p className="loadguess-feedback-card__message" aria-live="polite">
                 Saving your feedback...
+              </p>
+            ) : null}
+            {introFeedbackError ? (
+              <p className="loadguess-feedback-card__message" aria-live="polite">
+                {introFeedbackError}
               </p>
             ) : null}
           </>

@@ -10,12 +10,12 @@ import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import {
   CONSENT_POLICY_VERSION,
   CONSENT_STORAGE_KEY,
-  CONSENT_VISITOR_ID_KEY,
   DEFAULT_CONSENT_PREFERENCES,
   toConsentChoice,
   type ConsentChoice,
   type ConsentPreferences,
 } from "@/lib/privacy/consent";
+import { ensureVisitorIdentity, getStoredVisitorId } from "@/lib/visitor/client";
 
 type ConsentSource = "banner" | "settings";
 type ConsentAction = "accept_all" | "reject_all" | "save_preferences";
@@ -33,25 +33,13 @@ function readConsentChoice(): ConsentChoice | null {
   }
 }
 
-function getOrCreateVisitorId(): string {
-  const existing = window.localStorage.getItem(CONSENT_VISITOR_ID_KEY);
-  if (existing) return existing;
-
-  const next =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-  window.localStorage.setItem(CONSENT_VISITOR_ID_KEY, next);
-  return next;
-}
-
 async function logConsent(
   source: ConsentSource,
   action: ConsentAction,
   preferences: ConsentPreferences,
+  path: string,
 ): Promise<void> {
-  const visitorId = getOrCreateVisitorId();
+  const visitorId = getStoredVisitorId() || (await ensureVisitorIdentity({ path })).visitorId;
 
   await fetch("/api/privacy/consent", {
     method: "POST",
@@ -151,6 +139,12 @@ export function ConsentManager() {
   }, []);
 
   useEffect(() => {
+    void ensureVisitorIdentity({ path: pathname || "/" }).catch(() => {
+      // Non-blocking: consent and feedback retry when needed.
+    });
+  }, [pathname]);
+
+  useEffect(() => {
     setFabLift(0);
   }, []);
 
@@ -209,7 +203,7 @@ export function ConsentManager() {
     setChoice(saved);
 
     try {
-      await logConsent(source, action, nextPreferences);
+      await logConsent(source, action, nextPreferences, pathname || "/");
     } catch {
       // Non-blocking: local preference is still authoritative for UI behavior.
     } finally {

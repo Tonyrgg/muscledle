@@ -1,21 +1,20 @@
-import { CONSENT_VISITOR_ID_KEY } from "@/lib/privacy/consent";
 import type { CreateFeedbackReportInput, FeedbackReportSummary } from "@/types/feedback";
+import { ensureVisitorIdentity, getStoredVisitorId } from "@/lib/visitor/client";
 
 export type FeedbackListResponse = {
   reports: FeedbackReportSummary[];
 };
 
 export function getOrCreateFeedbackVisitorId(): string {
-  const existing = window.localStorage.getItem(CONSENT_VISITOR_ID_KEY);
+  return getStoredVisitorId();
+}
+
+export async function ensureFeedbackVisitorId(path?: string | null): Promise<string> {
+  const existing = getStoredVisitorId();
   if (existing) return existing;
 
-  const generated =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-  window.localStorage.setItem(CONSENT_VISITOR_ID_KEY, generated);
-  return generated;
+  const identity = await ensureVisitorIdentity({ path });
+  return identity.visitorId;
 }
 
 export async function createFeedbackReportRequest(input: CreateFeedbackReportInput): Promise<{ id: string }> {
