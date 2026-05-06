@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -35,9 +35,6 @@ function getSubmittedCount(round: LoadGuessRoundState): number {
 export function LoadGuessPage() {
   const [unit, setUnit] = useState<Unit>("kg");
   const [session, setSession] = useState<LoadGuessSessionState>(() => createDailySessionState());
-  const bodyTopOffset = 50
-  const heroRef = useRef<HTMLElement | null>(null);
-  const shellRef = useRef<HTMLElement | null>(null);
 
   const currentRound = session.rounds[session.currentRoundIndex];
   const currentVideo = getVideoById(currentRound.videoId);
@@ -177,10 +174,11 @@ export function LoadGuessPage() {
     currentRound.status === "won"
       ? `Round ${session.currentRoundIndex + 1} cleared`
       : `Round ${session.currentRoundIndex + 1} missed`;
+  const bodyVerticalOffset = shouldShowRoundSummary ? 20 : 50;
 
   return (
     <main className="game-page loadguess-page">
-      <header ref={heroRef} className="loadguess-hero">
+      <header className="loadguess-hero">
         <div className="loadguess-hero__stack">
           <div className="loadguess-hero__byline">
             <span className="loadguess-hero__by">by</span>
@@ -205,11 +203,13 @@ export function LoadGuessPage() {
       </header>
 
       <div
-        className="loadguess-body"
-        style={{ paddingTop: `${bodyTopOffset}px`, paddingBottom: `${bodyTopOffset}px` }}
+        className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""}`}
+        style={{
+          paddingTop: `${bodyVerticalOffset}px`,
+          paddingBottom: `${bodyVerticalOffset}px`,
+        }}
       >
         <section
-          ref={shellRef}
           className="loadguess-shell"
           aria-label="WeightGuess mode"
         >

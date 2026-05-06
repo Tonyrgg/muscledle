@@ -3777,6 +3777,10 @@ button.game-quick-tools__item:active {
   box-sizing: border-box;
 }
 
+.loadguess-body--summary {
+  align-items: center;
+}
+
 .loadguess-shell {
   width: 100%;
   max-width: 860px;
