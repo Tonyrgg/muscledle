@@ -10,6 +10,7 @@ import { LOAD_GUESS_VIDEOS } from "@/data/loadguess/videos";
 import { getOrCreateFeedbackVisitorId } from "@/lib/feedback/client";
 import { createWeightGuessFeedbackRequest } from "@/lib/loadguess/feedback-api";
 import { formatLoadSummary, getLoadFeedback } from "@/lib/loadguess/feedback";
+import { preloadWeightGuessVideos } from "@/lib/loadguess/video-preload";
 import {
   createDailySessionState,
   LOAD_GUESS_DAILY_ROUNDS,
@@ -94,6 +95,10 @@ export function LoadGuessPage() {
     introFeedbackHover ?? introFeedbackRating;
   const isIntroFeedbackComplete = introFeedbackPhase === "complete";
   const shouldRenderFeedbackCard = feedbackStorageReady && showFeedbackCard;
+
+  useEffect(() => {
+    preloadWeightGuessVideos();
+  }, []);
 
   useEffect(() => {
     try {

@@ -4418,7 +4418,10 @@ button.game-quick-tools__item:active {
   width: fit-content;
   max-width: 100%;
   border: 1px solid #3f3f3f;
-  background: transparent;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 139, 58, 0.1), transparent 30%),
+    linear-gradient(180deg, #171717 0%, #121212 100%);
 }
 
 .loadguess-video__player {
@@ -4428,13 +4431,126 @@ button.game-quick-tools__item:active {
   max-width: min(100%, var(--loadguess-video-max-width));
   max-height: min(54vh, 580px);
   background: transparent;
+  opacity: 0;
+  transition: opacity 220ms ease-out;
+}
+
+.loadguess-video__player--ready {
+  opacity: 1;
+}
+
+.loadguess-video__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  background:
+    linear-gradient(135deg, rgba(255, 139, 58, 0.06), rgba(255, 139, 58, 0) 42%),
+    linear-gradient(180deg, rgba(22, 22, 22, 0.94), rgba(14, 14, 14, 0.98));
+}
+
+.loadguess-video__skeleton::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 139, 58, 0.04) 42%,
+    rgba(255, 224, 194, 0.1) 50%,
+    rgba(255, 139, 58, 0.04) 58%,
+    transparent 100%
+  );
+  transform: translateX(-55%);
+  animation: loadguess-video-skeleton-sweep 2.4s ease-in-out infinite;
+}
+
+.loadguess-video__skeleton-badge,
+.loadguess-video__skeleton-stage,
+.loadguess-video__skeleton-bars {
+  position: relative;
+  z-index: 1;
+}
+
+.loadguess-video__skeleton-badge {
+  border: 1px solid rgba(255, 139, 58, 0.4);
+  padding: 0.38rem 0.6rem;
+  color: rgba(244, 244, 244, 0.82);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgba(17, 17, 17, 0.72);
+}
+
+.loadguess-video__skeleton-stage {
+  position: relative;
+  width: min(30vw, 112px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.loadguess-video__skeleton-ring {
+  position: absolute;
+  border: 1px solid rgba(255, 139, 58, 0.24);
+  border-radius: 999px;
+}
+
+.loadguess-video__skeleton-ring--outer {
+  inset: 0;
+  animation: loadguess-video-skeleton-pulse 1.8s ease-out infinite;
+}
+
+.loadguess-video__skeleton-ring--inner {
+  inset: 18%;
+  border-color: rgba(255, 214, 184, 0.34);
+  animation: loadguess-video-skeleton-pulse 1.8s ease-out infinite 180ms;
+}
+
+.loadguess-video__skeleton-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffb37f 0%, #ff8b3a 100%);
+  box-shadow: 0 0 24px rgba(255, 139, 58, 0.34);
+}
+
+.loadguess-video__skeleton-bars {
+  width: min(58vw, 220px);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.loadguess-video__skeleton-bar {
+  height: 0.44rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 139, 58, 0.18), rgba(255, 218, 194, 0.5), rgba(255, 139, 58, 0.14));
+  background-size: 180% 100%;
+  animation: loadguess-video-skeleton-flow 1.4s linear infinite;
+}
+
+.loadguess-video__skeleton-bar--long {
+  width: 100%;
+}
+
+.loadguess-video__skeleton-bar--mid {
+  width: 72%;
+}
+
+.loadguess-video__skeleton-bar--short {
+  width: 48%;
 }
 
 .loadguess-video__controls {
   position: absolute;
   right: 0.55rem;
   bottom: 0.55rem;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   gap: 0.42rem;
 }
@@ -4484,7 +4600,44 @@ button.game-quick-tools__item:active {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
+}
+
+@keyframes loadguess-video-skeleton-sweep {
+  0% {
+    transform: translateX(-55%);
+  }
+
+  100% {
+    transform: translateX(55%);
+  }
+}
+
+@keyframes loadguess-video-skeleton-pulse {
+  0% {
+    opacity: 0.28;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 0.62;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0.28;
+    transform: scale(0.96);
+  }
+}
+
+@keyframes loadguess-video-skeleton-flow {
+  0% {
+    background-position: 180% 0;
+  }
+
+  100% {
+    background-position: -180% 0;
+  }
 }
 
 .loadguess-status-row {

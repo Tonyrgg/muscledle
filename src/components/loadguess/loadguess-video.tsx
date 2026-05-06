@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LoadGuessVideo as LoadGuessVideoType } from "@/lib/loadguess/types";
 
 type LoadGuessVideoProps = {
@@ -19,6 +19,7 @@ export function LoadGuessVideo({
 }: LoadGuessVideoProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const pipSupported =
     typeof document !== "undefined" &&
     (("pictureInPictureEnabled" in document && document.pictureInPictureEnabled) ||
@@ -29,6 +30,11 @@ export function LoadGuessVideo({
     typeof HTMLVideoElement !== "undefined" &&
     ("requestFullscreen" in HTMLVideoElement.prototype ||
       "webkitRequestFullscreen" in HTMLVideoElement.prototype);
+
+  useEffect(() => {
+    setIsReady(false);
+    setIsPaused(false);
+  }, [sourceUrl]);
 
   async function handleTogglePlayback() {
     const player = videoRef.current;
@@ -99,16 +105,35 @@ export function LoadGuessVideo({
       aria-label={video.title}
     >
       <div className="loadguess-video__frame">
+        {!isReady ? (
+          <div className="loadguess-video__skeleton" aria-hidden="true">
+            <div className="loadguess-video__skeleton-badge">Priming clip</div>
+            <div className="loadguess-video__skeleton-stage">
+              <span className="loadguess-video__skeleton-ring loadguess-video__skeleton-ring--outer" />
+              <span className="loadguess-video__skeleton-ring loadguess-video__skeleton-ring--inner" />
+              <span className="loadguess-video__skeleton-dot" />
+            </div>
+            <div className="loadguess-video__skeleton-bars">
+              <span className="loadguess-video__skeleton-bar loadguess-video__skeleton-bar--long" />
+              <span className="loadguess-video__skeleton-bar loadguess-video__skeleton-bar--mid" />
+              <span className="loadguess-video__skeleton-bar loadguess-video__skeleton-bar--short" />
+            </div>
+          </div>
+        ) : null}
+
         <video
           key={`${video.id}-${sourceUrl}`}
           ref={videoRef}
-          className="loadguess-video__player"
+          className={`loadguess-video__player ${isReady ? "loadguess-video__player--ready" : ""}`}
           autoPlay
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="auto"
           poster={video.posterUrl}
+          onLoadedData={() => setIsReady(true)}
+          onCanPlay={() => setIsReady(true)}
+          onError={() => setIsReady(true)}
           onClick={() => {
             void handleTogglePlayback();
           }}
