@@ -1701,7 +1701,7 @@ export function GameShell({ initialState }: GameShellProps) {
               >
                 WeightGuess
                 <span className="mode-switch__badge" aria-hidden="true">
-                  try it
+                  new
                 </span>
               </Link>
             </div>
