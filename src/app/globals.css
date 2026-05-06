@@ -498,7 +498,7 @@ input {
   padding: 0.3rem 0 0.12rem 0;
   border: 1px solid #ff812f;
   border-radius: 999px;
-  background: #ff812f;
+  background-color: #ff812f;
   color: #111111;
   font-size: 0.6rem;
   font-weight: 900;
@@ -507,8 +507,25 @@ input {
   text-align: center;
   text-transform: uppercase;
   transform: translateY(-52%);
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease;
+  animation: mode-switch-badge-cycle 1.9s ease-in-out infinite;
   pointer-events: none;
   z-index: 2;
+}
+
+@keyframes mode-switch-badge-cycle {
+  0%,
+  100% {
+    background-color: #ff812f;
+    border-color: #ff812f;
+  }
+
+  50% {
+    background-color: #c9720f;
+    border-color: #c9720f;
+  }
 }
 
 .daily-tracker-copy {
@@ -4488,6 +4505,11 @@ button.game-quick-tools__item:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mode-switch__badge {
+    animation: none;
+    transition: none;
+  }
+
   .loadguess-hero__home-link,
   .loadguess-attempt-row {
     transition: none;
