@@ -3811,7 +3811,7 @@ button.game-quick-tools__item:active {
 
 .loadguess-hero__stack {
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
   align-items: stretch;
   gap: 0.7rem;
 }
@@ -3885,7 +3885,7 @@ button.game-quick-tools__item:active {
   margin: 0;
   color: #f5f5f5;
   font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(1.82rem, 6.6vw, 3.8rem);
+  font-size: clamp(1.82rem, 6.6vw, 4.5rem);
   font-style: italic;
   font-weight: 900;
   line-height: 0.92;
