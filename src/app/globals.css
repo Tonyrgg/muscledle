@@ -1901,11 +1901,74 @@ button.game-quick-tools__item:active {
 }
 
 .feedback-cell__muscle-backdrop img {
-  width: min(86%, 5.25rem);
-  height: min(86%, 5.25rem);
+  width: min(94%, 5.95rem);
+  height: min(94%, 5.95rem);
   object-fit: contain;
   object-position: center;
   filter: brightness(1) invert(1);
+}
+
+.feedback-cell__muscle-backdrop--split {
+  position: absolute;
+}
+
+.feedback-cell__muscle-backdrop-part {
+  position: absolute;
+  inset: 0;
+  width: min(94%, 5.95rem);
+  height: min(94%, 5.95rem);
+  margin: auto;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(1) invert(1);
+}
+
+.feedback-cell__muscle-backdrop-part--primary {
+  clip-path: polygon(0 100%, 0 0, 100% 0);
+}
+
+.feedback-cell__muscle-backdrop-part--secondary {
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);
+}
+
+.feedback-cell__muscle-backdrop-divider {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 148%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%) rotate(43deg);
+  pointer-events: none;
+}
+
+.feedback-cell__ego-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.16;
+}
+
+.feedback-cell__ego-icon {
+  filter: brightness(1) invert(1);
+}
+
+.feedback-cell__ego-icon--low {
+  width: min(60%, 3.3rem);
+  height: min(60%, 3.3rem);
+}
+
+.feedback-cell__ego-icon--medium {
+  width: min(65%, 5rem);
+  height: min(65%, 5rem);
+}
+
+.feedback-cell__ego-icon--high {
+  width: min(108%, 6.9rem);
+  height: min(108%, 6.9rem);
 }
 
 .feedback-cell__value {
@@ -1913,7 +1976,8 @@ button.game-quick-tools__item:active {
   z-index: 1;
 }
 
-.feedback-cell--with-muscle-backdrop .feedback-cell__value {
+.feedback-cell--with-muscle-backdrop .feedback-cell__value,
+.feedback-cell--with-ego-backdrop .feedback-cell__value {
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.4),
     0 0 8px rgba(0, 0, 0, 0.18);

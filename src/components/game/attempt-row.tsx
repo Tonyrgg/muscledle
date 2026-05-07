@@ -1,7 +1,7 @@
 import { ExerciseIconCell } from "@/components/game/exercise-icon-cell";
 import { FeedbackCell } from "@/components/game/feedback-cell";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
-import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
+import { getMuscleGroupIconKey, getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { PublicGameAttempt } from "@/types/game";
 
 type AttemptRowProps = {
@@ -18,6 +18,20 @@ export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
       muscle_group: attempt.guessMuscleGroup,
     }),
   );
+  const muscleTokens = attempt.values.muscle
+    .split("/")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+  const splitMuscleBackdropIconPaths =
+    muscleTokens.length >= 2
+      ? ([
+          getMuscleGroupIconPath(getMuscleGroupIconKey(muscleTokens[0])),
+          getMuscleGroupIconPath(getMuscleGroupIconKey(muscleTokens[1])),
+        ] as const)
+      : null;
+  const useSplitMuscleBackdrop =
+    splitMuscleBackdropIconPaths?.length === 2 &&
+    splitMuscleBackdropIconPaths[0] !== splitMuscleBackdropIconPaths[1];
 
   return (
     <div className="attempts-grid attempts-row" role="row">
@@ -37,7 +51,8 @@ export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
         isRevealing={isRevealing}
         revealOrder={0}
         exerciseMediaSlug={attempt.guessSlug}
-        backgroundIconPath={muscleBackdropIconPath}
+        backgroundIconPath={useSplitMuscleBackdrop ? null : muscleBackdropIconPath}
+        splitBackgroundIconPaths={useSplitMuscleBackdrop ? splitMuscleBackdropIconPaths : null}
       />
       <FeedbackCell column={columnKeys[1]} color={attempt.feedback.equipment} value={attempt.values.equipment} isRevealing={isRevealing} revealOrder={1} />
       <FeedbackCell column={columnKeys[2]} color={attempt.feedback.movement} value={attempt.values.movement} isRevealing={isRevealing} revealOrder={2} />

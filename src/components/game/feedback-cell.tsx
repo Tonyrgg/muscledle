@@ -14,6 +14,7 @@ type FeedbackCellProps = {
   revealOrder?: number;
   exerciseMediaSlug?: string;
   backgroundIconPath?: string | null;
+  splitBackgroundIconPaths?: readonly [string, string] | null;
 };
 
 const colorClassByFeedback: Record<FeedbackColor, string> = {
@@ -32,6 +33,7 @@ export function FeedbackCell({
   revealOrder = 0,
   exerciseMediaSlug,
   backgroundIconPath = null,
+  splitBackgroundIconPaths = null,
 }: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
@@ -169,11 +171,24 @@ export function FeedbackCell({
       }
     : undefined;
   const showMuscleBackdrop = column === "muscle" && hasExerciseMedia && Boolean(backgroundIconPath);
+  const showSplitMuscleBackdrop =
+    column === "muscle" &&
+    hasExerciseMedia &&
+    Boolean(splitBackgroundIconPaths?.[0]) &&
+    Boolean(splitBackgroundIconPaths?.[1]);
+  const showEgoBackdrop = column === "ego";
+  const normalizedEgoValue = displayValue.toLowerCase();
+  const egoBackdropSizeClass =
+    normalizedEgoValue === "high"
+      ? "feedback-cell__ego-icon--high"
+      : normalizedEgoValue === "medium"
+        ? "feedback-cell__ego-icon--medium"
+        : "feedback-cell__ego-icon--low";
 
   return (
     <div
       ref={cellRef}
-      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""} ${showMuscleBackdrop ? "feedback-cell--with-muscle-backdrop" : ""}`}
+      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""} ${showMuscleBackdrop || showSplitMuscleBackdrop ? "feedback-cell--with-muscle-backdrop" : ""} ${showEgoBackdrop ? "feedback-cell--with-ego-backdrop" : ""}`}
       role="cell"
       aria-label={displayValue}
       style={style}
@@ -181,9 +196,31 @@ export function FeedbackCell({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
+      {showSplitMuscleBackdrop ? (
+        <span className="feedback-cell__muscle-backdrop feedback-cell__muscle-backdrop--split" aria-hidden>
+          <img
+            src={splitBackgroundIconPaths?.[0] ?? ""}
+            alt=""
+            loading="lazy"
+            className="feedback-cell__muscle-backdrop-part feedback-cell__muscle-backdrop-part--primary"
+          />
+          <img
+            src={splitBackgroundIconPaths?.[1] ?? ""}
+            alt=""
+            loading="lazy"
+            className="feedback-cell__muscle-backdrop-part feedback-cell__muscle-backdrop-part--secondary"
+          />
+          <span className="feedback-cell__muscle-backdrop-divider" />
+        </span>
+      ) : null}
       {showMuscleBackdrop ? (
         <span className="feedback-cell__muscle-backdrop" aria-hidden>
           <img src={backgroundIconPath ?? ""} alt="" loading="lazy" />
+        </span>
+      ) : null}
+      {showEgoBackdrop ? (
+        <span className="feedback-cell__ego-backdrop" aria-hidden>
+          <img src="/icons/fire.svg" alt="" loading="lazy" className={`feedback-cell__ego-icon ${egoBackdropSizeClass}`} />
         </span>
       ) : null}
       <span className="feedback-cell__value">{displayValue}</span>
