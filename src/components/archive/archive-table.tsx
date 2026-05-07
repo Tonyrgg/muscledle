@@ -1,5 +1,6 @@
 'use client';
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ExerciseArchiveRow } from "@/lib/exercise-archive/types";
 
@@ -113,6 +114,22 @@ export function ArchiveTable({ rows }: ArchiveTableProps) {
                 <td>
                   <p className="archive-table__name">{row.name}</p>
                   <p className="archive-table__slug">{row.slug}</p>
+                  <p className="archive-table__sub">
+                    <Link href={row.exercisePagePath} className="archive-table__link" target="_blank" rel="noreferrer">
+                      Open exercise page
+                    </Link>
+                  </p>
+                  {row.enrichment.providerExerciseId || row.enrichment.providerExerciseName || row.media.providerExerciseName ? (
+                    <p className="archive-table__sub">
+                      ExerciseDB{" "}
+                      {row.enrichment.providerExerciseId ? `#${row.enrichment.providerExerciseId}` : ""}
+                      {row.enrichment.providerExerciseName
+                        ? ` - ${row.enrichment.providerExerciseName}`
+                        : row.media.providerExerciseName
+                          ? ` - ${row.media.providerExerciseName}`
+                          : ""}
+                    </p>
+                  ) : null}
                   {row.aliases.length > 0 ? <p className="archive-table__sub">{row.aliases.slice(0, 3).join(" - ")}</p> : null}
                 </td>
                 <td>{row.muscleGroup}</td>

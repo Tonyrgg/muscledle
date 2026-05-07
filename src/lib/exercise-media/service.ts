@@ -1,4 +1,5 @@
 import { findBestMatch } from "@/lib/exercise-media/match";
+import { getFallbackGifUrlByExerciseId } from "@/lib/exercise-media/fallback-gifs";
 import {
   buildExerciseDbProxyGifUrl,
   fetchExerciseDbGifById,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/exercise-media/providers/exercisedb";
 import { getExerciseMediaBySlug, getInternalExerciseBySlug, upsertExerciseMedia } from "@/lib/exercise-media/repository";
 import type { ExternalExerciseCandidate, InternalExercise, SyncStatus } from "@/lib/exercise-media/types";
+import { getExerciseNaming } from "@/lib/exercises/naming";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function isValidGifUrl(value: string | null): boolean {
@@ -21,6 +23,80 @@ function isValidGifUrl(value: string | null): boolean {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function normalizeQuery(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[()]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function maybeSingularize(value: string): string {
+  if (value.endsWith("ss") || value.length < 5) return value;
+  if (value.endsWith("ies")) return `${value.slice(0, -3)}y`;
+  if (value.endsWith("es")) return value.slice(0, -2);
+  if (value.endsWith("s")) return value.slice(0, -1);
+  return value;
+}
+
+function addQueryVariant(output: string[], seen: Set<string>, value: string) {
+  const normalized = normalizeQuery(value);
+  if (!normalized || seen.has(normalized)) return;
+  seen.add(normalized);
+  output.push(normalized);
+}
+
+function buildSearchQueries(exercise: InternalExercise): string[] {
+  const naming = getExerciseNaming(exercise.slug, exercise.name, exercise.aliases ?? []);
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+
+  const bases = [
+    naming.canonical_name,
+    naming.display_name,
+    exercise.name,
+    ...(exercise.aliases ?? []),
+    ...naming.aliases,
+  ];
+
+  for (const base of bases) {
+    addQueryVariant(ordered, seen, base);
+  }
+
+  for (const query of [...ordered]) {
+    addQueryVariant(ordered, seen, maybeSingularize(query));
+    addQueryVariant(ordered, seen, query.replace(/\bdumbbell\b/g, "db"));
+    addQueryVariant(ordered, seen, query.replace(/\bdb\b/g, "dumbbell"));
+    addQueryVariant(ordered, seen, query.replace(/\bbarbell\b/g, "bb"));
+    addQueryVariant(ordered, seen, query.replace(/\bbb\b/g, "barbell"));
+    addQueryVariant(ordered, seen, query.replace(/\bclose grip\b/g, "close-grip"));
+    addQueryVariant(ordered, seen, query.replace(/\bclose-grip\b/g, "close grip"));
+    addQueryVariant(ordered, seen, query.replace(/\breverse grip\b/g, "reverse-grip"));
+    addQueryVariant(ordered, seen, query.replace(/\breverse-grip\b/g, "reverse grip"));
+    addQueryVariant(ordered, seen, query.replace(/\bone legged\b/g, "single leg"));
+    addQueryVariant(ordered, seen, query.replace(/\bsingle leg\b/g, "one legged"));
+    addQueryVariant(ordered, seen, query.replace(/\bbicep\b/g, "biceps"));
+    addQueryVariant(ordered, seen, query.replace(/\btricep\b/g, "triceps"));
+    addQueryVariant(ordered, seen, query.replace(/\busing\b/g, "").replace(/\s+/g, " "));
+    addQueryVariant(ordered, seen, query.replace(/\bwith\b/g, "").replace(/\s+/g, " "));
+  }
+
+  for (const query of [...ordered]) {
+    const tokens = query.split(" ").filter(Boolean);
+    if (tokens.length >= 3) {
+      addQueryVariant(ordered, seen, tokens.slice(1).join(" "));
+      addQueryVariant(ordered, seen, tokens.slice(0, -1).join(" "));
+    }
+    if (tokens.length >= 4) {
+      addQueryVariant(ordered, seen, tokens.slice(-2).join(" "));
+      addQueryVariant(ordered, seen, tokens.slice(-3).join(" "));
+    }
+  }
+
+  return ordered;
 }
 
 type GifPayload = {
@@ -124,6 +200,17 @@ async function resolveGifPayload(best: { candidate: ExternalExerciseCandidate; s
         source: "provider_by_id",
       };
     }
+
+    const fallbackUrl = await getFallbackGifUrlByExerciseId(best.candidate.id).catch(() => null);
+    if (fallbackUrl) {
+      const byFallbackUrl = await downloadGifFromUrl(fallbackUrl);
+      if (byFallbackUrl) {
+        return {
+          ...byFallbackUrl,
+          source: "fallback_by_id",
+        };
+      }
+    }
   }
 
   return null;
@@ -153,21 +240,41 @@ async function persistStatus(params: {
 }
 
 async function searchCandidatesWithFallback(exercise: InternalExercise): Promise<ExternalExerciseCandidate[]> {
-  const byName = await searchExerciseDbByName(exercise.name);
-  if (byName.length > 0) {
-    return byName;
-  }
+  const primaryQuery = normalizeQuery(exercise.name);
+  const queries = buildSearchQueries(exercise);
+  const collected = new Map<string, ExternalExerciseCandidate>();
 
-  const aliases = exercise.aliases ?? [];
-  for (const alias of aliases) {
-    const byAlias = await searchExerciseDbByName(alias);
-    if (byAlias.length > 0) {
-      console.log(`[exercise-media] fallback alias used slug=\"${exercise.slug}\" alias=\"${alias}\" candidates=${byAlias.length}`);
-      return byAlias;
+  for (const query of queries) {
+    const candidates = await searchExerciseDbByName(query);
+    if (candidates.length > 0) {
+      if (query !== primaryQuery) {
+        console.log(
+          `[exercise-media] fallback query used slug=\"${exercise.slug}\" query=\"${query}\" candidates=${candidates.length}`,
+        );
+      }
+
+      for (const candidate of candidates) {
+        const key = `${candidate.id ?? ""}::${normalizeQuery(candidate.name)}`;
+        const previous = collected.get(key);
+        if (!previous) {
+          collected.set(key, candidate);
+          continue;
+        }
+
+        const previousHasGif = Boolean(previous.gifUrl);
+        const nextHasGif = Boolean(candidate.gifUrl);
+        if (!previousHasGif && nextHasGif) {
+          collected.set(key, candidate);
+        }
+      }
+
+      if (collected.size >= 24) {
+        break;
+      }
     }
   }
 
-  return [];
+  return Array.from(collected.values());
 }
 
 export async function syncExerciseGifBySlug(
@@ -188,7 +295,13 @@ export async function syncExerciseGifBySlug(
     };
   }
 
-  const candidates = await searchCandidatesWithFallback(exercise);
+  const naming = getExerciseNaming(exercise.slug, exercise.name, exercise.aliases ?? []);
+  const exerciseWithNamingAliases: InternalExercise = {
+    ...exercise,
+    aliases: Array.from(new Set([...(exercise.aliases ?? []), ...naming.aliases])),
+  };
+
+  const candidates = await searchCandidatesWithFallback(exerciseWithNamingAliases);
 
   if (candidates.length === 0) {
     if (existingMedia?.mediaUrl) {
@@ -228,7 +341,7 @@ export async function syncExerciseGifBySlug(
     };
   }
 
-  const best = findBestMatch(exercise, candidates);
+  const best = findBestMatch(exerciseWithNamingAliases, candidates);
 
   if (!best) {
     if (existingMedia?.mediaUrl) {

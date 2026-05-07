@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
+import { ArchiveSimulator } from "@/components/archive/archive-simulator";
 import { ArchiveTable } from "@/components/archive/archive-table";
 import { listExerciseArchive } from "@/lib/exercise-archive/service";
 
@@ -45,6 +46,7 @@ export default async function HiddenArchivePage() {
           </Link>
         </header>
 
+        <ArchiveSimulator rows={rows} />
         <ArchiveTable rows={rows} />
       </section>
     </main>

@@ -5,6 +5,7 @@ import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
 import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getExerciseNaming } from "@/lib/exercises/naming";
+import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import type { PublicTodayGameState } from "@/types/game";
 
 type UserDailyGameRow = {
@@ -131,14 +132,15 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   }
 
   const guessIds = (attemptRows ?? []).map((row) => row.guess_exercise_id);
+  const lookupExerciseIds = guessIds.length > 0 ? Array.from(new Set([...guessIds, dailySelection.exerciseId])) : [];
 
   let detailsById = new Map<string, ExerciseNameRow>();
 
-  if (guessIds.length > 0) {
+  if (lookupExerciseIds.length > 0) {
     const { data: exerciseRows, error: exercisesError } = await admin
       .from("exercises")
       .select("id, slug, name, muscle_group, muscle, equipment, movement, pattern, reps, goal, ego")
-      .in("id", guessIds)
+      .in("id", lookupExerciseIds)
       .returns<ExerciseNameRow[]>();
 
     if (exercisesError) {
@@ -146,6 +148,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
     }
 
     detailsById = new Map((exerciseRows ?? []).map((row) => [row.id, row]));
+    const targetDetails = detailsById.get(dailySelection.exerciseId);
 
     const attempts = (attemptRows ?? []).map((row) => {
       const details = detailsById.get(row.guess_exercise_id);
@@ -167,6 +170,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
           goal: details?.goal.join(" / ") ?? "-",
           ego: details?.ego.join(" / ") ?? "-",
         },
+        repsDirection: details && targetDetails ? getRepsDirection(details.reps, targetDetails.reps) : null,
         feedback: normalizeFeedback(row.feedback),
         isCorrect: row.is_correct,
       };
@@ -197,6 +201,7 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
       goal: "-",
       ego: "-",
     },
+    repsDirection: null,
     feedback: normalizeFeedback(row.feedback),
     isCorrect: row.is_correct,
   }));

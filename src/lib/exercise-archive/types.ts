@@ -20,6 +20,7 @@ export type ExerciseArchiveRow = {
   id: string;
   slug: string;
   name: string;
+  exercisePagePath: string;
   aliases: string[];
   muscleGroup: string;
   muscle: string[];
@@ -38,6 +39,7 @@ export type ExerciseArchiveRow = {
   };
   enrichment: {
     status: EnrichmentStatus | "pending" | null;
+    providerExerciseId: string | null;
     providerExerciseName: string | null;
     normalizedMuscle: string | null;
     normalizedEquipment: string | null;
@@ -50,4 +52,3 @@ export type ExerciseArchiveRow = {
   };
   stats: ExerciseArchiveStats;
 };
-

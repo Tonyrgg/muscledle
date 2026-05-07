@@ -18,6 +18,11 @@ type DailySelection = {
   exerciseName: string;
 };
 
+const DAILY_EXCLUDED_SLUGS = new Set([
+  "calf-press-using-leg-press-machine",
+  "double-leg-abdominal-press",
+]);
+
 function toDayIndex(isoDate: string): number {
   const value = new Date(`${isoDate}T00:00:00Z`);
   return Math.floor(value.getTime() / 86400000);
@@ -71,7 +76,7 @@ async function getLiveExercises(): Promise<LiveExerciseRow[]> {
     throw new GameConflictError("No live exercises available for daily rotation.");
   }
 
-  return data.filter((row) => !isMergedExerciseSlug(row.slug));
+  return data.filter((row) => !isMergedExerciseSlug(row.slug) && !DAILY_EXCLUDED_SLUGS.has(row.slug));
 }
 
 async function getConfiguredDailySelection(gameDate: string): Promise<DailySelection | null> {
@@ -98,6 +103,9 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
   }
 
   let effectiveExercise = exercise;
+  if (DAILY_EXCLUDED_SLUGS.has(effectiveExercise.slug)) {
+    return null;
+  }
   const mergedIntoSlug = resolveMergedIntoSlug(exercise.slug);
 
   if (mergedIntoSlug) {
@@ -111,6 +119,10 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
     if (!mergedTargetError && mergedTarget?.id) {
       effectiveExercise = mergedTarget;
     }
+  }
+
+  if (DAILY_EXCLUDED_SLUGS.has(effectiveExercise.slug)) {
+    return null;
   }
 
   const naming = getExerciseNaming(effectiveExercise.slug, effectiveExercise.name);

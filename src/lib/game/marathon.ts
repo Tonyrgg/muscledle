@@ -1,5 +1,6 @@
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import { getExerciseNaming, isMergedExerciseSlug, resolveMergedIntoSlug } from "@/lib/exercises/naming";
+import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { trackEvent } from "@/lib/analytics/track";
 import { AuthRequiredError, GameConflictError, normalizeFeedback } from "@/lib/game/shared";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -68,7 +69,11 @@ type RecordMarathonScoreInput = {
 // Temporary testing override.
 const TEST_MARATHON_EXERCISE_COUNT = 100;
 
-function toPublicAttempt(row: MarathonAttemptRow, detailsById: Map<string, ExerciseDetailsRow>): PublicGameAttempt {
+function toPublicAttempt(
+  row: MarathonAttemptRow,
+  detailsById: Map<string, ExerciseDetailsRow>,
+  targetDetails: ExerciseDetailsRow | null,
+): PublicGameAttempt {
   const details = detailsById.get(row.guess_exercise_id);
 
   return {
@@ -86,6 +91,7 @@ function toPublicAttempt(row: MarathonAttemptRow, detailsById: Map<string, Exerc
       goal: details?.goal.join(" / ") ?? "-",
       ego: details?.ego.join(" / ") ?? "-",
     },
+    repsDirection: details && targetDetails ? getRepsDirection(details.reps, targetDetails.reps) : null,
     feedback: normalizeFeedback(row.feedback),
     isCorrect: row.is_correct,
   };
@@ -307,8 +313,13 @@ export async function getMarathonState(): Promise<PublicMarathonState> {
   }
 
   const attemptRows = await getRoundAttempts(run.id, run.current_index);
-  const detailsById = await getExerciseDetailsByIds(attemptRows.map((row) => row.guess_exercise_id));
-  const attempts = attemptRows.map((row) => toPublicAttempt(row, detailsById));
+  const targetExerciseId = run.exercise_order_ids[run.current_index];
+  const detailsById = await getExerciseDetailsByIds([
+    ...attemptRows.map((row) => row.guess_exercise_id),
+    ...(targetExerciseId ? [targetExerciseId] : []),
+  ]);
+  const targetDetails = targetExerciseId ? detailsById.get(targetExerciseId) ?? null : null;
+  const attempts = attemptRows.map((row) => toPublicAttempt(row, detailsById, targetDetails));
 
   return toPublicState(run, attempts);
 }
@@ -511,10 +522,15 @@ export async function submitMarathonGuess(input: { guessExerciseId: string }): P
       ? await getRoundAttempts(updatedRun.id, updatedRun.current_index)
       : [];
   const detailsById = await getExerciseDetailsByIds(
-    Array.from(new Set([insertedAttempt.guess_exercise_id, ...currentRoundAttempts.map((row) => row.guess_exercise_id)])),
+    Array.from(new Set([
+      insertedAttempt.guess_exercise_id,
+      targetExerciseId,
+      ...currentRoundAttempts.map((row) => row.guess_exercise_id),
+    ])),
   );
-  const attempt = toPublicAttempt(insertedAttempt, detailsById);
-  const attempts = currentRoundAttempts.map((row) => toPublicAttempt(row, detailsById));
+  const targetDetails = detailsById.get(targetExerciseId) ?? null;
+  const attempt = toPublicAttempt(insertedAttempt, detailsById, targetDetails);
+  const attempts = currentRoundAttempts.map((row) => toPublicAttempt(row, detailsById, targetDetails));
 
   void trackEvent({
     userId,

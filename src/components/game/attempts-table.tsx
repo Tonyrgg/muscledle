@@ -141,6 +141,7 @@ function MobileAttemptCard({
           value={attempt.values.reps}
           isRevealing={isRevealing}
           revealOrder={4}
+          repsDirection={attempt.repsDirection}
         />
       </section>
 
