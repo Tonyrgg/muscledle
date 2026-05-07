@@ -1,6 +1,7 @@
 import { trackEvent } from "@/lib/analytics/track";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import { getExerciseNaming, resolveMergedIntoSlug } from "@/lib/exercises/naming";
+import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
@@ -225,6 +226,7 @@ export async function submitGuess(input: {
       goal: guessedExercise.goal.join(" / "),
       ego: guessedExercise.ego.join(" / "),
     },
+    repsDirection: getRepsDirection(guessedExercise.reps, targetExercise.reps),
     feedback,
     isCorrect: correct,
   };

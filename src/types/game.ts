@@ -10,6 +10,8 @@ export type PublicAttemptValues = {
   ego: string;
 };
 
+export type PublicAttemptRepsDirection = "up" | "down" | null;
+
 export type PublicGameAttempt = {
   id: string;
   guessExerciseId: string;
@@ -17,6 +19,7 @@ export type PublicGameAttempt = {
   guessName: string;
   guessMuscleGroup: string | null;
   values: PublicAttemptValues;
+  repsDirection: PublicAttemptRepsDirection;
   feedback: GuessFeedback;
   isCorrect: boolean;
 };

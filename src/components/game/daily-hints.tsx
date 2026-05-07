@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
+import { resolveExerciseMediaUrl } from "@/lib/game/exercise-media-client";
 import type { FeedbackColor } from "@/types/exercise";
 import type { PublicGameAttempt } from "@/types/game";
 
@@ -12,7 +13,7 @@ type DailyHintsProps = {
   targetExercise: LiveExerciseSuggestion | null;
 };
 
-type HintId = "attribute" | "name";
+type HintId = "attribute" | "visual" | "name";
 
 type HintStatus = {
   id: HintId;
@@ -47,7 +48,8 @@ const COLUMN_ORDER: FeedbackColumnKey[] = [
 ];
 const ATTRIBUTE_HINT_COLUMN_ORDER: FeedbackColumnKey[] = COLUMN_ORDER.filter((key) => key !== "muscle");
 const ATTRIBUTE_HINT_THRESHOLD = 5;
-const NAME_HINT_THRESHOLD = 10;
+const VISUAL_HINT_THRESHOLD = 10;
+const NAME_HINT_THRESHOLD = 15;
 
 const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
   muscle: "Muscle",
@@ -61,6 +63,7 @@ const COLUMN_LABEL: Record<FeedbackColumnKey, string> = {
 
 const HINT_ICON_MAP: Record<HintId, string> = {
   attribute: "/hints/attribute-clue.svg",
+  visual: "/hints/image-clue.svg",
   name: "/hints/name-clue.svg",
 };
 
@@ -199,6 +202,14 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
         lockCopy: buildRemainingWrongCopy(Math.max(0, ATTRIBUTE_HINT_THRESHOLD - wrongCount)),
       },
       {
+        id: "visual",
+        label: "Visual hint",
+        threshold: VISUAL_HINT_THRESHOLD,
+        unlocked: wrongCount >= VISUAL_HINT_THRESHOLD,
+        remainingWrong: Math.max(0, VISUAL_HINT_THRESHOLD - wrongCount),
+        lockCopy: buildRemainingWrongCopy(Math.max(0, VISUAL_HINT_THRESHOLD - wrongCount)),
+      },
+      {
         id: "name",
         label: "Name clue",
         threshold: NAME_HINT_THRESHOLD,
@@ -209,6 +220,47 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
     ],
     [wrongCount],
   );
+
+  const [visualMediaUrl, setVisualMediaUrl] = useState<string | null>(null);
+  const [visualMediaLoading, setVisualMediaLoading] = useState(false);
+  const [visualMediaError, setVisualMediaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const slug = targetExercise?.slug?.trim().toLowerCase() ?? "";
+    if (!slug) {
+      return;
+    }
+
+    let cancelled = false;
+    const kickoff = window.setTimeout(() => {
+      if (cancelled) return;
+      setVisualMediaLoading(true);
+      setVisualMediaError(null);
+    }, 0);
+
+    void resolveExerciseMediaUrl(slug)
+      .then((resolved) => {
+        if (cancelled) return;
+        setVisualMediaUrl(resolved);
+        if (!resolved) {
+          setVisualMediaError("Visual hint unavailable");
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setVisualMediaUrl(null);
+        setVisualMediaError("Visual hint unavailable");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setVisualMediaLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(kickoff);
+    };
+  }, [targetExercise?.slug]);
 
   const [selectedHint, setSelectedHint] = useState<HintId | null>(null);
   const activeHint = useMemo(() => {
@@ -301,6 +353,24 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
       {activeHint ? (
         <div className="daily-hints__content" aria-live="polite">
           {activeHint === "attribute" ? renderAttributeContent() : null}
+
+          {activeHint === "visual" ? (
+            visualMediaUrl ? (
+              <div className="daily-hints__visual">
+                <img
+                  src={visualMediaUrl}
+                  alt={`Visual hint for ${targetExercise?.display_name || targetExercise?.name || "hidden exercise"}`}
+                  className="daily-hints__visual-media"
+                />
+              </div>
+            ) : visualMediaLoading ? (
+              <div className="daily-hints__visual daily-hints__visual--loading" aria-hidden>
+                <span className="daily-hints__visual-skeleton" />
+              </div>
+            ) : (
+              <p className="daily-hints__name-mask">{visualMediaError ?? "Visual hint unavailable"}</p>
+            )
+          ) : null}
 
           {activeHint === "name" ? (
             <p className="daily-hints__name-mask">{nameHint || "Name clue unavailable"}</p>

@@ -3,6 +3,8 @@
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { getAttributeDefinition, type FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
+import type { RepsDirection } from "@/lib/exercises/reps-direction";
+import { getValueBackdropPath, getValueBackdropSizeClass } from "@/lib/exercises/value-backdrops";
 import { getCachedExerciseMediaUrl, resolveExerciseMediaUrl } from "@/lib/game/exercise-media-client";
 import type { FeedbackColor } from "@/types/exercise";
 
@@ -10,11 +12,15 @@ type FeedbackCellProps = {
   column: FeedbackColumnKey;
   color: FeedbackColor;
   value: string;
+  displayValueOverride?: string;
   isRevealing?: boolean;
   revealOrder?: number;
   exerciseMediaSlug?: string;
   backgroundIconPath?: string | null;
   splitBackgroundIconPaths?: readonly [string, string] | null;
+  className?: string;
+  forceBackdropPreview?: boolean;
+  repsDirection?: RepsDirection;
 };
 
 const colorClassByFeedback: Record<FeedbackColor, string> = {
@@ -24,16 +30,81 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
 };
 
 const TOOLTIP_OPEN_EVENT = "liftdle-feedback-tooltip-open";
+const missingBackdropPaths = new Set<string>();
+
+type ValueBackdropImageProps = {
+  path: string;
+  className: string;
+};
+
+function ValueBackdropImage({ path, className }: ValueBackdropImageProps) {
+  const [isMissing, setIsMissing] = useState(() => missingBackdropPaths.has(path));
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (missingBackdropPaths.has(path)) {
+      return;
+    }
+
+    const image = new Image();
+    image.src = path;
+
+    if (image.complete) {
+      const frameId = window.requestAnimationFrame(() => {
+        setIsLoaded(true);
+      });
+
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const handleLoad = () => setIsLoaded(true);
+    const handleError = () => {
+      missingBackdropPaths.add(path);
+      setIsMissing(true);
+      setIsLoaded(false);
+    };
+
+    image.addEventListener("load", handleLoad);
+    image.addEventListener("error", handleError);
+
+    return () => {
+      image.removeEventListener("load", handleLoad);
+      image.removeEventListener("error", handleError);
+    };
+  }, [path]);
+
+  if (isMissing) {
+    return null;
+  }
+
+  return (
+    <img
+      src={path}
+      alt=""
+      className={className}
+      style={{ visibility: isLoaded ? "visible" : "hidden" }}
+      onError={() => {
+        missingBackdropPaths.add(path);
+        setIsMissing(true);
+        setIsLoaded(false);
+      }}
+    />
+  );
+}
 
 export function FeedbackCell({
   column,
   color,
   value,
+  displayValueOverride,
   isRevealing = false,
   revealOrder = 0,
   exerciseMediaSlug,
   backgroundIconPath = null,
   splitBackgroundIconPaths = null,
+  className = "",
+  forceBackdropPreview = false,
+  repsDirection = null,
 }: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
@@ -44,12 +115,13 @@ export function FeedbackCell({
   const cellRef = useRef<HTMLDivElement | null>(null);
   const tooltipId = useId();
   const normalizedValue = value.trim();
-  const displayValue = normalizedValue.length > 0 ? normalizedValue : "Unknown";
+  const displayValue = displayValueOverride?.trim() || (normalizedValue.length > 0 ? normalizedValue : "Unknown");
   const shouldTrackMedia = column === "muscle" && Boolean(exerciseMediaSlug);
   const cachedHasExerciseMedia = shouldTrackMedia && exerciseMediaSlug
     ? Boolean(getCachedExerciseMediaUrl(exerciseMediaSlug))
     : false;
   const hasExerciseMedia =
+    forceBackdropPreview ||
     cachedHasExerciseMedia ||
     (shouldTrackMedia && resolvedMediaState.slug === exerciseMediaSlug && resolvedMediaState.hasMedia);
 
@@ -176,19 +248,15 @@ export function FeedbackCell({
     hasExerciseMedia &&
     Boolean(splitBackgroundIconPaths?.[0]) &&
     Boolean(splitBackgroundIconPaths?.[1]);
-  const showEgoBackdrop = column === "ego";
-  const normalizedEgoValue = displayValue.toLowerCase();
-  const egoBackdropSizeClass =
-    normalizedEgoValue === "high"
-      ? "feedback-cell__ego-icon--high"
-      : normalizedEgoValue === "medium"
-        ? "feedback-cell__ego-icon--medium"
-        : "feedback-cell__ego-icon--low";
+  const showRepsDirectionBackdrop = column === "reps" && repsDirection !== null;
+  const valueBackdropPath = useMemo(() => getValueBackdropPath(column, displayValue), [column, displayValue]);
+  const valueBackdropSizeClass = useMemo(() => getValueBackdropSizeClass(column, displayValue), [column, displayValue]);
+  const showValueBackdrop = !showRepsDirectionBackdrop && column !== "muscle" && Boolean(valueBackdropPath);
 
   return (
     <div
       ref={cellRef}
-      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""} ${showMuscleBackdrop || showSplitMuscleBackdrop ? "feedback-cell--with-muscle-backdrop" : ""} ${showEgoBackdrop ? "feedback-cell--with-ego-backdrop" : ""}`}
+      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""} ${showMuscleBackdrop || showSplitMuscleBackdrop ? "feedback-cell--with-muscle-backdrop" : ""} ${showValueBackdrop ? "feedback-cell--with-value-backdrop" : ""} ${className}`.trim()}
       role="cell"
       aria-label={displayValue}
       style={style}
@@ -218,9 +286,22 @@ export function FeedbackCell({
           <img src={backgroundIconPath ?? ""} alt="" loading="lazy" />
         </span>
       ) : null}
-      {showEgoBackdrop ? (
-        <span className="feedback-cell__ego-backdrop" aria-hidden>
-          <img src="/icons/fire.svg" alt="" loading="lazy" className={`feedback-cell__ego-icon ${egoBackdropSizeClass}`} />
+      {showValueBackdrop ? (
+        <span className="feedback-cell__value-backdrop" aria-hidden>
+          <ValueBackdropImage
+            key={valueBackdropPath ?? ""}
+            path={valueBackdropPath ?? ""}
+            className={`feedback-cell__value-icon ${valueBackdropSizeClass ?? ""}`.trim()}
+          />
+        </span>
+      ) : null}
+      {showRepsDirectionBackdrop ? (
+        <span className="feedback-cell__value-backdrop" aria-hidden>
+          <ValueBackdropImage
+            key={`/icons/up-arrow.svg:${repsDirection ?? ""}`}
+            path="/icons/up-arrow.svg"
+            className={`feedback-cell__value-icon feedback-cell__value-icon--reps ${repsDirection === "down" ? "feedback-cell__value-icon--reps-down" : "feedback-cell__value-icon--reps-up"}`.trim()}
+          />
         </span>
       ) : null}
       <span className="feedback-cell__value">{displayValue}</span>

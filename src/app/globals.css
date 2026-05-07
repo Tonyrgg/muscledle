@@ -229,7 +229,7 @@ input {
 
 .daily-hints__tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
 }
 
@@ -395,6 +395,19 @@ input {
   justify-content: center;
   overflow: hidden;
   margin: 0 auto;
+}
+
+.daily-hints__visual-skeleton {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.04) 100%),
+    #232323;
+  background-size: 220% 100%;
+  animation:
+    skeleton-sweep 1.15s linear infinite,
+    skeleton-pulse 1.8s ease-in-out infinite;
 }
 
 .daily-hints__visual-media {
@@ -1597,6 +1610,19 @@ button.game-quick-tools__item:active {
   overflow: hidden;
 }
 
+.exercise-icon-cell__skeleton {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.12) 50%, rgba(255, 255, 255, 0.04) 100%),
+    #232323;
+  background-size: 220% 100%;
+  animation:
+    skeleton-sweep 1.15s linear infinite,
+    skeleton-pulse 1.8s ease-in-out infinite;
+}
+
 .exercise-icon-cell__icon {
   width: min(84%, 6.1rem);
   height: min(84%, 6.1rem);
@@ -1942,7 +1968,7 @@ button.game-quick-tools__item:active {
   pointer-events: none;
 }
 
-.feedback-cell__ego-backdrop {
+.feedback-cell__value-backdrop {
   position: absolute;
   inset: 0;
   display: flex;
@@ -1952,21 +1978,71 @@ button.game-quick-tools__item:active {
   opacity: 0.16;
 }
 
-.feedback-cell__ego-icon {
+.feedback-cell__value-icon {
+  object-fit: contain;
+  object-position: center;
   filter: brightness(1) invert(1);
 }
 
-.feedback-cell__ego-icon--low {
+.feedback-cell__value-icon--standard {
+  width: min(74%, 4.75rem);
+  height: min(74%, 4.75rem);
+}
+
+.feedback-cell__value-icon--equipment-machine {
+  width: min(67%, 4.55rem);
+  height: min(67%, 4.55rem);
+}
+
+.feedback-cell__value-icon--equipment-cable {
+  width: min(66%, 4.02rem);
+  height: min(66%, 4.02rem);
+}
+
+.feedback-cell__value-icon--equipment-barbell {
+  width: min(84%, 5.3rem);
+  height: min(84%, 5.3rem);
+}
+
+.feedback-cell__value-icon--equipment-bodyweight {
+  width: min(72%, 4.55rem);
+  height: min(72%, 4.55rem);
+}
+
+.feedback-cell__value-icon--equipment-kettlebell {
+  width: min(74%, 4.7rem);
+  height: min(74%, 4.7rem);
+}
+
+.feedback-cell__value-icon--equipment-dumbbell {
+  width: min(68%, 4.28rem);
+  height: min(68%, 4.28rem);
+}
+
+.feedback-cell__value-icon--reps {
+  width: min(76%, 4.85rem);
+  height: min(76%, 4.85rem);
+}
+
+.feedback-cell__value-icon--reps-up {
+  transform: translateY(-2%);
+}
+
+.feedback-cell__value-icon--reps-down {
+  transform: rotate(180deg) translateY(-2%);
+}
+
+.feedback-cell__value-icon--low {
   width: min(60%, 3.3rem);
   height: min(60%, 3.3rem);
 }
 
-.feedback-cell__ego-icon--medium {
+.feedback-cell__value-icon--medium {
   width: min(65%, 5rem);
   height: min(65%, 5rem);
 }
 
-.feedback-cell__ego-icon--high {
+.feedback-cell__value-icon--high {
   width: min(108%, 6.9rem);
   height: min(108%, 6.9rem);
 }
@@ -1977,7 +2053,7 @@ button.game-quick-tools__item:active {
 }
 
 .feedback-cell--with-muscle-backdrop .feedback-cell__value,
-.feedback-cell--with-ego-backdrop .feedback-cell__value {
+.feedback-cell--with-value-backdrop .feedback-cell__value {
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.4),
     0 0 8px rgba(0, 0, 0, 0.18);
@@ -2605,6 +2681,148 @@ button.game-quick-tools__item:active {
   border: 1px solid #3a3a3a;
   background: #1b1b1b;
   padding: 0.72rem;
+}
+
+.archive-simulator {
+  margin-bottom: 1rem;
+  border: 1px solid #3a3a3a;
+  background: #1b1b1b;
+  padding: 0.72rem;
+}
+
+.archive-simulator__head {
+  margin-bottom: 0.75rem;
+}
+
+.archive-simulator__head-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.archive-simulator__kicker {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.archive-simulator__title {
+  margin: 0.22rem 0 0;
+  color: #f4f4f4;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.archive-simulator__copy {
+  margin: 0.3rem 0 0;
+  color: #cfcfcf;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.archive-simulator__copy code {
+  color: #fff1c7;
+}
+
+.archive-simulator__color-toggle {
+  flex-shrink: 0;
+  min-height: 2rem;
+  border: 1px solid #474747;
+  background: #262626;
+  color: #f4f4f4;
+  padding: 0 0.8rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.archive-simulator__color-toggle:hover,
+.archive-simulator__color-toggle:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.archive-simulator__color-toggle:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
+}
+
+.archive-simulator__scroll {
+  padding-bottom: 0.25rem;
+}
+
+.archive-simulator__header {
+  min-width: 896px;
+}
+
+.archive-simulator__grid {
+  min-width: 896px;
+  align-items: start;
+}
+
+.archive-simulator__control-cell {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 0.34rem;
+}
+
+.archive-simulator__exercise-cell,
+.archive-simulator__sim-cell {
+  min-height: 7.8rem;
+}
+
+.archive-simulator__arrow {
+  min-height: 1.6rem;
+  border: 1px solid #474747;
+  background: #262626;
+  color: #f4f4f4;
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.archive-simulator__arrow:hover,
+.archive-simulator__arrow:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.archive-simulator__arrow:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
+}
+
+.archive-simulator__exercise-name {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.archive-simulator__muscle-cell .feedback-cell__value {
+  white-space: pre-line;
+  line-height: 1.05;
+}
+
+.archive-simulator__muscle-cell .feedback-cell__muscle-backdrop img,
+.archive-simulator__muscle-cell .feedback-cell__muscle-backdrop-part {
+  width: min(94%, 5.95rem);
+  height: min(94%, 5.95rem);
 }
 
 .archive-toolbar {

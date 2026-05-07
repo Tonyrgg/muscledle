@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import {
   getMuscleGroupIconKey,
   getMuscleGroupIconPath,
@@ -12,6 +12,10 @@ import {
   markExerciseMediaLoaded,
   resolveExerciseMediaUrl,
 } from "@/lib/game/exercise-media-client";
+
+const TOOLTIP_OPEN_EVENT = "liftdle-feedback-tooltip-open";
+const EXERCISE_MEDIA_TOOLTIP =
+  "GIFS ARE DEMONSTRATIVE. SOME DO NOT PERFECTLY MATCH THE EXERCISE, BUT THEY ARE CLOSE. THERE IS CURRENTLY LIMITED SOURCE MATERIAL, AND WE ARE WORKING ON IT.";
 
 type ExerciseIconCellProps = {
   exerciseSlug: string;
@@ -51,8 +55,8 @@ export function ExerciseIconCell({
   exerciseMuscleGroup,
   exerciseMuscleValues = null,
 }: ExerciseIconCellProps) {
-  const [touchOpen, setTouchOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
   const cachedMediaUrl = getCachedExerciseMediaUrl(exerciseSlug) ?? null;
   const [resolvedMedia, setResolvedMedia] = useState<{ slug: string; url: string | null }>({
     slug: exerciseSlug,
@@ -60,7 +64,8 @@ export function ExerciseIconCell({
   });
   const [mediaResolved, setMediaResolved] = useState(() => cachedMediaUrl !== null);
   const [loadedMediaUrl, setLoadedMediaUrl] = useState<string | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const cellRef = useRef<HTMLDivElement | null>(null);
+  const tooltipId = useId();
   const iconPath = useMemo(
     () => resolveColumnIconPath(exerciseSlug, exerciseName, exerciseMuscleGroup),
     [exerciseMuscleGroup, exerciseName, exerciseSlug],
@@ -79,6 +84,7 @@ export function ExerciseIconCell({
     cachedMediaUrl ??
     (resolvedMedia.slug === exerciseSlug ? resolvedMedia.url : null);
   const mediaReady = mediaUrl !== null && loadedMediaUrl === mediaUrl;
+  const showLoadingSkeleton = !mediaResolved || (mediaUrl !== null && !mediaReady);
   const shouldShowFallback = mediaResolved && mediaUrl === null;
 
   useEffect(() => {
@@ -96,178 +102,180 @@ export function ExerciseIconCell({
   }, [exerciseSlug]);
 
   useEffect(() => {
-    if (!touchOpen && !isModalOpen) {
-      return;
-    }
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!buttonRef.current?.contains(event.target as Node)) {
-        setTouchOpen(false);
+    const onAnotherTooltipOpen = (event: Event) => {
+      const customEvent = event as CustomEvent<{ id?: string }>;
+      if (customEvent.detail?.id === tooltipId) {
+        return;
       }
+
+      setTooltipOpen(false);
+      setCursorPosition(null);
     };
 
-    window.addEventListener("pointerdown", onPointerDown);
-    return () => window.removeEventListener("pointerdown", onPointerDown);
-  }, [isModalOpen, touchOpen]);
+    window.addEventListener(TOOLTIP_OPEN_EVENT, onAnotherTooltipOpen as EventListener);
+    return () => window.removeEventListener(TOOLTIP_OPEN_EVENT, onAnotherTooltipOpen as EventListener);
+  }, [tooltipId]);
 
   useEffect(() => {
-    if (!isModalOpen) {
+    if (!tooltipOpen) {
       return;
     }
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsModalOpen(false);
-      }
+    const closeTooltip = () => {
+      setTooltipOpen(false);
+      setCursorPosition(null);
     };
 
-    window.addEventListener("keydown", onKeyDown);
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) {
+        closeTooltip();
+        return;
+      }
+
+      if (cellRef.current?.contains(target)) {
+        return;
+      }
+
+      closeTooltip();
+    };
+
+    document.addEventListener("pointerdown", onDocumentPointerDown, true);
+    window.addEventListener("scroll", closeTooltip, true);
+    window.addEventListener("resize", closeTooltip);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onDocumentPointerDown, true);
+      window.removeEventListener("scroll", closeTooltip, true);
+      window.removeEventListener("resize", closeTooltip);
     };
-  }, [isModalOpen]);
+  }, [tooltipOpen]);
+
+  const getClampedViewportPosition = (clientX: number, clientY: number): { x: number; y: number } => {
+    const viewportPadding = 12;
+    const tooltipMaxWidth = 320;
+    const tooltipHalfWidth = tooltipMaxWidth / 2;
+    const minX = viewportPadding + tooltipHalfWidth;
+    const maxX = Math.max(minX, window.innerWidth - viewportPadding - tooltipHalfWidth);
+    const minY = 44;
+    const maxY = Math.max(minY, window.innerHeight - viewportPadding);
+
+    return {
+      x: Math.max(minX, Math.min(clientX, maxX)),
+      y: Math.max(minY, Math.min(clientY - 10, maxY)),
+    };
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!tooltipOpen) {
+      return;
+    }
+
+    setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
+  };
+
+  const handleClick = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const nextOpen = !tooltipOpen;
+    setTooltipOpen(nextOpen);
+
+    if (!nextOpen) {
+      setCursorPosition(null);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent(TOOLTIP_OPEN_EVENT, { detail: { id: tooltipId } }));
+    setCursorPosition(getClampedViewportPosition(event.clientX, event.clientY));
+  };
+
+  const handlePointerLeave = () => {
+    setTooltipOpen(false);
+    setCursorPosition(null);
+  };
 
   return (
-    <>
-      <button
-        ref={buttonRef}
-        type="button"
-        className={`exercise-icon-cell ${mediaUrl ? "exercise-icon-cell--has-media" : ""} ${touchOpen ? "exercise-icon-cell--touch-open" : ""}`}
-        aria-label={exerciseName}
-        aria-pressed={touchOpen}
-        onBlur={() => setTouchOpen(false)}
-        onClick={() => setIsModalOpen(true)}
-        onPointerDown={(event) => {
-          if (event.pointerType !== "mouse") {
-            event.preventDefault();
-            setTouchOpen((current) => !current);
-          }
-        }}
-      >
-        <span className="exercise-icon-cell__icon-wrap" aria-hidden>
-          {mediaUrl ? (
-            <img
-              src={mediaUrl}
-              alt=""
-              className={`exercise-icon-cell__gif ${mediaReady ? "exercise-icon-cell__gif--ready" : "exercise-icon-cell__gif--loading"}`}
-              width={120}
-              height={120}
-              loading="lazy"
-              onLoad={() => {
-                markExerciseMediaLoaded(mediaUrl);
-                setLoadedMediaUrl(mediaUrl);
-              }}
-              onError={() => {
-                setResolvedMedia({ slug: exerciseSlug, url: null });
-                setMediaResolved(true);
-                setLoadedMediaUrl(null);
-              }}
-            />
-          ) : null}
+    <div
+      ref={cellRef}
+      className={`exercise-icon-cell ${mediaUrl ? "exercise-icon-cell--has-media" : ""} ${tooltipOpen ? "exercise-icon-cell--tooltip-open" : ""}`.trim()}
+      role="button"
+      aria-label={exerciseName}
+      tabIndex={0}
+      onClick={handleClick}
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+    >
+      <span className="exercise-icon-cell__icon-wrap" aria-hidden>
+        {showLoadingSkeleton ? (
+          <span className="exercise-icon-cell__skeleton" />
+        ) : null}
+        {mediaUrl ? (
+          <img
+            src={mediaUrl}
+            alt=""
+            className={`exercise-icon-cell__gif ${mediaReady ? "exercise-icon-cell__gif--ready" : "exercise-icon-cell__gif--loading"}`}
+            width={120}
+            height={120}
+            loading="lazy"
+            onLoad={() => {
+              markExerciseMediaLoaded(mediaUrl);
+              setLoadedMediaUrl(mediaUrl);
+            }}
+            onError={() => {
+              setResolvedMedia({ slug: exerciseSlug, url: null });
+              setMediaResolved(true);
+              setLoadedMediaUrl(null);
+            }}
+          />
+        ) : null}
 
-          {shouldShowFallback ? (
-            splitIconPaths ? (
-              <span className="exercise-icon-cell__split">
-                <img
-                  src={splitIconPaths[0]}
-                  alt=""
-                  className="exercise-icon-cell__split-part exercise-icon-cell__split-part--primary"
-                  width={90}
-                  height={90}
-                  loading="lazy"
-                />
-                <img
-                  src={splitIconPaths[1]}
-                  alt=""
-                  className="exercise-icon-cell__split-part exercise-icon-cell__split-part--secondary"
-                  width={90}
-                  height={90}
-                  loading="lazy"
-                />
-                <span className="exercise-icon-cell__split-divider" />
-              </span>
-            ) : (
+        {shouldShowFallback ? (
+          splitIconPaths ? (
+            <span className="exercise-icon-cell__split">
               <img
-                src={iconPath}
+                src={splitIconPaths[0]}
                 alt=""
-                className="exercise-icon-cell__icon"
+                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--primary"
                 width={90}
                 height={90}
                 loading="lazy"
               />
-            )
-          ) : null}
-        </span>
+              <img
+                src={splitIconPaths[1]}
+                alt=""
+                className="exercise-icon-cell__split-part exercise-icon-cell__split-part--secondary"
+                width={90}
+                height={90}
+                loading="lazy"
+              />
+              <span className="exercise-icon-cell__split-divider" />
+            </span>
+          ) : (
+            <img
+              src={iconPath}
+              alt=""
+              className="exercise-icon-cell__icon"
+              width={90}
+              height={90}
+              loading="lazy"
+            />
+          )
+        ) : null}
+      </span>
 
-        <span className="exercise-icon-cell__overlay">{exerciseName}</span>
-      </button>
-
-      {typeof document !== "undefined" && isModalOpen
+      <span className="exercise-icon-cell__overlay">{exerciseName}</span>
+      {tooltipOpen && cursorPosition && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="exercise-media-modal"
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Exercise demo ${exerciseName}`}
-              onClick={() => setIsModalOpen(false)}
+              className="feedback-cell__tooltip"
+              style={{
+                left: `${cursorPosition.x}px`,
+                top: `${cursorPosition.y}px`,
+              }}
             >
-              <div className="exercise-media-modal__panel" onClick={(event) => event.stopPropagation()}>
-                <div className="exercise-media-modal__header">
-                  <h3 className="exercise-media-modal__title">{exerciseName}</h3>
-                  <button
-                    type="button"
-                    className="exercise-media-modal__close"
-                    onClick={() => setIsModalOpen(false)}
-                  >
-                    Close
-                  </button>
-                </div>
-
-                {mediaUrl ? (
-                  <img
-                    src={mediaUrl}
-                    alt={`Demo ${exerciseName}`}
-                    className="exercise-media-preview__media"
-                    width={720}
-                    height={460}
-                  />
-                ) : splitIconPaths ? (
-                  <div className="exercise-media-preview__split" aria-label={`Icone muscolari ${exerciseName}`}>
-                    <img
-                      src={splitIconPaths[0]}
-                      alt=""
-                      className="exercise-media-preview__split-part exercise-media-preview__split-part--primary"
-                      width={720}
-                      height={460}
-                    />
-                    <img
-                      src={splitIconPaths[1]}
-                      alt=""
-                      className="exercise-media-preview__split-part exercise-media-preview__split-part--secondary"
-                      width={720}
-                      height={460}
-                    />
-                    <span className="exercise-media-preview__split-divider" />
-                  </div>
-                ) : (
-                  <img
-                    src={iconPath}
-                    alt={`Demo ${exerciseName}`}
-                    className="exercise-media-preview__media"
-                    width={720}
-                    height={460}
-                  />
-                )}
-              </div>
+              {EXERCISE_MEDIA_TOOLTIP}
             </div>,
             document.body,
           )
         : null}
-    </>
+    </div>
   );
 }

@@ -57,7 +57,14 @@ export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
       <FeedbackCell column={columnKeys[1]} color={attempt.feedback.equipment} value={attempt.values.equipment} isRevealing={isRevealing} revealOrder={1} />
       <FeedbackCell column={columnKeys[2]} color={attempt.feedback.movement} value={attempt.values.movement} isRevealing={isRevealing} revealOrder={2} />
       <FeedbackCell column={columnKeys[3]} color={attempt.feedback.pattern} value={attempt.values.pattern} isRevealing={isRevealing} revealOrder={3} />
-      <FeedbackCell column={columnKeys[4]} color={attempt.feedback.reps} value={attempt.values.reps} isRevealing={isRevealing} revealOrder={4} />
+      <FeedbackCell
+        column={columnKeys[4]}
+        color={attempt.feedback.reps}
+        value={attempt.values.reps}
+        isRevealing={isRevealing}
+        revealOrder={4}
+        repsDirection={attempt.repsDirection}
+      />
       <FeedbackCell column={columnKeys[5]} color={attempt.feedback.goal} value={attempt.values.goal} isRevealing={isRevealing} revealOrder={5} />
       <FeedbackCell column={columnKeys[6]} color={attempt.feedback.ego} value={attempt.values.ego} isRevealing={isRevealing} revealOrder={6} />
     </div>

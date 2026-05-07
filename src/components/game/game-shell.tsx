@@ -26,6 +26,7 @@ import {
   getMuscleGroupIconPath,
   resolveMuscleGroupIconKey,
 } from "@/lib/exercises/icons";
+import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
@@ -245,6 +246,7 @@ function buildMarathonAttempt(
         goal: guess.goal.join(" / "),
         ego: guess.ego.join(" / "),
       },
+      repsDirection: getRepsDirection(guess.reps, target.reps),
       feedback,
       isCorrect: strictCorrect || acceptedFamilyMatch,
     },
@@ -299,6 +301,7 @@ function buildDailyAttempt(
       goal: guess.goal.join(" / "),
       ego: guess.ego.join(" / "),
     },
+    repsDirection: getRepsDirection(guess.reps, target.reps),
     feedback,
     isCorrect: correct,
   };
@@ -2172,7 +2175,7 @@ export function GameShell({ initialState }: GameShellProps) {
                     </p>
                   </div>
                   <p className="htp-note">
-                    Liftdle does not use arrows. Feedback depends only on exact match, partial overlap, or no overlap.
+                    Reps cells can also show a directional arrow: up means the hidden exercise sits in a higher rep range, down means it sits in a lower one.
                   </p>
                 </section>
 
