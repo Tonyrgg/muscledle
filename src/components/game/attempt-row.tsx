@@ -1,6 +1,7 @@
 import { ExerciseIconCell } from "@/components/game/exercise-icon-cell";
 import { FeedbackCell } from "@/components/game/feedback-cell";
 import type { FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
+import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { PublicGameAttempt } from "@/types/game";
 
 type AttemptRowProps = {
@@ -10,6 +11,13 @@ type AttemptRowProps = {
 
 export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
   const columnKeys: FeedbackColumnKey[] = ["muscle", "equipment", "movement", "pattern", "reps", "goal", "ego"];
+  const muscleBackdropIconPath = getMuscleGroupIconPath(
+    resolveMuscleGroupIconKey({
+      slug: attempt.guessSlug,
+      name: attempt.guessName,
+      muscle_group: attempt.guessMuscleGroup,
+    }),
+  );
 
   return (
     <div className="attempts-grid attempts-row" role="row">
@@ -22,7 +30,15 @@ export function AttemptRow({ attempt, isRevealing = false }: AttemptRowProps) {
         />
       </div>
 
-      <FeedbackCell column={columnKeys[0]} color={attempt.feedback.muscle} value={attempt.values.muscle} isRevealing={isRevealing} revealOrder={0} />
+      <FeedbackCell
+        column={columnKeys[0]}
+        color={attempt.feedback.muscle}
+        value={attempt.values.muscle}
+        isRevealing={isRevealing}
+        revealOrder={0}
+        exerciseMediaSlug={attempt.guessSlug}
+        backgroundIconPath={muscleBackdropIconPath}
+      />
       <FeedbackCell column={columnKeys[1]} color={attempt.feedback.equipment} value={attempt.values.equipment} isRevealing={isRevealing} revealOrder={1} />
       <FeedbackCell column={columnKeys[2]} color={attempt.feedback.movement} value={attempt.values.movement} isRevealing={isRevealing} revealOrder={2} />
       <FeedbackCell column={columnKeys[3]} color={attempt.feedback.pattern} value={attempt.values.pattern} isRevealing={isRevealing} revealOrder={3} />

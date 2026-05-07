@@ -1581,6 +1581,7 @@ button.game-quick-tools__item:active {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  padding: 0;
 }
 
 .exercise-icon-cell--has-media {
@@ -1589,24 +1590,25 @@ button.game-quick-tools__item:active {
 
 .exercise-icon-cell__icon-wrap {
   position: relative;
-  display: flex;
+  display: grid;
   width: 100%;
   height: 100%;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
   overflow: hidden;
 }
 
 .exercise-icon-cell__icon {
-  width: clamp(3.8rem, 6.2vw, 4.8rem);
-  height: clamp(3.8rem, 6.2vw, 4.8rem);
+  width: min(84%, 6.1rem);
+  height: min(84%, 6.1rem);
   object-fit: contain;
+  object-position: center;
+  display: block;
 }
 
 .exercise-icon-cell__split {
   position: relative;
-  width: clamp(3.8rem, 6.2vw, 4.8rem);
-  height: clamp(3.8rem, 6.2vw, 4.8rem);
+  width: min(84%, 6.1rem);
+  height: min(84%, 6.1rem);
   --split-padding: 0px;
 }
 
@@ -1639,14 +1641,18 @@ button.game-quick-tools__item:active {
 }
 
 .exercise-icon-cell__gif {
+  position: absolute;
   inset: 0;
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
   display: block;
+  background: #f4f2ed;
 }
 
 .exercise-icon-cell--has-media .exercise-icon-cell__gif {
-  transform: scale(1.18);
-  transform-origin: center;
+  transform: none;
 }
 
 .exercise-icon-cell__gif--loading {
@@ -1881,6 +1887,36 @@ button.game-quick-tools__item:active {
   transform-origin: center;
   cursor: pointer;
   transition: filter 180ms ease;
+  overflow: hidden;
+}
+
+.feedback-cell__muscle-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0.16;
+}
+
+.feedback-cell__muscle-backdrop img {
+  width: min(86%, 5.25rem);
+  height: min(86%, 5.25rem);
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(1) invert(1);
+}
+
+.feedback-cell__value {
+  position: relative;
+  z-index: 1;
+}
+
+.feedback-cell--with-muscle-backdrop .feedback-cell__value {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 0 8px rgba(0, 0, 0, 0.18);
 }
 
 .feedback-cell--green {

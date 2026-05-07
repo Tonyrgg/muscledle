@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { getAttributeDefinition, type FeedbackColumnKey } from "@/lib/exercises/attribute-definitions";
+import { getCachedExerciseMediaUrl, resolveExerciseMediaUrl } from "@/lib/game/exercise-media-client";
 import type { FeedbackColor } from "@/types/exercise";
 
 type FeedbackCellProps = {
@@ -11,6 +12,8 @@ type FeedbackCellProps = {
   value: string;
   isRevealing?: boolean;
   revealOrder?: number;
+  exerciseMediaSlug?: string;
+  backgroundIconPath?: string | null;
 };
 
 const colorClassByFeedback: Record<FeedbackColor, string> = {
@@ -21,15 +24,51 @@ const colorClassByFeedback: Record<FeedbackColor, string> = {
 
 const TOOLTIP_OPEN_EVENT = "liftdle-feedback-tooltip-open";
 
-export function FeedbackCell({ column, color, value, isRevealing = false, revealOrder = 0 }: FeedbackCellProps) {
+export function FeedbackCell({
+  column,
+  color,
+  value,
+  isRevealing = false,
+  revealOrder = 0,
+  exerciseMediaSlug,
+  backgroundIconPath = null,
+}: FeedbackCellProps) {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState<{ x: number; y: number } | null>(null);
+  const [resolvedMediaState, setResolvedMediaState] = useState<{ slug: string | null; hasMedia: boolean }>({
+    slug: null,
+    hasMedia: false,
+  });
   const cellRef = useRef<HTMLDivElement | null>(null);
   const tooltipId = useId();
   const normalizedValue = value.trim();
   const displayValue = normalizedValue.length > 0 ? normalizedValue : "Unknown";
+  const shouldTrackMedia = column === "muscle" && Boolean(exerciseMediaSlug);
+  const cachedHasExerciseMedia = shouldTrackMedia && exerciseMediaSlug
+    ? Boolean(getCachedExerciseMediaUrl(exerciseMediaSlug))
+    : false;
+  const hasExerciseMedia =
+    cachedHasExerciseMedia ||
+    (shouldTrackMedia && resolvedMediaState.slug === exerciseMediaSlug && resolvedMediaState.hasMedia);
 
   const tooltipText = useMemo(() => getAttributeDefinition(column, displayValue), [column, displayValue]);
+
+  useEffect(() => {
+    if (!shouldTrackMedia || !exerciseMediaSlug || cachedHasExerciseMedia) {
+      return;
+    }
+
+    let cancelled = false;
+    void resolveExerciseMediaUrl(exerciseMediaSlug).then((resolved) => {
+      if (!cancelled) {
+        setResolvedMediaState({ slug: exerciseMediaSlug, hasMedia: Boolean(resolved) });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cachedHasExerciseMedia, exerciseMediaSlug, shouldTrackMedia]);
 
   useEffect(() => {
     const onAnotherTooltipOpen = (event: Event) => {
@@ -129,11 +168,12 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
         animationDelay: `${revealOrder * 180}ms`,
       }
     : undefined;
+  const showMuscleBackdrop = column === "muscle" && hasExerciseMedia && Boolean(backgroundIconPath);
 
   return (
     <div
       ref={cellRef}
-      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""}`}
+      className={`feedback-cell ${colorClassByFeedback[color]} ${isRevealing ? "feedback-cell--reveal" : ""} ${showMuscleBackdrop ? "feedback-cell--with-muscle-backdrop" : ""}`}
       role="cell"
       aria-label={displayValue}
       style={style}
@@ -141,7 +181,12 @@ export function FeedbackCell({ column, color, value, isRevealing = false, reveal
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
-      <span>{displayValue}</span>
+      {showMuscleBackdrop ? (
+        <span className="feedback-cell__muscle-backdrop" aria-hidden>
+          <img src={backgroundIconPath ?? ""} alt="" loading="lazy" />
+        </span>
+      ) : null}
+      <span className="feedback-cell__value">{displayValue}</span>
       {tooltipOpen && cursorPosition && typeof document !== "undefined"
         ? createPortal(
             <div

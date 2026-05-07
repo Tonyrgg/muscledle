@@ -1,6 +1,22 @@
 import type { ExternalExerciseCandidate } from "@/lib/exercise-media/types";
 
 type JsonRecord = Record<string, unknown>;
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+const MAX_ATTEMPTS = 3;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryDelayMs(response: Response, attempt: number): number {
+  const retryAfter = response.headers.get("retry-after")?.trim() ?? "";
+  const retrySeconds = Number(retryAfter);
+  if (Number.isFinite(retrySeconds) && retrySeconds > 0) {
+    return retrySeconds * 1000;
+  }
+
+  return 1500 * attempt;
+}
 
 function asString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -104,7 +120,19 @@ export async function searchExerciseDbByName(query: string): Promise<ExternalExe
   }
 
   try {
-    const response = await fetch(url, { method: "GET", headers, cache: "no-store" });
+    let response: Response | null = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      response = await fetch(url, { method: "GET", headers, cache: "no-store" });
+      if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_ATTEMPTS) {
+        break;
+      }
+      await sleep(getRetryDelayMs(response, attempt));
+    }
+
+    if (!response) {
+      return [];
+    }
+
     const payload = (await response.json().catch(() => null)) as unknown;
 
     const shape = Array.isArray(payload)
@@ -173,14 +201,25 @@ export async function fetchExerciseDbGifById(
   const url = `${baseUrl}/image?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${safeResolution}`;
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "x-rapidapi-key": key,
-        "x-rapidapi-host": host,
-      },
-      cache: "no-store",
-    });
+    let response: Response | null = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "x-rapidapi-key": key,
+          "x-rapidapi-host": host,
+        },
+        cache: "no-store",
+      });
+      if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_ATTEMPTS) {
+        break;
+      }
+      await sleep(getRetryDelayMs(response, attempt));
+    }
+
+    if (!response) {
+      return { ok: false, status: 500, error: "provider_image_fetch_failed" };
+    }
 
     const contentType = response.headers.get("content-type") ?? "";
     if (!response.ok) {
@@ -216,14 +255,25 @@ export async function probeExerciseDbGifById(
   const url = `${baseUrl}/image?exerciseId=${encodeURIComponent(exerciseId)}&resolution=${safeResolution}`;
 
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "x-rapidapi-key": key,
-        "x-rapidapi-host": host,
-      },
-      cache: "no-store",
-    });
+    let response: Response | null = null;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "x-rapidapi-key": key,
+          "x-rapidapi-host": host,
+        },
+        cache: "no-store",
+      });
+      if (!RETRYABLE_STATUSES.has(response.status) || attempt === MAX_ATTEMPTS) {
+        break;
+      }
+      await sleep(getRetryDelayMs(response, attempt));
+    }
+
+    if (!response) {
+      return { ok: false, status: 500, error: "gif_probe_failed" };
+    }
 
     const contentType = response.headers.get("content-type") ?? "";
     const ok = response.ok && contentType.toLowerCase().includes("image/gif");

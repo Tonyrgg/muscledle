@@ -84,11 +84,16 @@ export function findBestMatch(
       }
     }
 
-    if (!best || score > best.score) {
+    const scoreWithMediaBonus = Math.min(
+      1,
+      score + (candidate.gifUrl ? 0.01 : 0) + (candidate.id ? 0.005 : 0),
+    );
+
+    if (!best || scoreWithMediaBonus > best.score) {
       best = {
         candidate,
-        score: Number(score.toFixed(4)),
-        reason,
+        score: Number(scoreWithMediaBonus.toFixed(4)),
+        reason: candidate.gifUrl || candidate.id ? `${reason} + media bonus` : reason,
       };
     }
   }

@@ -25,6 +25,19 @@ export function isExerciseMediaLoaded(url: string): boolean {
   return loadedMediaUrls.has(url);
 }
 
+export function isExerciseMediaReadyForSlug(slug: string): boolean {
+  const cachedUrl = mediaUrlCache.get(slug);
+  if (cachedUrl === null) {
+    return true;
+  }
+
+  if (typeof cachedUrl === "string" && cachedUrl.length > 0) {
+    return loadedMediaUrls.has(cachedUrl);
+  }
+
+  return false;
+}
+
 export function markExerciseMediaLoaded(url: string): void {
   loadedMediaUrls.add(url);
 }

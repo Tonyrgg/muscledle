@@ -53,10 +53,12 @@ export function ExerciseIconCell({
 }: ExerciseIconCellProps) {
   const [touchOpen, setTouchOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const cachedMediaUrl = getCachedExerciseMediaUrl(exerciseSlug) ?? null;
   const [resolvedMedia, setResolvedMedia] = useState<{ slug: string; url: string | null }>({
     slug: exerciseSlug,
-    url: null,
+    url: cachedMediaUrl,
   });
+  const [mediaResolved, setMediaResolved] = useState(() => cachedMediaUrl !== null);
   const [loadedMediaUrl, setLoadedMediaUrl] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const iconPath = useMemo(
@@ -73,11 +75,11 @@ export function ExerciseIconCell({
 
     return [first, second] as const;
   }, [exerciseMuscleValues]);
-  const cachedMediaUrl = getCachedExerciseMediaUrl(exerciseSlug) ?? null;
   const mediaUrl =
     cachedMediaUrl ??
     (resolvedMedia.slug === exerciseSlug ? resolvedMedia.url : null);
   const mediaReady = mediaUrl !== null && loadedMediaUrl === mediaUrl;
+  const shouldShowFallback = mediaResolved && mediaUrl === null;
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +87,7 @@ export function ExerciseIconCell({
     void resolveExerciseMediaUrl(exerciseSlug).then((resolved) => {
       if (cancelled) return;
       setResolvedMedia({ slug: exerciseSlug, url: resolved });
+      setMediaResolved(true);
     });
 
     return () => {
@@ -152,8 +155,8 @@ export function ExerciseIconCell({
               src={mediaUrl}
               alt=""
               className={`exercise-icon-cell__gif ${mediaReady ? "exercise-icon-cell__gif--ready" : "exercise-icon-cell__gif--loading"}`}
-              width={90}
-              height={90}
+              width={120}
+              height={120}
               loading="lazy"
               onLoad={() => {
                 markExerciseMediaLoaded(mediaUrl);
@@ -161,12 +164,13 @@ export function ExerciseIconCell({
               }}
               onError={() => {
                 setResolvedMedia({ slug: exerciseSlug, url: null });
+                setMediaResolved(true);
                 setLoadedMediaUrl(null);
               }}
             />
           ) : null}
 
-          {!mediaReady ? (
+          {shouldShowFallback ? (
             splitIconPaths ? (
               <span className="exercise-icon-cell__split">
                 <img
