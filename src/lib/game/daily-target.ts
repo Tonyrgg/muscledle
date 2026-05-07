@@ -103,6 +103,9 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
   }
 
   let effectiveExercise = exercise;
+  if (DAILY_EXCLUDED_SLUGS.has(effectiveExercise.slug)) {
+    return null;
+  }
   const mergedIntoSlug = resolveMergedIntoSlug(exercise.slug);
 
   if (mergedIntoSlug) {
@@ -116,6 +119,10 @@ async function getConfiguredDailySelection(gameDate: string): Promise<DailySelec
     if (!mergedTargetError && mergedTarget?.id) {
       effectiveExercise = mergedTarget;
     }
+  }
+
+  if (DAILY_EXCLUDED_SLUGS.has(effectiveExercise.slug)) {
+    return null;
   }
 
   const naming = getExerciseNaming(effectiveExercise.slug, effectiveExercise.name);
