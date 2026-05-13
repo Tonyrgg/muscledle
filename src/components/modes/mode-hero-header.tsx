@@ -19,11 +19,16 @@ export function ModeHeroHeader({
 }: ModeHeroHeaderProps) {
   return (
     <header className={`mode-hero ${className ?? ""}`.trim()}>
-      <div className="mode-hero__stack">
-        {badge ? <div className="mode-hero__badge">{badge}</div> : null}
-        <ModeTitle parts={titleParts} />
-        <ModeSignature href={signatureHref} />
-        {description ? <div className="mode-hero__description">{description}</div> : null}
+      <div className="mode-hero__bar">
+        <div className="mode-hero__signature-slot">
+          <ModeSignature href={signatureHref} showBy={false} />
+        </div>
+        <div className="mode-hero__stack">
+          {badge ? <div className="mode-hero__badge">{badge}</div> : null}
+          <ModeTitle parts={titleParts} />
+          {description ? <div className="mode-hero__description">{description}</div> : null}
+        </div>
+        <div className="mode-hero__balance" aria-hidden="true" />
       </div>
     </header>
   );

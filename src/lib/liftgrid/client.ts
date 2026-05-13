@@ -71,8 +71,6 @@ export async function fetchLiftGridToday(): Promise<LiftGridPublicState> {
 }
 
 export async function submitLiftGridGuessRequest(input: {
-  rowIndex: number;
-  columnIndex: number;
   guess: string;
 }): Promise<LiftGridGuessResponse> {
   const headers = await buildClientHeaders();

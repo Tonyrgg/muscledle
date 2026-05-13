@@ -119,52 +119,63 @@ test("liftgrid accepts a correct exercise for a matching cell", () => {
     exercises,
     puzzle,
     solvedCells: [],
-    rowIndex: 0,
-    columnIndex: 0,
     guess: "bench press",
   });
 
   assert.equal(result.correct, true);
   assert.equal(result.normalizedExerciseName, "Bench Press");
+  assert.deepEqual(result.solvedCell, {
+    rowIndex: 0,
+    columnIndex: 0,
+    exerciseId: "bench-press",
+    exerciseName: "Bench Press",
+  });
 });
 
 test("liftgrid rejects wrong muscle and wrong equipment independently", () => {
   const exercises = toLiveLiftGridExercises(buildFixtureExercises());
-  const puzzle = {
+  const wrongRowPuzzle = {
     gameDate: "2026-05-12",
     dailyNumber: 1,
     rowCategoryKey: "muscle_group" as const,
     columnCategoryKey: "equipment" as const,
-    rowValues: ["chest", "back"],
-    columnValues: ["barbell", "machine"],
-    rowLabels: ["Chest", "Back"],
-    columnLabels: ["Barbell", "Machine"],
+    rowValues: ["arms", "legs"],
+    columnValues: ["bodyweight", "machine"],
+    rowLabels: ["Arms", "Legs"],
+    columnLabels: ["Bodyweight", "Machine"],
   };
 
   const wrongRow = validateLiftGridGuess({
     exercises,
-    puzzle,
+    puzzle: wrongRowPuzzle,
     solvedCells: [],
-    rowIndex: 0,
-    columnIndex: 0,
-    guess: "lat pulldown",
+    guess: "push-up",
   });
   assert.equal(wrongRow.correct, false);
   assert.equal(wrongRow.reason, "wrong_row_category");
 
+  const wrongColumnPuzzle = {
+    gameDate: "2026-05-12",
+    dailyNumber: 1,
+    rowCategoryKey: "muscle_group" as const,
+    columnCategoryKey: "equipment" as const,
+    rowValues: ["back", "arms"],
+    columnValues: ["bodyweight", "cable"],
+    rowLabels: ["Back", "Arms"],
+    columnLabels: ["Bodyweight", "Cable"],
+  };
+
   const wrongColumn = validateLiftGridGuess({
     exercises,
-    puzzle,
+    puzzle: wrongColumnPuzzle,
     solvedCells: [],
-    rowIndex: 1,
-    columnIndex: 0,
-    guess: "lat pulldown",
+    guess: "barbell bent over row",
   });
   assert.equal(wrongColumn.correct, false);
   assert.equal(wrongColumn.reason, "wrong_column_category");
 });
 
-test("liftgrid rejects duplicate exercise reuse and already solved cells", () => {
+test("liftgrid rejects duplicate exercise reuse and skips already solved cells", () => {
   const exercises = toLiveLiftGridExercises(buildFixtureExercises());
   const puzzle = {
     gameDate: "2026-05-12",
@@ -185,25 +196,27 @@ test("liftgrid rejects duplicate exercise reuse and already solved cells", () =>
     },
   ];
 
-  const alreadySolved = validateLiftGridGuess({
-    exercises,
-    puzzle,
-    solvedCells,
-    rowIndex: 0,
-    columnIndex: 0,
-    guess: "bench press",
-  });
-  assert.equal(alreadySolved.reason, "already_solved");
-
   const alreadyUsed = validateLiftGridGuess({
     exercises,
     puzzle,
     solvedCells,
-    rowIndex: 0,
-    columnIndex: 1,
     guess: "bench press",
   });
   assert.equal(alreadyUsed.reason, "already_used");
+
+  const nextOpenMatch = validateLiftGridGuess({
+    exercises,
+    puzzle,
+    solvedCells,
+    guess: "lat pulldown",
+  });
+  assert.equal(nextOpenMatch.correct, true);
+  assert.deepEqual(nextOpenMatch.solvedCell, {
+    rowIndex: 1,
+    columnIndex: 1,
+    exerciseId: "lat-pulldown",
+    exerciseName: "Lat Pulldown",
+  });
 });
 
 test("liftgrid daily generation is stable for the same date and can vary across dates", () => {
@@ -220,4 +233,51 @@ test("liftgrid daily generation is stable for the same date and can vary across 
       first.columnValues.join("|") !== different.columnValues.join("|"),
     true,
   );
+});
+
+test("liftgrid accepts hybrid exercises for any listed muscle match", () => {
+  const exercises = toLiveLiftGridExercises([
+    ...buildFixtureExercises(),
+    {
+      id: "chest-back-barbell",
+      slug: "chest-back-barbell",
+      name: "Chest Back Barbell Combo",
+      aliases: [],
+      muscle_group: "chest",
+      muscle: ["chest", "back"],
+      equipment: ["barbell"],
+      movement: ["push"],
+      pattern: ["horizontal"],
+      reps: ["6-12"],
+      goal: ["hypertrophy"],
+      ego: ["medium"],
+      is_live: true,
+    },
+  ]);
+
+  const puzzle = {
+    gameDate: "2026-05-12",
+    dailyNumber: 1,
+    rowCategoryKey: "muscle_group" as const,
+    columnCategoryKey: "equipment" as const,
+    rowValues: ["back", "arms"],
+    columnValues: ["barbell", "cable"],
+    rowLabels: ["Back", "Arms"],
+    columnLabels: ["Barbell", "Cable"],
+  };
+
+  const result = validateLiftGridGuess({
+    exercises,
+    puzzle,
+    solvedCells: [],
+    guess: "Chest Back Barbell Combo",
+  });
+
+  assert.equal(result.correct, true);
+  assert.deepEqual(result.solvedCell, {
+    rowIndex: 0,
+    columnIndex: 0,
+    exerciseId: "chest-back-barbell",
+    exerciseName: "Chest Back Barbell Combo",
+  });
 });

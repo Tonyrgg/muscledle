@@ -31,7 +31,8 @@ export type LiftGridGuessFailureReason =
   | "wrong_row_category"
   | "wrong_column_category"
   | "already_used"
-  | "already_solved";
+  | "already_solved"
+  | "no_matching_cell";
 
 export type LiftGridGuessResponse = {
   correct: boolean;

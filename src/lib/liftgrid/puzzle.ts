@@ -42,6 +42,11 @@ export type LiftGridValidationResult = {
   solvedCell: LiftGridSolvedCell | null;
 };
 
+type ValidationFailureContext = {
+  rowMatchFound: boolean;
+  columnMatchFound: boolean;
+};
+
 const DAY_ZERO = "2026-01-01";
 const DEFAULT_SEED = "Liftdle-liftgrid-v1";
 const EQUIPMENT_LABELS: Record<string, string> = {
@@ -122,6 +127,27 @@ function getExerciseCategoryValues(
   exercise: LiftGridExercise,
   categoryKey: LiftGridCategoryKey,
 ): string[] {
+  if (categoryKey === "muscle_group") {
+    const values = new Set<string>();
+
+    const addValue = (value: string | null | undefined) => {
+      if (!value) return;
+      for (const part of value
+        .split(/[\/,&|]+/g)
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)) {
+        values.add(part);
+      }
+    };
+
+    addValue(exercise.muscle_group);
+    for (const muscle of exercise.muscle ?? []) {
+      addValue(muscle);
+    }
+
+    return [...values];
+  }
+
   const value = exercise[categoryKey];
   return Array.isArray(value) ? value : [value];
 }
@@ -319,11 +345,9 @@ export function validateLiftGridGuess(params: {
   exercises: LiftGridExercise[];
   puzzle: LiftGridPuzzle;
   solvedCells: LiftGridSolvedCell[];
-  rowIndex: number;
-  columnIndex: number;
   guess: string;
 }): LiftGridValidationResult {
-  const { exercises, puzzle, solvedCells, rowIndex, columnIndex, guess } = params;
+  const { exercises, puzzle, solvedCells, guess } = params;
   const guessedExercise = resolveLiftGridExerciseGuess(exercises, guess);
 
   if (!guessedExercise) {
@@ -331,15 +355,6 @@ export function validateLiftGridGuess(params: {
       correct: false,
       normalizedExerciseName: null,
       reason: "unknown_exercise",
-      solvedCell: null,
-    };
-  }
-
-  if (solvedCells.some((cell) => cell.rowIndex === rowIndex && cell.columnIndex === columnIndex)) {
-    return {
-      correct: false,
-      normalizedExerciseName: null,
-      reason: "already_solved",
       solvedCell: null,
     };
   }
@@ -353,37 +368,61 @@ export function validateLiftGridGuess(params: {
     };
   }
 
-  const rowValue = puzzle.rowValues[rowIndex];
-  const columnValue = puzzle.columnValues[columnIndex];
+  const solvedSet = new Set(solvedCells.map((cell) => `${cell.rowIndex}:${cell.columnIndex}`));
+  const failureContext: ValidationFailureContext = {
+    rowMatchFound: false,
+    columnMatchFound: false,
+  };
 
-  if (!rowValue || !matchesCategory(guessedExercise, puzzle.rowCategoryKey, rowValue)) {
-    return {
-      correct: false,
-      normalizedExerciseName: null,
-      reason: "wrong_row_category",
-      solvedCell: null,
-    };
-  }
+  for (let rowIndex = 0; rowIndex < puzzle.rowValues.length; rowIndex += 1) {
+    const rowValue = puzzle.rowValues[rowIndex];
+    const rowMatches = matchesCategory(guessedExercise, puzzle.rowCategoryKey, rowValue);
+    if (rowMatches) {
+      failureContext.rowMatchFound = true;
+    }
 
-  if (!columnValue || !matchesCategory(guessedExercise, puzzle.columnCategoryKey, columnValue)) {
-    return {
-      correct: false,
-      normalizedExerciseName: null,
-      reason: "wrong_column_category",
-      solvedCell: null,
-    };
+    for (let columnIndex = 0; columnIndex < puzzle.columnValues.length; columnIndex += 1) {
+      const key = `${rowIndex}:${columnIndex}`;
+      if (solvedSet.has(key)) continue;
+
+      const columnValue = puzzle.columnValues[columnIndex];
+      const columnMatches = matchesCategory(
+        guessedExercise,
+        puzzle.columnCategoryKey,
+        columnValue,
+      );
+
+      if (columnMatches) {
+        failureContext.columnMatchFound = true;
+      }
+
+      if (!rowMatches || !columnMatches) {
+        continue;
+      }
+
+      return {
+        correct: true,
+        normalizedExerciseName: guessedExercise.display_name,
+        reason: null,
+        solvedCell: {
+          rowIndex,
+          columnIndex,
+          exerciseId: guessedExercise.id,
+          exerciseName: guessedExercise.display_name,
+        },
+      };
+    }
   }
 
   return {
-    correct: true,
-    normalizedExerciseName: guessedExercise.display_name,
-    reason: null,
-    solvedCell: {
-      rowIndex,
-      columnIndex,
-      exerciseId: guessedExercise.id,
-      exerciseName: guessedExercise.display_name,
-    },
+    correct: false,
+    normalizedExerciseName: null,
+    reason: failureContext.rowMatchFound
+      ? failureContext.columnMatchFound
+        ? "no_matching_cell"
+        : "wrong_column_category"
+      : "wrong_row_category",
+    solvedCell: null,
   };
 }
 

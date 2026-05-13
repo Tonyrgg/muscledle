@@ -270,8 +270,6 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
 }
 
 export async function submitLiftGridGuess(input: {
-  rowIndex: number;
-  columnIndex: number;
   guess: string;
 }): Promise<LiftGridGuessResponse> {
   const gameDate = gameDateRome();
@@ -288,8 +286,6 @@ export async function submitLiftGridGuess(input: {
     exercises,
     puzzle,
     solvedCells,
-    rowIndex: input.rowIndex,
-    columnIndex: input.columnIndex,
     guess: input.guess,
   });
 
@@ -313,8 +309,8 @@ export async function submitLiftGridGuess(input: {
     .from("liftgrid_attempts")
     .insert({
       result_id: result.id,
-      row_index: input.rowIndex,
-      column_index: input.columnIndex,
+      row_index: validation.solvedCell?.rowIndex ?? null,
+      column_index: validation.solvedCell?.columnIndex ?? null,
       guess_text: input.guess.trim(),
       normalized_guess_text: input.guess.trim().toLowerCase(),
       matched_exercise_id: validation.solvedCell?.exerciseId ?? null,
@@ -350,8 +346,8 @@ export async function submitLiftGridGuess(input: {
       eventName: "liftgrid_guess_correct",
       payload: {
         gameDate,
-        rowIndex: input.rowIndex,
-        columnIndex: input.columnIndex,
+        rowIndex: validation.solvedCell?.rowIndex ?? null,
+        columnIndex: validation.solvedCell?.columnIndex ?? null,
         completedCount: nextCompletedCount,
       },
     });
@@ -377,11 +373,17 @@ export async function submitLiftGridGuess(input: {
       attemptId: insertedAttempt.id,
       completedCount: nextCompletedCount,
       totalCells,
-      rowIndex: input.rowIndex,
-      columnIndex: input.columnIndex,
-      rowLabel: puzzle.rowLabels[input.rowIndex] ?? null,
-      columnLabel: puzzle.columnLabels[input.columnIndex] ?? null,
-      cellKey: `${input.rowIndex}:${input.columnIndex}`,
+      rowIndex: validation.solvedCell?.rowIndex ?? null,
+      columnIndex: validation.solvedCell?.columnIndex ?? null,
+      rowLabel:
+        validation.solvedCell ? puzzle.rowLabels[validation.solvedCell.rowIndex] ?? null : null,
+      columnLabel:
+        validation.solvedCell
+          ? puzzle.columnLabels[validation.solvedCell.columnIndex] ?? null
+          : null,
+      cellKey: validation.solvedCell
+        ? `${validation.solvedCell.rowIndex}:${validation.solvedCell.columnIndex}`
+        : null,
       inputValue: input.guess,
       inputLength: input.guess.trim().length,
       normalizedGuessText: input.guess.trim().toLowerCase(),
@@ -401,8 +403,8 @@ export async function submitLiftGridGuess(input: {
       eventName: "liftgrid_guess_rejected",
       payload: {
         gameDate,
-        rowIndex: input.rowIndex,
-        columnIndex: input.columnIndex,
+        rowIndex: null,
+        columnIndex: null,
         reason: validation.reason,
       },
     });
@@ -416,11 +418,11 @@ export async function submitLiftGridGuess(input: {
       attemptId: insertedAttempt.id,
       completedCount: nextCompletedCount,
       totalCells,
-      rowIndex: input.rowIndex,
-      columnIndex: input.columnIndex,
-      rowLabel: puzzle.rowLabels[input.rowIndex] ?? null,
-      columnLabel: puzzle.columnLabels[input.columnIndex] ?? null,
-      cellKey: `${input.rowIndex}:${input.columnIndex}`,
+      rowIndex: null,
+      columnIndex: null,
+      rowLabel: null,
+      columnLabel: null,
+      cellKey: null,
       inputValue: input.guess,
       inputLength: input.guess.trim().length,
       normalizedGuessText: input.guess.trim().toLowerCase(),
