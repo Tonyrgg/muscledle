@@ -5,6 +5,7 @@ import { fetchLiveExercises, type LiveExerciseSuggestion } from "@/lib/game/clie
 import { getMuscleGroupIconKey, getMuscleGroupIconPath } from "@/lib/exercises/icons";
 import {
   getCachedExerciseMediaUrl,
+  isExerciseMediaReadyForSlug,
   markExerciseMediaLoaded,
   preloadExerciseMedia,
   resolveExerciseMediaUrl,
@@ -14,11 +15,13 @@ import {
 } from "@/lib/liftgrid/puzzle";
 import {
   fetchLiftGridToday,
+  resetLiftGridRequest,
   submitLiftGridFeedbackRequest,
   submitLiftGridGuessRequest,
   trackLiftGridEventRequest,
 } from "@/lib/liftgrid/client";
 import { GuessInput } from "@/components/game/guess-input";
+import { DailyCelebration } from "@/components/game/daily-celebration";
 import { ModeHeroHeader } from "@/components/modes/mode-hero-header";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
 import { ModePanel } from "@/components/modes/mode-panel";
@@ -29,6 +32,8 @@ const FEEDBACK_OPTIONS: Array<{ label: string; value: LiftGridFeedbackChoice }> 
   { label: "Maybe", value: "maybe" },
   { label: "Not for me", value: "not_for_me" },
 ];
+
+const LIFTGRID_BATTLE_FEEDBACK_STORAGE_KEY = "liftdle:liftgrid:battle-feedback:v1";
 
 const EQUIPMENT_ICON_PATHS: Record<string, string> = {
   barbell: "/icons/barbell.svg",
@@ -77,6 +82,15 @@ function cellKey(rowIndex: number, columnIndex: number) {
   return `${rowIndex}:${columnIndex}`;
 }
 
+function shuffleArray<T>(items: T[]) {
+  const next = [...items];
+  for (let index = next.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swapIndex]] = [next[swapIndex], next[index]];
+  }
+  return next;
+}
+
 function getSolvedCell(
   solvedCells: LiftGridSolvedCell[],
   rowIndex: number,
@@ -103,6 +117,82 @@ function getMuscleIconPath(label: string) {
   return getMuscleGroupIconPath(getMuscleGroupIconKey(normalize(label)));
 }
 
+function getMsUntilNextRomeMidnight(now: Date): number {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Rome",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const parts = formatter.formatToParts(now);
+  const read = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((item) => item.type === type)?.value ?? "0");
+
+  const year = read("year");
+  const month = read("month");
+  const day = read("day");
+  const hour = read("hour");
+  const minute = read("minute");
+  const second = read("second");
+
+  const currentPseudoUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  const nextMidnightPseudoUtc = Date.UTC(year, month - 1, day + 1, 0, 0, 0);
+
+  return Math.max(0, nextMidnightPseudoUtc - currentPseudoUtc);
+}
+
+function formatCountdown(totalMs: number): string {
+  const totalSeconds = Math.max(0, Math.floor(totalMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function getExerciseCategoryValues(
+  exercise: LiveExerciseSuggestion,
+  categoryKey: LiftGridPublicState["rowCategoryKey"] | LiftGridPublicState["columnCategoryKey"],
+) {
+  if (categoryKey === "muscle_group") {
+    const values = new Set<string>();
+    const addValue = (value: string | null | undefined) => {
+      if (!value) return;
+      for (const part of value
+        .split(/[\/,&|]+/g)
+        .map((entry) => normalize(entry))
+        .filter(Boolean)) {
+        values.add(part);
+      }
+    };
+
+    addValue(exercise.muscle_group);
+    for (const muscle of exercise.muscle ?? []) {
+      addValue(muscle);
+    }
+
+    return [...values];
+  }
+
+  const rawValue = exercise[categoryKey];
+  const values = Array.isArray(rawValue) ? rawValue : [rawValue];
+  return values.map((value) => normalize(String(value))).filter(Boolean);
+}
+
+function matchesExerciseCategory(
+  exercise: LiveExerciseSuggestion,
+  categoryKey: LiftGridPublicState["rowCategoryKey"] | LiftGridPublicState["columnCategoryKey"],
+  categoryLabel: string,
+) {
+  const normalizedLabel = normalize(categoryLabel);
+  return getExerciseCategoryValues(exercise, categoryKey).includes(normalizedLabel);
+}
+
 type LiftGridExerciseMediaProps = {
   exercise: LiveExerciseSuggestion | null;
   fallbackIconPath: string;
@@ -112,6 +202,9 @@ function LiftGridExerciseMedia({ exercise, fallbackIconPath }: LiftGridExerciseM
   const slug = exercise?.slug ?? "";
   const cachedUrl = slug ? getCachedExerciseMediaUrl(slug) ?? null : null;
   const [mediaUrl, setMediaUrl] = useState<string | null>(cachedUrl);
+  const [loadedMediaUrl, setLoadedMediaUrl] = useState<string | null>(() =>
+    slug && isExerciseMediaReadyForSlug(slug) && cachedUrl ? cachedUrl : null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +220,9 @@ function LiftGridExerciseMedia({ exercise, fallbackIconPath }: LiftGridExerciseM
       setMediaUrl(resolved);
       if (resolved) {
         await preloadExerciseMedia(slug);
+        if (!cancelled && isExerciseMediaReadyForSlug(slug)) {
+          setLoadedMediaUrl(resolved);
+        }
       }
     });
 
@@ -135,24 +231,29 @@ function LiftGridExerciseMedia({ exercise, fallbackIconPath }: LiftGridExerciseM
     };
   }, [cachedUrl, slug]);
 
+  const mediaReady = mediaUrl !== null && loadedMediaUrl === mediaUrl;
+  const shouldShowFallback = !mediaReady;
+
   return (
     <div className="liftgrid-cell__media-wrap" aria-hidden="true">
       {mediaUrl ? (
         <img
           src={mediaUrl}
           alt=""
-          className="liftgrid-cell__gif"
+          className={`liftgrid-cell__gif ${mediaReady ? "liftgrid-cell__gif--ready" : "liftgrid-cell__gif--loading"}`}
           loading="lazy"
           onLoad={() => {
             markExerciseMediaLoaded(mediaUrl);
+            setLoadedMediaUrl(mediaUrl);
           }}
           onError={() => {
             setMediaUrl(null);
+            setLoadedMediaUrl(null);
           }}
         />
       ) : null}
 
-      {!mediaUrl ? (
+      {shouldShowFallback ? (
         <img
           src={fallbackIconPath}
           alt=""
@@ -166,6 +267,7 @@ function LiftGridExerciseMedia({ exercise, fallbackIconPath }: LiftGridExerciseM
 
 export function LiftGridPage() {
   const [state, setState] = useState<LiftGridPublicState | null>(null);
+  const [localSolvedCells, setLocalSolvedCells] = useState<LiftGridSolvedCell[] | null>(null);
   const [exercises, setExercises] = useState<LiveExerciseSuggestion[]>([]);
   const [query, setQuery] = useState("");
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
@@ -174,10 +276,25 @@ export function LiftGridPage() {
   const [error, setError] = useState<string | null>(null);
   const [feedbackChoice, setFeedbackChoice] = useState<LiftGridFeedbackChoice | null>(null);
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "done">("idle");
+  const [hasStoredBattleFeedback, setHasStoredBattleFeedback] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "error">("idle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isBoardShaking, setIsBoardShaking] = useState(false);
+  const [showVictoryCelebration, setShowVictoryCelebration] = useState(false);
+  const [showVictoryCard, setShowVictoryCard] = useState(false);
+  const [victoryCelebrationSeed, setVictoryCelebrationSeed] = useState(0);
+  const [resettingDebugGrid, setResettingDebugGrid] = useState(false);
+  const [focusTick, setFocusTick] = useState(0);
+  const [countdown, setCountdown] = useState("00:00:00");
+  const [showSurrenderDialog, setShowSurrenderDialog] = useState(false);
+  const [isSurrendering, setIsSurrendering] = useState(false);
+  const [gameOutcome, setGameOutcome] = useState<"win" | "lose" | null>(null);
+  const [revealedCellKeys, setRevealedCellKeys] = useState<string[]>([]);
   const stateRef = useRef<LiftGridPublicState | null>(null);
+  const previousCompleteRef = useRef(false);
+  const completionStateInitializedRef = useRef(false);
+  const victoryCardRef = useRef<HTMLElement | null>(null);
+  const liftgridInputRef = useRef<HTMLInputElement | null>(null);
   const boardRenderedRef = useRef(false);
   const suggestionSignatureRef = useRef<string>("");
   const queryChangeTimerRef = useRef<number | null>(null);
@@ -189,6 +306,41 @@ export function LiftGridPage() {
   }, [state]);
 
   useEffect(() => {
+    setLocalSolvedCells(null);
+  }, [state?.gameDate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const stored = window.localStorage.getItem(LIFTGRID_BATTLE_FEEDBACK_STORAGE_KEY);
+    if (!stored) {
+      return;
+    }
+
+    if (stored === "yes_make_it" || stored === "maybe" || stored === "not_for_me") {
+      setFeedbackChoice(stored);
+      setHasStoredBattleFeedback(true);
+      setFeedbackStatus("done");
+    }
+  }, []);
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      setCountdown(formatCountdown(getMsUntilNextRomeMidnight(new Date())));
+    };
+
+    const kickoff = window.setTimeout(updateCountdown, 0);
+    const timer = window.setInterval(updateCountdown, 1000);
+
+    return () => {
+      window.clearTimeout(kickoff);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (toastTimerRef.current !== null) {
         window.clearTimeout(toastTimerRef.current);
@@ -198,6 +350,20 @@ export function LiftGridPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (shareStatus !== "copied") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShareStatus("idle");
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [shareStatus]);
 
   const emitEvent = useCallback(
     (input: Omit<LiftGridEventInput, "eventSource">) => {
@@ -363,16 +529,202 @@ export function LiftGridPage() {
     });
   }, [emitEvent, query, state, suggestions]);
 
+  const effectiveSolvedCells = useMemo(
+    () => localSolvedCells ?? state?.solvedCells ?? [],
+    [localSolvedCells, state],
+  );
+  const effectiveCompletedCount = effectiveSolvedCells.length;
+  const effectiveIsComplete = state ? effectiveCompletedCount === state.totalCells : false;
+  const didSurrender = gameOutcome === "lose";
+  const completedBeforeSurrender = didSurrender
+    ? Math.max(0, effectiveSolvedCells.length - revealedCellKeys.length)
+    : effectiveCompletedCount;
+
   const shareText = useMemo(() => {
     if (!state) return "";
-    return buildLiftGridShareText({
-      dailyNumber: state.dailyNumber,
-      rows: state.rows.length,
-      columns: state.columns.length,
-      solvedCells: state.solvedCells,
-      totalCells: state.totalCells,
-    });
-  }, [state]);
+    if (gameOutcome !== "lose") {
+      return buildLiftGridShareText({
+        dailyNumber: state.dailyNumber,
+        rows: state.rows.length,
+        columns: state.columns.length,
+        solvedCells: effectiveSolvedCells,
+        totalCells: state.totalCells,
+      });
+    }
+
+    const solvedBeforeSurrender = new Set(
+      effectiveSolvedCells
+        .filter((cell) => !revealedCellKeys.includes(cellKey(cell.rowIndex, cell.columnIndex)))
+        .map((cell) => cellKey(cell.rowIndex, cell.columnIndex)),
+    );
+    const revealedSet = new Set(revealedCellKeys);
+    const lines: string[] = [];
+
+    for (let rowIndex = 0; rowIndex < state.rows.length; rowIndex += 1) {
+      let line = "";
+      for (let columnIndex = 0; columnIndex < state.columns.length; columnIndex += 1) {
+        const key = cellKey(rowIndex, columnIndex);
+        line += solvedBeforeSurrender.has(key) ? "\u{1F7E9}" : revealedSet.has(key) ? "\u{1F7E5}" : "\u2B1B";
+      }
+      lines.push(line);
+    }
+
+    return `LIFTGRID #${state.dailyNumber}\n${lines.join("\n")}\nSurrendered after ${completedBeforeSurrender}/${state.totalCells}`;
+  }, [completedBeforeSurrender, effectiveSolvedCells, gameOutcome, revealedCellKeys, state]);
+
+  useEffect(() => {
+    if (focusTick === 0 || submitting || effectiveIsComplete) {
+      return;
+    }
+
+    const focusInput = () => {
+      liftgridInputRef.current?.focus();
+      liftgridInputRef.current?.select();
+    };
+
+    const frame = window.requestAnimationFrame(focusInput);
+    const timer = window.setTimeout(focusInput, 40);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [effectiveIsComplete, focusTick, submitting]);
+
+  useEffect(() => {
+    if (!completionStateInitializedRef.current) {
+      completionStateInitializedRef.current = true;
+      previousCompleteRef.current = effectiveIsComplete;
+      setShowVictoryCard(effectiveIsComplete);
+      return;
+    }
+
+    const justCompleted = effectiveIsComplete && !previousCompleteRef.current;
+    previousCompleteRef.current = effectiveIsComplete;
+
+    if (!effectiveIsComplete) {
+      setShowVictoryCard(false);
+      return;
+    }
+
+    if (!justCompleted) {
+      return;
+    }
+
+    if (didSurrender) {
+      const timer = window.setTimeout(() => {
+        setShowVictoryCelebration(false);
+        setShowVictoryCard(true);
+        window.requestAnimationFrame(() => {
+          victoryCardRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+            inline: "nearest",
+          });
+        });
+      }, 1000);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
+    }
+
+    setShowVictoryCard(false);
+    setVictoryCelebrationSeed((current) => current + 1);
+    setShowVictoryCelebration(true);
+
+    const timer = window.setTimeout(() => {
+      setShowVictoryCelebration(false);
+      setShowVictoryCard(true);
+      window.requestAnimationFrame(() => {
+        victoryCardRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+      });
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [didSurrender, effectiveIsComplete]);
+
+  const debugSolutions = useMemo(() => {
+    if (!state) return [];
+
+    return state.rows.map((rowLabel, rowIndex) =>
+      state.columns.map((columnLabel, columnIndex) => {
+        const matches = exercises
+          .filter(
+            (exercise) =>
+              matchesExerciseCategory(exercise, state.rowCategoryKey, rowLabel) &&
+              matchesExerciseCategory(exercise, state.columnCategoryKey, columnLabel),
+          )
+          .map((exercise) => exercise.display_name)
+          .slice(0, 6);
+
+        return {
+          rowIndex,
+          columnIndex,
+          rowLabel,
+          columnLabel,
+          matches,
+        };
+      }),
+    );
+  }, [exercises, state]);
+
+  const solutionCandidatesByCell = useMemo(() => {
+    if (!state) {
+      return new Map<string, LiveExerciseSuggestion[]>();
+    }
+
+    const next = new Map<string, LiveExerciseSuggestion[]>();
+    for (let rowIndex = 0; rowIndex < state.rows.length; rowIndex += 1) {
+      for (let columnIndex = 0; columnIndex < state.columns.length; columnIndex += 1) {
+        const rowLabel = state.rows[rowIndex];
+        const columnLabel = state.columns[columnIndex];
+        const matches = exercises.filter(
+          (exercise) =>
+            matchesExerciseCategory(exercise, state.rowCategoryKey, rowLabel) &&
+            matchesExerciseCategory(exercise, state.columnCategoryKey, columnLabel),
+        );
+        next.set(cellKey(rowIndex, columnIndex), matches);
+      }
+    }
+
+    return next;
+  }, [exercises, state]);
+
+  const dailyRelevantExerciseSlugs = useMemo(() => {
+    if (!state) return [];
+
+    return [...new Set(
+      exercises
+        .filter(
+          (exercise) =>
+            state.rows.some((rowLabel) =>
+              matchesExerciseCategory(exercise, state.rowCategoryKey, rowLabel),
+            ) &&
+            state.columns.some((columnLabel) =>
+              matchesExerciseCategory(exercise, state.columnCategoryKey, columnLabel),
+            ),
+        )
+        .map((exercise) => exercise.slug)
+        .filter(Boolean),
+    )];
+  }, [exercises, state]);
+
+  useEffect(() => {
+    if (dailyRelevantExerciseSlugs.length === 0) {
+      return;
+    }
+
+    for (const slug of dailyRelevantExerciseSlugs) {
+      void preloadExerciseMedia(slug);
+    }
+  }, [dailyRelevantExerciseSlugs]);
 
   function handleTrackedClickCapture(event: MouseEvent<HTMLElement>) {
     const target = event.target as HTMLElement | null;
@@ -466,9 +818,11 @@ export function LiftGridPage() {
             }
           : current,
       );
+      setLocalSolvedCells((current) => (current ? [...current, solvedCell] : current));
       setQuery("");
       setSelectedExerciseId(null);
       setShareStatus("idle");
+      setGameOutcome(response.isComplete ? "win" : null);
       emitEvent({
         eventName: "guess_result_rendered",
         uiSurface: "entry",
@@ -503,11 +857,124 @@ export function LiftGridPage() {
       });
     } finally {
       setSubmitting(false);
+      if (!effectiveIsComplete) {
+        setFocusTick((current) => current + 1);
+      }
     }
   }
 
+  async function handleConfirmSurrender() {
+    if (!state || isSurrendering) return;
+
+    const solvedSet = new Set(effectiveSolvedCells.map((cell) => cellKey(cell.rowIndex, cell.columnIndex)));
+    const usedExerciseIds = new Set(effectiveSolvedCells.map((cell) => cell.exerciseId));
+    const pendingCells: Array<{ rowIndex: number; columnIndex: number; key: string }> = [];
+
+    for (let rowIndex = 0; rowIndex < state.rows.length; rowIndex += 1) {
+      for (let columnIndex = 0; columnIndex < state.columns.length; columnIndex += 1) {
+        const key = cellKey(rowIndex, columnIndex);
+        if (!solvedSet.has(key)) {
+          pendingCells.push({ rowIndex, columnIndex, key });
+        }
+      }
+    }
+
+    const sortedPending = [...pendingCells].sort((left, right) => {
+      const leftCount = solutionCandidatesByCell.get(left.key)?.length ?? Number.MAX_SAFE_INTEGER;
+      const rightCount = solutionCandidatesByCell.get(right.key)?.length ?? Number.MAX_SAFE_INTEGER;
+      return leftCount - rightCount;
+    });
+
+    const assigned = new Map<string, LiveExerciseSuggestion>();
+
+    const assignSolutions = (index: number): boolean => {
+      if (index >= sortedPending.length) {
+        return true;
+      }
+
+      const cell = sortedPending[index];
+      const candidates = solutionCandidatesByCell.get(cell.key) ?? [];
+
+      for (const exercise of candidates) {
+        if (usedExerciseIds.has(exercise.id)) {
+          continue;
+        }
+
+        usedExerciseIds.add(exercise.id);
+        assigned.set(cell.key, exercise);
+
+        if (assignSolutions(index + 1)) {
+          return true;
+        }
+
+        assigned.delete(cell.key);
+        usedExerciseIds.delete(exercise.id);
+      }
+
+      return false;
+    };
+
+    if (!assignSolutions(0)) {
+      showRejectedGuessFeedback("Could not reveal the remaining grid");
+      setShowSurrenderDialog(false);
+      return;
+    }
+
+    emitEvent({
+      eventName: "interactive_click",
+      uiSurface: "entry",
+      actionTarget: "confirm-surrender",
+      metadata: {
+        remainingCells: pendingCells.length,
+      },
+    });
+
+    setIsSurrendering(true);
+    setShowSurrenderDialog(false);
+    setShowVictoryCard(false);
+    setShowVictoryCelebration(false);
+    setShareStatus("idle");
+    setQuery("");
+    setSelectedExerciseId(null);
+    setGameOutcome("lose");
+
+    const revealOrder = shuffleArray(pendingCells);
+    const revealDelayMs = 110;
+
+    revealOrder.forEach((cell, index) => {
+      window.setTimeout(() => {
+        const exercise = assigned.get(cell.key);
+        if (!exercise) {
+          return;
+        }
+
+        const solvedCell: LiftGridSolvedCell = {
+          rowIndex: cell.rowIndex,
+          columnIndex: cell.columnIndex,
+          exerciseId: exercise.id,
+          exerciseName: exercise.display_name,
+        };
+
+        setLocalSolvedCells((current) => {
+          const existing = current ?? state.solvedCells;
+          if (existing.some((entry) => entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex)) {
+            return existing;
+          }
+          return [...existing, solvedCell];
+        });
+        setRevealedCellKeys((current) => [...current, cell.key]);
+
+        if (index === revealOrder.length - 1) {
+          window.setTimeout(() => {
+            setIsSurrendering(false);
+          }, 20);
+        }
+      }, revealDelayMs * index);
+    });
+  }
+
   async function handleFeedback(choice: LiftGridFeedbackChoice) {
-    if (feedbackStatus === "submitting" || feedbackChoice) return;
+    if (feedbackStatus === "submitting" || hasStoredBattleFeedback) return;
     emitEvent({
       eventName: "feedback_clicked",
       uiSurface: "feedback",
@@ -519,6 +986,10 @@ export function LiftGridPage() {
       await submitLiftGridFeedbackRequest(choice);
       setFeedbackChoice(choice);
       setFeedbackStatus("done");
+      setHasStoredBattleFeedback(true);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(LIFTGRID_BATTLE_FEEDBACK_STORAGE_KEY, choice);
+      }
     } catch {
       setFeedbackStatus("idle");
     }
@@ -526,19 +997,23 @@ export function LiftGridPage() {
 
   async function handleCopyShare() {
     if (!shareText) return;
+    const copyText =
+      typeof window === "undefined"
+        ? `${shareText}\nhttps://liftdle.vercel.app/liftgrid`
+        : `${shareText}\n${window.location.origin}/liftgrid`;
     emitEvent({
       eventName: "share_copy_clicked",
       uiSurface: "share",
-      shareText,
+      shareText: copyText,
     });
 
     try {
-      await navigator.clipboard.writeText(shareText);
+      await navigator.clipboard.writeText(copyText);
       setShareStatus("copied");
       emitEvent({
         eventName: "share_copy_result",
         uiSurface: "share",
-        shareText,
+        shareText: copyText,
         metadata: {
           status: "copied",
         },
@@ -548,12 +1023,52 @@ export function LiftGridPage() {
       emitEvent({
         eventName: "share_copy_result",
         uiSurface: "share",
-        shareText,
+        shareText: copyText,
         metadata: {
           status: "error",
         },
       });
     }
+  }
+
+  async function handleDebugReset() {
+    setResettingDebugGrid(true);
+    setToastMessage(null);
+    setShowVictoryCelebration(false);
+
+    try {
+      const nextState = await resetLiftGridRequest();
+      setState(nextState);
+      setLocalSolvedCells(null);
+      setRevealedCellKeys([]);
+      setQuery("");
+      setSelectedExerciseId(null);
+      setShareStatus("idle");
+      setIsBoardShaking(false);
+      setShowVictoryCard(false);
+      setShowSurrenderDialog(false);
+      setIsSurrendering(false);
+      setGameOutcome(null);
+      emitEvent({
+        eventName: "interactive_click",
+        uiSurface: "debug",
+        actionTarget: "reset-grid-server",
+      });
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : "Failed to reset grid.";
+      setToastMessage(message);
+    } finally {
+      setResettingDebugGrid(false);
+    }
+  }
+
+  function handleShareOnX() {
+    if (!shareText) return;
+    const shareUrl =
+      typeof window === "undefined" ? "https://liftdle.vercel.app/liftgrid" : `${window.location.origin}/liftgrid`;
+    const xText = `${shareText}\n${shareUrl}`;
+    const intentUrl = `https://x.com/intent/tweet?${new URLSearchParams({ text: xText }).toString()}`;
+    window.open(intentUrl, "_blank", "noopener,noreferrer");
   }
 
   const exercisesById = useMemo(
@@ -563,6 +1078,13 @@ export function LiftGridPage() {
 
   return (
     <ModePageShell className="liftgrid-page">
+      {showVictoryCelebration ? (
+        <DailyCelebration
+          key={`liftgrid-celebration-${victoryCelebrationSeed}`}
+          durationMs={2800}
+          powerMultiplier={1}
+        />
+      ) : null}
       <div className="mode-shell">
         <ModeHeroHeader
           modeLead="LIFT"
@@ -575,6 +1097,39 @@ export function LiftGridPage() {
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (
             <div className="liftgrid-loading">
+              <div className="liftgrid-loading__inner" aria-hidden="true">
+                <div className="liftgrid-loading__topline">
+                  <span className="liftgrid-loading__badge" />
+                  <span className="liftgrid-loading__title" />
+                </div>
+                <div className="liftgrid-loading__mockboard">
+                  <span className="liftgrid-loading__cell liftgrid-loading__cell--corner" />
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <span
+                      key={`liftgrid-loading-column-${index}`}
+                      className="liftgrid-loading__cell liftgrid-loading__cell--header"
+                    />
+                  ))}
+                  {Array.from({ length: 3 }, (_, rowIndex) => (
+                    <div
+                      key={`liftgrid-loading-row-${rowIndex}`}
+                      className="liftgrid-loading__mockrow"
+                    >
+                      <span className="liftgrid-loading__cell liftgrid-loading__cell--header" />
+                      {Array.from({ length: 3 }, (_, columnIndex) => (
+                        <span
+                          key={`liftgrid-loading-body-${rowIndex}-${columnIndex}`}
+                          className={`liftgrid-loading__cell ${
+                            (rowIndex + columnIndex) % 2 === 0
+                              ? "liftgrid-loading__cell--light"
+                              : "liftgrid-loading__cell--dark"
+                          }`.trim()}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
               <p className="liftgrid-loading__label">Loading today&apos;s grid...</p>
             </div>
           ) : null}
@@ -590,6 +1145,34 @@ export function LiftGridPage() {
               <div
                 className={`liftgrid-board-wrap ${isBoardShaking ? "liftgrid-board-wrap--shake" : ""}`.trim()}
               >
+                <aside className="liftgrid-debug-overlay" aria-label="LiftGrid debug solutions">
+                  <div className="liftgrid-debug-overlay__head">
+                    <strong>Debug solutions</strong>
+                    <button
+                      type="button"
+                      className="liftgrid-debug-overlay__reset"
+                      onClick={() => void handleDebugReset()}
+                      disabled={resettingDebugGrid}
+                    >
+                      {resettingDebugGrid ? "Resetting..." : "Reset grid"}
+                    </button>
+                  </div>
+                  <div className="liftgrid-debug-overlay__grid">
+                    {debugSolutions.flat().map((cell) => (
+                      <div
+                        key={`${cell.rowIndex}:${cell.columnIndex}`}
+                        className="liftgrid-debug-overlay__cell"
+                      >
+                        <div className="liftgrid-debug-overlay__label">
+                          {cell.rowLabel} / {cell.columnLabel}
+                        </div>
+                        <div className="liftgrid-debug-overlay__value">
+                          {cell.matches.length > 0 ? cell.matches.join(", ") : "No match"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </aside>
                 <div className="liftgrid-board" role="grid" aria-label="LiftGrid daily board">
                 <div className="liftgrid-board__corner liftgrid-board__corner--brand">
                   <span className="liftgrid-board__brand">
@@ -625,7 +1208,7 @@ export function LiftGridPage() {
                       <span>{row}</span>
                     </div>
                     {state.columns.map((column, columnIndex) => {
-                      const solvedCell = getSolvedCell(state.solvedCells, rowIndex, columnIndex);
+                      const solvedCell = getSolvedCell(effectiveSolvedCells, rowIndex, columnIndex);
                       const solvedExercise = solvedCell
                         ? exercisesById.get(solvedCell.exerciseId) ?? null
                         : null;
@@ -633,7 +1216,13 @@ export function LiftGridPage() {
                       return (
                         <div
                           key={cellKey(rowIndex, columnIndex)}
-                          className={`liftgrid-cell ${solvedCell ? "liftgrid-cell--solved" : ""}`.trim()}
+                          className={`liftgrid-cell ${
+                            (rowIndex + columnIndex) % 2 === 0
+                              ? "liftgrid-cell--tone-light"
+                              : "liftgrid-cell--tone-dark"
+                          } ${solvedCell ? "liftgrid-cell--solved" : ""} ${
+                            revealedCellKeys.includes(cellKey(rowIndex, columnIndex)) ? "liftgrid-cell--revealed" : ""
+                          }`.trim()}
                           aria-label={`${row} and ${column}`}
                           data-liftgrid-action={solvedCell ? "solved-cell" : "cell"}
                           data-liftgrid-surface="board"
@@ -666,6 +1255,7 @@ export function LiftGridPage() {
                                   />
                                 </div>
                                 <span className="liftgrid-cell__placeholder">+</span>
+                                <span className="liftgrid-cell__placeholder-copy">Choose the exercise</span>
                               </>
                             )}
                           </div>
@@ -675,6 +1265,32 @@ export function LiftGridPage() {
                   </div>
                 ))}
                 </div>
+
+                {showSurrenderDialog ? (
+                  <div className="liftgrid-surrender" role="dialog" aria-modal="true" aria-label="Surrender LiftGrid">
+                    <div className="liftgrid-surrender__panel">
+                      <p className="liftgrid-surrender__title">Are you sure you want to surrender this grid?</p>
+                      <div className="liftgrid-surrender__actions">
+                        <button
+                          type="button"
+                          className="exercise-media-modal__close victory-panel__action"
+                          onClick={() => {
+                            setShowSurrenderDialog(false);
+                          }}
+                        >
+                          No
+                        </button>
+                        <button
+                          type="button"
+                          className="exercise-media-modal__close victory-panel__action"
+                          onClick={() => void handleConfirmSurrender()}
+                        >
+                          Yes, surrender
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="liftgrid-entry">
@@ -695,10 +1311,29 @@ export function LiftGridPage() {
                     selectedExerciseId={selectedExerciseId}
                     exercises={exercises}
                     loadingExercises={loading && exercises.length === 0}
-                    disabled={state.isComplete}
+                    disabled={effectiveIsComplete || isSurrendering}
                     submitting={submitting}
                     autoDropdownPlacement
                     preferredDropdownPlacement="up"
+                    inputElementRef={liftgridInputRef}
+                    secondaryAction={{
+                      ariaLabel: "Surrender grid",
+                      disabled: effectiveIsComplete || isSurrendering,
+                      icon: (
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 3v18" />
+                          <path d="M5 4h10l-1.6 3L15 10H5" />
+                        </svg>
+                      ),
+                      onClick: () => {
+                        emitEvent({
+                          eventName: "interactive_click",
+                          uiSurface: "entry",
+                          actionTarget: "open-surrender-dialog",
+                        });
+                        setShowSurrenderDialog(true);
+                      },
+                    }}
                     onQueryChange={(value) => {
                       setSelectedExerciseId(null);
                       setQuery(value);
@@ -723,53 +1358,79 @@ export function LiftGridPage() {
                 </section>
 
               </div>
+              {showVictoryCard && effectiveIsComplete ? (
+                <section
+                  ref={victoryCardRef}
+                  className="victory-panel liftgrid-victory-card"
+                  aria-label="LiftGrid victory card"
+                >
+                  <div className="victory-panel__head">
+                    <p className="victory-panel__kicker">{didSurrender ? "Defeat" : "Victory"}</p>
+                    <h3 className="victory-panel__title">{didSurrender ? "You'll get it next time" : "You win"}</h3>
+                  </div>
 
-              {state.isComplete ? (
-                <div className="liftgrid-finish">
-                  <div className="liftgrid-share">
-                    <p className="liftgrid-finish__question">Would you play this as a 1v1 battle?</p>
-                    <div className="liftgrid-finish__actions">
-                      {FEEDBACK_OPTIONS.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={`liftgrid-finish__button ${
-                            feedbackChoice === option.value
-                              ? "liftgrid-finish__button--active"
-                              : ""
-                          }`.trim()}
-                          onClick={() => void handleFeedback(option.value)}
-                          disabled={feedbackStatus === "submitting" || feedbackChoice !== null}
-                          data-liftgrid-action={`feedback-${option.value}`}
-                          data-liftgrid-surface="feedback"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
+                  <div className="victory-panel__stats">
+                    <p className="victory-panel__stat-line">
+                      Completed: <span>{completedBeforeSurrender}</span> / <span>{state.totalCells}</span>
+                    </p>
+                    <p className="victory-panel__countdown">{countdown}</p>
+                    <p className="victory-panel__timezone">Europe/Rome (midnight reset)</p>
+                  </div>
+
+                  <div className="victory-panel__share-card">
+                    <p className="victory-panel__share-text">Share result</p>
+                    <pre className="liftgrid-share__preview">{shareText}</pre>
+                    <div className="victory-panel__actions">
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close victory-panel__action"
+                        onClick={() => void handleCopyShare()}
+                        data-liftgrid-action="copy-share"
+                        data-liftgrid-surface="share"
+                      >
+                        {shareStatus === "copied"
+                          ? "Result copied"
+                          : shareStatus === "error"
+                            ? "Copy failed"
+                            : "Copy result"}
+                      </button>
+                      <button
+                        type="button"
+                        className="exercise-media-modal__close victory-panel__action"
+                        onClick={handleShareOnX}
+                        data-liftgrid-action="share-on-x"
+                        data-liftgrid-surface="share"
+                      >
+                        Share on X
+                      </button>
                     </div>
                   </div>
 
-                  <div className="liftgrid-share">
-                    <p className="liftgrid-used__label">Share result</p>
-                    <pre className="liftgrid-share__preview">{shareText}</pre>
-                    <button
-                      type="button"
-                      className="liftgrid-entry__submit"
-                      onClick={() => void handleCopyShare()}
-                      data-liftgrid-action="copy-share"
-                      data-liftgrid-surface="share"
-                    >
-                      Copy result
-                    </button>
-                    {shareStatus !== "idle" ? (
-                      <p className="liftgrid-share__status" aria-live="polite">
-                        {shareStatus === "copied"
-                          ? "Share text copied."
-                          : "Clipboard copy failed."}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
+                  {!hasStoredBattleFeedback ? (
+                    <div className="liftgrid-share">
+                      <p className="liftgrid-finish__question">Would you play this as a 1v1 battle?</p>
+                      <div className="liftgrid-finish__actions">
+                        {FEEDBACK_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            className={`liftgrid-finish__button ${
+                              feedbackChoice === option.value
+                                ? "liftgrid-finish__button--active"
+                                : ""
+                            }`.trim()}
+                            onClick={() => void handleFeedback(option.value)}
+                            disabled={feedbackStatus === "submitting" || hasStoredBattleFeedback}
+                            data-liftgrid-action={`feedback-${option.value}`}
+                            data-liftgrid-surface="feedback"
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
               ) : null}
             </>
           ) : null}

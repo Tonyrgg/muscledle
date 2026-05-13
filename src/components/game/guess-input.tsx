@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, type WheelEvent, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type ReactNode, type RefObject, type WheelEvent, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -17,6 +17,13 @@ type GuessInputProps = {
   autoDropdownPlacement?: boolean;
   preferredDropdownPlacement?: "up" | "down";
   className?: string;
+  inputElementRef?: RefObject<HTMLInputElement | null>;
+  secondaryAction?: {
+    ariaLabel: string;
+    icon: ReactNode;
+    disabled?: boolean;
+    onClick: () => void;
+  } | null;
 };
 
 type RankedExercise = {
@@ -123,6 +130,8 @@ export function GuessInput({
   autoDropdownPlacement = false,
   preferredDropdownPlacement = "down",
   className,
+  inputElementRef,
+  secondaryAction,
 }: GuessInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -291,7 +300,9 @@ export function GuessInput({
   };
 
   return (
-    <div className={`guess-input ${className ?? ""}`.trim()}>
+    <div
+      className={`guess-input ${secondaryAction ? "guess-input--has-secondary-action" : ""} ${className ?? ""}`.trim()}
+    >
       <div className="guess-input__row">
         <div
           ref={fieldWrapRef}
@@ -300,7 +311,12 @@ export function GuessInput({
           }`.trim()}
         >
           <input
-            ref={inputRef}
+            ref={(node) => {
+              inputRef.current = node;
+              if (inputElementRef) {
+                inputElementRef.current = node;
+              }
+            }}
             role="combobox"
             aria-expanded={showDropdown}
             aria-controls={listId}
@@ -376,11 +392,29 @@ export function GuessInput({
           type="button"
           className="guess-input__submit"
           aria-label="Submit guess"
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
           onClick={() => onSubmit()}
           disabled={!canSubmitFromButton}
         >
           <span className="guess-input__submit-glyph" aria-hidden>{"\u27A4"}</span>
         </button>
+
+        {secondaryAction ? (
+          <button
+            type="button"
+            className="guess-input__submit guess-input__submit--secondary"
+            aria-label={secondaryAction.ariaLabel}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={secondaryAction.onClick}
+            disabled={secondaryAction.disabled}
+          >
+            <span className="guess-input__submit-glyph" aria-hidden>{secondaryAction.icon}</span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

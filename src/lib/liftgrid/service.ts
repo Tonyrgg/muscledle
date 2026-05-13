@@ -464,3 +464,55 @@ export async function submitLiftGridFeedback(choice: LiftGridFeedbackChoice) {
     },
   });
 }
+
+export async function resetLiftGridForViewer(): Promise<LiftGridPublicState> {
+  const gameDate = gameDateRome();
+  const identity = await getViewerIdentity();
+  const result = await getOrCreateLiftGridResult({
+    gameDate,
+    userId: identity.userId,
+    sessionPublicId: identity.sessionPublicId,
+  });
+
+  if (result) {
+    const admin = createAdminClient();
+
+    const { error: attemptsError } = await admin
+      .from("liftgrid_attempts")
+      .delete()
+      .eq("result_id", result.id);
+
+    if (attemptsError) {
+      throw new Error(`Failed to clear LiftGrid attempts: ${attemptsError.message}`);
+    }
+
+    const { error: resultError } = await admin
+      .from("liftgrid_results")
+      .update({
+        solved_cells: [],
+        completed_count: 0,
+        status: "in_progress",
+        finished_at: null,
+      })
+      .eq("id", result.id);
+
+    if (resultError) {
+      throw new Error(`Failed to reset LiftGrid result: ${resultError.message}`);
+    }
+
+    await recordLiftGridEvent({
+      eventName: "board_rendered",
+      eventSource: "server",
+      gameDate,
+      resultId: result.id,
+      completedCount: 0,
+      totalCells: 9,
+      pagePath: "/liftgrid",
+      metadata: {
+        action: "debug_reset",
+      },
+    });
+  }
+
+  return getLiftGridTodayState();
+}

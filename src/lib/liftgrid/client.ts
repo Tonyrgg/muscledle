@@ -106,6 +106,19 @@ export async function submitLiftGridFeedbackRequest(choice: LiftGridFeedbackChoi
   );
 }
 
+export async function resetLiftGridRequest(): Promise<LiftGridPublicState> {
+  const headers = await buildClientHeaders();
+  const response = await fetch("/api/liftgrid/reset", {
+    method: "POST",
+    headers,
+  });
+
+  return parseOrThrow<LiftGridPublicState>(
+    response,
+    `Failed to reset LiftGrid (${response.status}).`,
+  );
+}
+
 export async function trackLiftGridEventRequest(input: LiftGridEventInput): Promise<void> {
   const headers = await buildClientHeaders();
   const response = await fetch("/api/liftgrid/events", {
