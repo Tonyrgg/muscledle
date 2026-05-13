@@ -5,14 +5,15 @@ import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { resolveDailySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, GameConflictError } from "@/lib/game/shared";
-import { getAuthenticatedUser } from "@/lib/supabase/server";
+import { getDailyViewerIdentity } from "@/lib/game/viewer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Exercise } from "@/types/exercise";
 import type { PublicGameAttempt, SubmitGuessResponse } from "@/types/game";
 
 type UserDailyGameRow = {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  session_public_id: string | null;
   game_date: string;
   status: "in_progress" | "won" | "lost";
   guess_count: number;
@@ -21,15 +22,29 @@ type UserDailyGameRow = {
 
 const TECHNICAL_MAX_GUESSES = 2147483647;
 
-async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
+async function getOrCreateUserDailyGame(args: {
+  userId: string | null;
+  sessionPublicId: string | null;
+  gameDate: string;
+}): Promise<UserDailyGameRow> {
+  if (!args.userId && !args.sessionPublicId) {
+    throw new AuthRequiredError();
+  }
+
   const admin = createAdminClient();
 
-  const { data: existing, error: existingError } = await admin
+  let existingQuery = admin
     .from("user_daily_games")
-    .select("id, user_id, game_date, status, guess_count, max_guesses")
-    .eq("user_id", userId)
-    .eq("game_date", gameDate)
-    .maybeSingle<UserDailyGameRow>();
+    .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
+    .eq("game_date", args.gameDate);
+
+  if (args.userId) {
+    existingQuery = existingQuery.eq("user_id", args.userId);
+  } else {
+    existingQuery = existingQuery.is("user_id", null).eq("session_public_id", args.sessionPublicId);
+  }
+
+  const { data: existing, error: existingError } = await existingQuery.maybeSingle<UserDailyGameRow>();
 
   if (existingError) {
     throw new Error(`Failed to load user daily game: ${existingError.message}`);
@@ -44,7 +59,7 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
           finished_at: null,
         })
         .eq("id", existing.id)
-        .select("id, user_id, game_date, status, guess_count, max_guesses")
+        .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
         .single<UserDailyGameRow>();
 
       if (reopenError) {
@@ -60,13 +75,14 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
   const { data: created, error: createError } = await admin
     .from("user_daily_games")
     .insert({
-      user_id: userId,
-      game_date: gameDate,
+      user_id: args.userId,
+      session_public_id: args.userId ? null : args.sessionPublicId,
+      game_date: args.gameDate,
       status: "in_progress",
       guess_count: 0,
       max_guesses: TECHNICAL_MAX_GUESSES,
     })
-    .select("id, user_id, game_date, status, guess_count, max_guesses")
+    .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
 
   if (createError) {
@@ -74,9 +90,10 @@ async function getOrCreateUserDailyGame(userId: string, gameDate: string): Promi
   }
 
   await trackEvent({
-    userId,
+    userId: args.userId,
+    sessionId: args.sessionPublicId,
     eventName: "daily_game_created",
-    payload: { gameDate },
+    payload: { gameDate: args.gameDate },
   });
 
   return created;
@@ -88,15 +105,18 @@ export async function submitGuess(input: {
   const admin = createAdminClient();
   const gameDate = gameDateRome();
 
-  const user = await getAuthenticatedUser();
-
-  if (!user) {
+  const viewer = await getDailyViewerIdentity();
+  if (!viewer.userId && !viewer.sessionPublicId) {
     throw new AuthRequiredError();
   }
 
   const [dailySelection, userDailyGame] = await Promise.all([
     resolveDailySelection(gameDate),
-    getOrCreateUserDailyGame(user.id, gameDate),
+    getOrCreateUserDailyGame({
+      userId: viewer.userId,
+      sessionPublicId: viewer.sessionPublicId,
+      gameDate,
+    }),
   ]);
 
   if (userDailyGame.status !== "in_progress") {
@@ -168,7 +188,8 @@ export async function submitGuess(input: {
   const { data: insertedAttempt, error: attemptError } = await admin
     .from("game_attempts")
     .insert({
-      user_id: user.id,
+      user_id: viewer.userId,
+      session_public_id: viewer.userId ? null : viewer.sessionPublicId,
       game_date: gameDate,
       user_daily_game_id: userDailyGame.id,
       guess_index: newGuessCount,
@@ -232,7 +253,8 @@ export async function submitGuess(input: {
   };
 
   void trackEvent({
-    userId: user.id,
+    userId: viewer.userId,
+    sessionId: viewer.sessionPublicId,
     eventName: "guess_submitted",
     payload: {
       gameDate,
@@ -244,7 +266,8 @@ export async function submitGuess(input: {
 
   if (nextStatus === "won") {
     void trackEvent({
-      userId: user.id,
+      userId: viewer.userId,
+      sessionId: viewer.sessionPublicId,
       eventName: "game_won",
       payload: { gameDate, guessCount: newGuessCount },
     });

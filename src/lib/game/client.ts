@@ -5,6 +5,7 @@ import type {
   SubmitGuessResponse,
 } from "@/types/game";
 import { createClient } from "@/lib/supabase/client";
+import { ensureVisitorIdentity } from "@/lib/visitor/client";
 import type { Ego, Equipment, Goal, Movement, Muscle, MuscleGroup, Pattern, Reps } from "@/types/exercise";
 
 export type LiveExerciseSuggestion = {
@@ -74,12 +75,30 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   }
 }
 
+async function buildClientHeaders(): Promise<Record<string, string>> {
+  const [identity, authHeaders] = await Promise.all([
+    ensureVisitorIdentity({ path: "/" }),
+    getAuthHeaders(),
+  ]);
+
+  const headers: Record<string, string> = {
+    "x-liftdle-session-id": identity.sessionId,
+    "x-liftdle-visitor-id": identity.visitorId,
+  };
+
+  if (authHeaders.Authorization) {
+    headers.Authorization = authHeaders.Authorization;
+  }
+
+  return headers;
+}
+
 export async function fetchTodayGameState(): Promise<PublicTodayGameState> {
-  const authHeaders = await getAuthHeaders();
+  const headers = await buildClientHeaders();
   const response = await fetch("/api/game/today", {
     method: "GET",
     cache: "no-store",
-    headers: authHeaders,
+    headers,
   });
 
   return parseOrThrow<PublicTodayGameState>(
@@ -91,12 +110,12 @@ export async function fetchTodayGameState(): Promise<PublicTodayGameState> {
 export async function submitGuessRequest(
   guessExerciseId: string,
 ): Promise<SubmitGuessResponse> {
-  const authHeaders = await getAuthHeaders();
+  const headers = await buildClientHeaders();
   const response = await fetch("/api/game/guess", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...authHeaders,
+      ...headers,
     },
     body: JSON.stringify({ guessExerciseId }),
   });
@@ -136,11 +155,11 @@ export async function fetchLiveExercises(): Promise<LiveExerciseSuggestion[]> {
 }
 
 export async function fetchGameStats(): Promise<PublicGameStats> {
-  const authHeaders = await getAuthHeaders();
+  const headers = await buildClientHeaders();
   const response = await fetch("/api/game/stats", {
     method: "GET",
     cache: "no-store",
-    headers: authHeaders,
+    headers,
   });
 
   return parseOrThrow<PublicGameStats>(response, `Failed to load stats (${response.status}).`);

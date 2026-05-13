@@ -1,7 +1,7 @@
 import { AuthRequiredError } from "@/lib/game/shared";
 import { gameDateRome } from "@/lib/game/date";
+import { getDailyViewerIdentity } from "@/lib/game/viewer";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getAuthenticatedUser } from "@/lib/supabase/server";
 import type { PublicGameStats, PublicGameStatsPoint } from "@/types/game";
 
 type UserDailyGameStatsRow = {
@@ -25,19 +25,24 @@ function round1(value: number): number {
 }
 
 export async function getGameStats(): Promise<PublicGameStats> {
-  const user = await getAuthenticatedUser();
-
-  if (!user) {
+  const viewer = await getDailyViewerIdentity();
+  if (!viewer.userId && !viewer.sessionPublicId) {
     throw new AuthRequiredError();
   }
 
   const admin = createAdminClient();
-  const { data, error } = await admin
+  let query = admin
     .from("user_daily_games")
     .select("game_date, status, guess_count")
-    .eq("user_id", user.id)
-    .order("game_date", { ascending: true })
-    .returns<UserDailyGameStatsRow[]>();
+    .order("game_date", { ascending: true });
+
+  if (viewer.userId) {
+    query = query.eq("user_id", viewer.userId);
+  } else {
+    query = query.is("user_id", null).eq("session_public_id", viewer.sessionPublicId);
+  }
+
+  const { data, error } = await query.returns<UserDailyGameStatsRow[]>();
 
   if (error) {
     throw new Error(`Failed to load user stats: ${error.message}`);

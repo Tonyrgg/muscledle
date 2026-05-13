@@ -2,15 +2,17 @@ import { trackEvent } from "@/lib/analytics/track";
 import { resolveDailySelection, resolveYesterdaySelection } from "@/lib/game/daily-target";
 import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError, normalizeFeedback } from "@/lib/game/shared";
-import { createClient, getAuthenticatedUser } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getExerciseNaming } from "@/lib/exercises/naming";
 import { getRepsDirection } from "@/lib/exercises/reps-direction";
+import { getDailyViewerIdentity } from "@/lib/game/viewer";
 import type { PublicTodayGameState } from "@/types/game";
 
 type UserDailyGameRow = {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  session_public_id: string | null;
   game_date: string;
   status: "in_progress" | "won" | "lost";
   guess_count: number;
@@ -41,15 +43,29 @@ type ExerciseNameRow = {
 
 const TECHNICAL_MAX_GUESSES = 2147483647;
 
-async function ensureUserDailyGame(userId: string, gameDate: string): Promise<UserDailyGameRow> {
+async function ensureUserDailyGame(args: {
+  userId: string | null;
+  sessionPublicId: string | null;
+  gameDate: string;
+}): Promise<UserDailyGameRow> {
+  if (!args.userId && !args.sessionPublicId) {
+    throw new AuthRequiredError();
+  }
+
   const admin = createAdminClient();
 
-  const { data: existing, error: existingError } = await admin
+  let existingQuery = admin
     .from("user_daily_games")
-    .select("id, user_id, game_date, status, guess_count, max_guesses")
-    .eq("user_id", userId)
-    .eq("game_date", gameDate)
-    .maybeSingle<UserDailyGameRow>();
+    .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
+    .eq("game_date", args.gameDate);
+
+  if (args.userId) {
+    existingQuery = existingQuery.eq("user_id", args.userId);
+  } else {
+    existingQuery = existingQuery.is("user_id", null).eq("session_public_id", args.sessionPublicId);
+  }
+
+  const { data: existing, error: existingError } = await existingQuery.maybeSingle<UserDailyGameRow>();
 
   if (existingError) {
     throw new Error(`Failed to load user daily game: ${existingError.message}`);
@@ -64,7 +80,7 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
           finished_at: null,
         })
         .eq("id", existing.id)
-        .select("id, user_id, game_date, status, guess_count, max_guesses")
+        .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
         .single<UserDailyGameRow>();
 
       if (reopenError) {
@@ -80,25 +96,29 @@ async function ensureUserDailyGame(userId: string, gameDate: string): Promise<Us
   const { data: created, error: createError } = await admin
     .from("user_daily_games")
     .insert({
-      user_id: userId,
-      game_date: gameDate,
+      user_id: args.userId,
+      session_public_id: args.userId ? null : args.sessionPublicId,
+      game_date: args.gameDate,
       status: "in_progress",
       guess_count: 0,
       max_guesses: TECHNICAL_MAX_GUESSES,
     })
-    .select("id, user_id, game_date, status, guess_count, max_guesses")
+    .select("id, user_id, session_public_id, game_date, status, guess_count, max_guesses")
     .single<UserDailyGameRow>();
 
   if (createError) {
     throw new Error(`Failed to create user daily game: ${createError.message}`);
   }
 
-  await admin.from("user_stats").upsert({ user_id: userId }, { onConflict: "user_id" });
+  if (args.userId) {
+    await admin.from("user_stats").upsert({ user_id: args.userId }, { onConflict: "user_id" });
+  }
 
   await trackEvent({
-    userId,
+    userId: args.userId,
+    sessionId: args.sessionPublicId,
     eventName: "daily_game_created",
-    payload: { gameDate },
+    payload: { gameDate: args.gameDate },
   });
 
   return created;
@@ -109,16 +129,19 @@ export async function getTodayGameState(): Promise<PublicTodayGameState> {
   const admin = createAdminClient();
   const gameDate = gameDateRome();
 
-  const user = await getAuthenticatedUser();
-
-  if (!user) {
+  const viewer = await getDailyViewerIdentity();
+  if (!viewer.userId && !viewer.sessionPublicId) {
     throw new AuthRequiredError();
   }
 
   const dailySelection = await resolveDailySelection(gameDate);
   const yesterdaySelection = await resolveYesterdaySelection(gameDate);
 
-  const game = await ensureUserDailyGame(user.id, gameDate);
+  const game = await ensureUserDailyGame({
+    userId: viewer.userId,
+    sessionPublicId: viewer.sessionPublicId,
+    gameDate,
+  });
 
   const { data: attemptRows, error: attemptsError } = await admin
     .from("game_attempts")
