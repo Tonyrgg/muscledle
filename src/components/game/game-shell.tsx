@@ -1707,6 +1707,13 @@ export function GameShell({ initialState }: GameShellProps) {
                   new
                 </span>
               </Link>
+              <Link
+                href="/liftgrid"
+                className="mode-switch__button mode-switch__button--link"
+                aria-label="Open LiftGrid mode"
+              >
+                LiftGrid
+              </Link>
             </div>
             {mode === "daily" ? (
               <>

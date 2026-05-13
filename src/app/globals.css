@@ -4149,6 +4149,157 @@ button.game-quick-tools__item:active {
   }
 }
 
+/* Shared mode shell */
+.mode-page {
+  width: 100%;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  overflow-x: clip;
+}
+
+.mode-shell {
+  width: min(100%, 920px);
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+}
+
+.mode-hero {
+  width: 100%;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mode-hero__stack {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+}
+
+.mode-hero__badge {
+  display: flex;
+  justify-content: center;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.75rem;
+  padding: 0.22rem 0.65rem;
+  border: 1px solid rgba(249, 115, 22, 0.48);
+  background: rgba(65, 33, 13, 0.8);
+  color: #ffb16f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mode-title {
+  margin: 0;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.82rem, 6.6vw, 4.5rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 0.92;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.mode-title__part {
+  display: inline-block;
+}
+
+.mode-title__part--accent {
+  color: var(--accent);
+}
+
+.mode-signature {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.mode-signature__by {
+  color: #a8a8a8;
+  font-size: 0.76rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.mode-signature__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.05rem, 3vw, 1.5rem);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mode-signature__part--accent {
+  color: var(--accent);
+}
+
+.mode-signature__link:hover,
+.mode-signature__link:focus-visible {
+  color: #f5f5f5;
+  transform: scale(1.04);
+}
+
+.mode-signature__link:focus-visible,
+.loadguess-unit-toggle__button:focus-visible,
+.loadguess-attempt-row__arrow:focus-visible,
+.loadguess-attempt-row__submit:focus-visible,
+.loadguess-feedback-card__star:focus-visible,
+.loadguess-feedback-card__mode:focus-visible,
+.liftgrid-cell:focus-visible,
+.liftgrid-entry__input:focus-visible,
+.liftgrid-entry__submit:focus-visible,
+.liftgrid-suggestions__option:focus-visible,
+.liftgrid-finish__button:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.86);
+  outline-offset: 2px;
+}
+
+.mode-panel {
+  width: min(100%, 580px);
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  border: 1px solid rgba(249, 115, 22, 0.42);
+  border-radius: 0.82rem;
+  background:
+    linear-gradient(180deg, rgba(255, 139, 58, 0.1), rgba(255, 139, 58, 0) 38%),
+    #1d1d1d;
+  padding: clamp(1rem, 2.8vw, 1.35rem);
+  text-align: center;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
 /* LoadGuess mode */
 .loadguess-page {
   width: 100%;
@@ -4213,99 +4364,8 @@ button.game-quick-tools__item:active {
   min-height: 100%;
 }
 
-.loadguess-hero {
-  width: 100%;
-  max-width: none;
-  padding: 0 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.loadguess-hero__stack {
-  display: inline-flex;
-  flex-direction: column-reverse;
-  align-items: stretch;
+.loadguess-hero .mode-hero__stack {
   gap: 0.7rem;
-}
-
-.loadguess-hero__byline,
-.loadguess-hero__title-row {
-  display: flex;
-  align-items: center;
-}
-
-.loadguess-hero__byline {
-  justify-content: center;
-  gap: 0.35rem;
-}
-
-.loadguess-hero__by {
-  color: #a8a8a8;
-  font-size: 0.76rem;
-  font-style: italic;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: lowercase;
-}
-
-.loadguess-hero__home-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  color: #f5f5f5;
-  font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(1.05rem, 3vw, 1.5rem);
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.loadguess-hero__word {
-  display: inline-block;
-}
-
-.loadguess-hero__word--accent {
-  color: var(--accent);
-}
-
-.loadguess-hero__home-link:hover,
-.loadguess-hero__home-link:focus-visible {
-  color: #f5f5f5;
-  transform: scale(1.04);
-}
-
-.loadguess-hero__home-link:focus-visible,
-.loadguess-unit-toggle__button:focus-visible,
-.loadguess-attempt-row__arrow:focus-visible,
-.loadguess-attempt-row__submit:focus-visible,
-.loadguess-feedback-card__star:focus-visible,
-.loadguess-feedback-card__mode:focus-visible {
-  outline: 2px solid rgba(249, 115, 22, 0.86);
-  outline-offset: 2px;
-}
-
-.loadguess-hero__title-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loadguess-hero__title {
-  margin: 0;
-  color: #f5f5f5;
-  font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(1.82rem, 6.6vw, 4.5rem);
-  font-style: italic;
-  font-weight: 900;
-  line-height: 0.92;
-  text-align: center;
-  text-transform: uppercase;
 }
 
 .loadguess-playfield {
@@ -4383,17 +4443,6 @@ button.game-quick-tools__item:active {
 
 .loadguess-intro {
   width: min(100%, 580px);
-  display: grid;
-  gap: 1rem;
-  justify-items: center;
-  border: 1px solid rgba(249, 115, 22, 0.42);
-  border-radius: 0.82rem;
-  background:
-    linear-gradient(180deg, rgba(255, 139, 58, 0.1), rgba(255, 139, 58, 0) 38%),
-    #1d1d1d;
-  padding: clamp(1rem, 2.8vw, 1.35rem);
-  text-align: center;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
 }
 
 .loadguess-feedback-card {
@@ -5281,6 +5330,469 @@ button.game-quick-tools__item:active {
   outline-offset: 2px;
 }
 
+/* LiftGrid mode */
+.liftgrid-page {
+  padding-top: clamp(0.75rem, 2vh, 1.4rem);
+  padding-bottom: 1rem;
+}
+
+.liftgrid-panel {
+  width: min(100%, 900px);
+  justify-items: stretch;
+  gap: 1rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+.liftgrid-panel__head {
+  display: grid;
+  gap: 0.45rem;
+  margin-bottom: 0.82rem;
+  justify-items: center;
+}
+
+.liftgrid-panel__eyebrow,
+.liftgrid-entry__label,
+.liftgrid-used__label,
+.liftgrid-loading__label,
+.liftgrid-share__status,
+.liftgrid-board__header small {
+  margin: 0;
+  color: #ffb16f;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.liftgrid-panel__title {
+  margin: 0;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.32rem, 4vw, 2.35rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 0.96;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.liftgrid-entry__target,
+.liftgrid-cell__value,
+.liftgrid-cell__placeholder,
+.liftgrid-entry__error,
+.liftgrid-finish__question {
+  margin: 0;
+  color: #dfd3ca;
+  font-size: 0.98rem;
+  line-height: 1.24;
+}
+
+.liftgrid-loading,
+.liftgrid-error {
+  min-height: 10rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(18, 13, 10, 0.7);
+  color: #f5f5f5;
+}
+
+.liftgrid-board {
+  width: min(100%, min(68dvh, 56rem));
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.34rem;
+  margin-inline: auto;
+}
+
+.liftgrid-board__corner {
+  aspect-ratio: 1;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(18, 13, 10, 0.72);
+}
+
+.liftgrid-board__corner--brand {
+  display: grid;
+  place-items: center;
+  padding: 0.45rem;
+}
+
+.liftgrid-board__row {
+  display: contents;
+}
+
+.liftgrid-board__header {
+  aspect-ratio: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.26rem;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(18, 13, 10, 0.72);
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.liftgrid-board__header span {
+  color: #f8efe8;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.liftgrid-board__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.06rem;
+  color: #f5f5f5;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(0.85rem, 2vw, 1.25rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.liftgrid-board__brand-accent {
+  color: var(--accent);
+}
+
+.liftgrid-board__header-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: min(48%, 2.95rem);
+  aspect-ratio: 1;
+}
+
+.liftgrid-board__header-icon-wrap--row {
+  width: min(44%, 2.8rem);
+}
+
+.liftgrid-board__header-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0) saturate(100%) invert(97%) sepia(11%) saturate(481%) hue-rotate(336deg)
+    brightness(106%) contrast(95%);
+}
+
+.liftgrid-board__header-icon--row {
+  filter: none;
+}
+
+.liftgrid-cell {
+  aspect-ratio: 1;
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  background: rgba(23, 17, 13, 0.94);
+  padding: 0;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.liftgrid-cell:hover:not(:disabled),
+.liftgrid-cell--active {
+  border-color: rgba(249, 115, 22, 0.64);
+  background: rgba(43, 27, 18, 0.98);
+  transform: translateY(-1px);
+}
+
+.liftgrid-cell:disabled {
+  cursor: default;
+}
+
+.liftgrid-cell--solved {
+  border-color: rgba(249, 115, 22, 0.56);
+  background:
+    linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(249, 115, 22, 0) 60%),
+    rgba(32, 22, 16, 0.98);
+}
+
+.liftgrid-cell__frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.liftgrid-cell__corner {
+  position: absolute;
+  z-index: 2;
+  width: min(24%, 1.7rem);
+  aspect-ratio: 1;
+  opacity: 0.92;
+}
+
+.liftgrid-cell__corner--row {
+  left: 0.38rem;
+  top: 0.38rem;
+}
+
+.liftgrid-cell__corner--column {
+  right: 0.38rem;
+  top: 0.38rem;
+}
+
+.liftgrid-cell__corner-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  filter: brightness(0) saturate(100%) invert(80%) sepia(25%) saturate(749%) hue-rotate(335deg)
+    brightness(104%) contrast(101%);
+}
+
+.liftgrid-cell__media-wrap {
+  position: absolute;
+  inset: 0.3rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.liftgrid-cell__gif,
+.liftgrid-cell__fallback-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+
+.liftgrid-cell__gif {
+  background: #f4f2ed;
+}
+
+.liftgrid-cell__gif--loading {
+  visibility: hidden;
+}
+
+.liftgrid-cell__gif--ready {
+  visibility: visible;
+}
+
+.liftgrid-cell__fallback-icon {
+  width: 64%;
+  height: 64%;
+  opacity: 0.84;
+  filter: brightness(0) saturate(100%) invert(80%) sepia(25%) saturate(749%) hue-rotate(335deg)
+    brightness(104%) contrast(101%);
+}
+
+.liftgrid-cell__value {
+  position: absolute;
+  left: 0.42rem;
+  right: 0.42rem;
+  bottom: 0.34rem;
+  z-index: 3;
+  padding: 0.24rem 0.35rem;
+  background: rgba(18, 13, 10, 0.82);
+  backdrop-filter: blur(3px);
+  color: #fff5ee;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1.08;
+  text-transform: uppercase;
+}
+
+.liftgrid-cell__placeholder {
+  color: #a8998d;
+  max-width: 70%;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.liftgrid-entry {
+  display: grid;
+  gap: 0.9rem;
+  padding-top: 0.25rem;
+}
+
+.liftgrid-entry__meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.liftgrid-entry__target {
+  color: #f5f0ea;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.liftgrid-entry__controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+}
+
+.liftgrid-entry__input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3rem;
+  border: 1px solid rgba(249, 115, 22, 0.24);
+  background: rgba(14, 11, 8, 0.92);
+  color: #f7f1ec;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.94rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.liftgrid-entry__input::placeholder {
+  color: #948378;
+}
+
+.liftgrid-entry__submit,
+.liftgrid-finish__button {
+  min-height: 3rem;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #1b130e;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
+}
+
+.liftgrid-entry__submit:hover:not(:disabled),
+.liftgrid-finish__button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+.liftgrid-entry__submit:disabled,
+.liftgrid-finish__button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.liftgrid-suggestions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.45rem;
+}
+
+.liftgrid-suggestions__option {
+  min-height: 2.6rem;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(16, 12, 9, 0.84);
+  color: #f2e8df;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.liftgrid-suggestions__option:hover {
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.liftgrid-used {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.liftgrid-used__list,
+.liftgrid-finish__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.liftgrid-used__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(14, 11, 8, 0.92);
+  color: #ede2d7;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.liftgrid-entry__error {
+  color: #ffb38b;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.liftgrid-finish {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.liftgrid-share {
+  display: grid;
+  gap: 0.55rem;
+  border-top: 1px solid rgba(249, 115, 22, 0.12);
+  padding-top: 0.9rem;
+}
+
+.liftgrid-finish__question {
+  color: #fff3ea;
+  font-family: var(--font-display), "Oswald", sans-serif;
+  font-size: clamp(1.05rem, 3vw, 1.45rem);
+  font-style: italic;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.liftgrid-finish__button--active {
+  background: #ffb16f;
+  border-color: #ffb16f;
+}
+
+.liftgrid-share__preview {
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: rgba(16, 12, 9, 0.88);
+  color: #fff6ef;
+  padding: 0.85rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 1240px) {
   .loadguess-feedback-card--summary {
     width: min(100%, 580px);
@@ -5315,6 +5827,10 @@ button.game-quick-tools__item:active {
 
   .loadguess-shell {
     gap: 0.78rem;
+  }
+
+  .mode-shell {
+    width: 100%;
   }
 
   .loadguess-body {
@@ -5429,20 +5945,53 @@ button.game-quick-tools__item:active {
     padding: 0.28rem 0.3rem;
   }
 
-  .loadguess-hero {
+  .mode-hero {
     padding: 0 0.8rem;
   }
 
-  .loadguess-hero__stack {
+  .loadguess-hero .mode-hero__stack {
     gap: 0.22rem;
   }
 
-  .loadguess-hero__home-link {
+  .mode-signature__link {
     font-size: 0.95rem;
   }
 
-  .loadguess-hero__title {
+  .mode-title {
     font-size: clamp(1.55rem, 8vw, 2.5rem);
+  }
+
+  .liftgrid-panel {
+    width: 100%;
+  }
+
+  .liftgrid-board {
+    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .liftgrid-board__header span {
+    font-size: 0.68rem;
+  }
+
+  .liftgrid-board__brand {
+    font-size: 0.82rem;
+  }
+
+  .liftgrid-cell__value {
+    font-size: 0.58rem;
+  }
+
+  .liftgrid-cell__placeholder {
+    font-size: 0.66rem;
+  }
+
+  .liftgrid-entry__controls {
+    grid-template-columns: 1fr;
+  }
+
+  .liftgrid-entry__submit {
+    width: 100%;
   }
 
   .loadguess-video__frame {
@@ -5466,7 +6015,7 @@ button.game-quick-tools__item:active {
     transition: none;
   }
 
-  .loadguess-hero__home-link,
+  .mode-signature__link,
   .loadguess-attempt-row {
     transition: none;
   }

@@ -1,10 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
+import { ModeHeroHeader } from "@/components/modes/mode-hero-header";
+import { ModePageShell } from "@/components/modes/mode-page-shell";
+import { ModePanel } from "@/components/modes/mode-panel";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
 import { LOAD_GUESS_VIDEOS } from "@/data/loadguess/videos";
 import { getOrCreateFeedbackVisitorId } from "@/lib/feedback/client";
@@ -528,30 +530,14 @@ export function LoadGuessPage() {
   }
 
   return (
-    <main className="game-page loadguess-page">
-      <header className="loadguess-hero">
-        <div className="loadguess-hero__stack">
-          <div className="loadguess-hero__byline">
-            <span className="loadguess-hero__by">by</span>
-            <Link
-              href="/"
-              className="loadguess-hero__home-link"
-              aria-label="Go to Liftdle homepage"
-            >
-              <span className="loadguess-hero__word">Lift</span>
-              <span className="loadguess-hero__word loadguess-hero__word--accent">dle</span>
-            </Link>
-          </div>
-          <div className="loadguess-hero__title-row">
-            <h1 className="loadguess-hero__title">
-              <span className="loadguess-hero__word">Weight</span>
-              <span className="loadguess-hero__word loadguess-hero__word--accent">
-                Guess
-              </span>
-            </h1>
-          </div>
-        </div>
-      </header>
+    <ModePageShell className="loadguess-page">
+      <ModeHeroHeader
+        titleParts={[
+          { text: "WEIGHT" },
+          { text: "GUESS", accent: true },
+        ]}
+        className="loadguess-hero"
+      />
 
       <div
         className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""} ${
@@ -572,7 +558,7 @@ export function LoadGuessPage() {
         >
           {shouldShowIntro ? (
             <div className="loadguess-intro-stack">
-              <section className="loadguess-intro" aria-label="WeightGuess introduction">
+              <ModePanel className="loadguess-intro">
                 <div className="loadguess-intro__head">
                   <p className="loadguess-intro__eyebrow">Test mode</p>
                   <h2 className="loadguess-intro__title">
@@ -617,7 +603,7 @@ export function LoadGuessPage() {
                 >
                   Start
                 </button>
-              </section>
+              </ModePanel>
 
               {shouldRenderFeedbackCard ? renderFeedbackCard("intro") : null}
             </div>
@@ -694,6 +680,6 @@ export function LoadGuessPage() {
           )}
         </section>
       </div>
-    </main>
+    </ModePageShell>
   );
 }
