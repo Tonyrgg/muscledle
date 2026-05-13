@@ -2364,7 +2364,7 @@ button.game-quick-tools__item:active {
 
 .game-footer-copy {
   width: min(100%, 940px);
-  margin: auto 0 0;
+  margin: auto 0 1rem;
   color: #adadad;
   font-size: 0.65rem;
   font-weight: 700;
@@ -5808,6 +5808,12 @@ button.game-quick-tools__item:active {
   text-transform: uppercase;
 }
 
+.liftgrid-debug-overlay__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
 .liftgrid-debug-overlay__reset {
   border: 1px solid rgba(249, 115, 22, 0.4);
   background: rgba(249, 115, 22, 0.14);
@@ -5816,6 +5822,22 @@ button.game-quick-tools__item:active {
   font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.liftgrid-debug-overlay__close {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid rgba(249, 115, 22, 0.26);
+  background: rgba(22, 17, 14, 0.92);
+  color: #ffd8bd;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -6280,6 +6302,12 @@ button.game-quick-tools__item:active {
     padding: 0 0.8rem;
   }
 
+  .mode-shell {
+    width: 100%;
+    padding: 0 0.8rem 0.8rem;
+    box-sizing: border-box;
+  }
+
   .mode-hero__bar {
     padding: 0.9rem 0.8rem;
   }
@@ -6304,6 +6332,11 @@ button.game-quick-tools__item:active {
     gap: 0.42rem;
   }
 
+  .mode-hero__wordmark .mode-hero__segment:last-child {
+    font-size: 0.74em;
+    transform: translate(-6px);
+  }
+
   .mode-hero__subtitle {
     font-size: clamp(0.58rem, 2.2vw, 0.72rem);
     letter-spacing: 0.32em;
@@ -6311,6 +6344,13 @@ button.game-quick-tools__item:active {
 
   .liftgrid-panel {
     width: 100%;
+  }
+
+  .liftgrid-panel__interaction-layer,
+  .liftgrid-victory-card {
+    padding-left: 0.2rem;
+    padding-right: 0.2rem;
+    box-sizing: border-box;
   }
 
   .liftgrid-board {
@@ -6340,14 +6380,6 @@ button.game-quick-tools__item:active {
 
   .liftgrid-cell__placeholder {
     font-size: 1.15rem;
-  }
-
-  .liftgrid-entry__controls {
-    grid-template-columns: 1fr;
-  }
-
-  .liftgrid-entry__submit {
-    width: 100%;
   }
 
   .loadguess-video__frame {

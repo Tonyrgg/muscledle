@@ -290,6 +290,7 @@ export function LiftGridPage() {
   const [isSurrendering, setIsSurrendering] = useState(false);
   const [gameOutcome, setGameOutcome] = useState<"win" | "lose" | null>(null);
   const [revealedCellKeys, setRevealedCellKeys] = useState<string[]>([]);
+  const [showDebugOverlay, setShowDebugOverlay] = useState(false);
   const stateRef = useRef<LiftGridPublicState | null>(null);
   const previousCompleteRef = useRef(false);
   const completionStateInitializedRef = useRef(false);
@@ -528,6 +529,22 @@ export function LiftGridPage() {
       },
     });
   }, [emitEvent, query, state, suggestions]);
+
+  useEffect(() => {
+    if (query.trim().toLowerCase() !== "secret-debuggerxvii") {
+      return;
+    }
+
+    setShowDebugOverlay(true);
+    setQuery("");
+    setSelectedExerciseId(null);
+    setFocusTick((current) => current + 1);
+    emitEvent({
+      eventName: "interactive_click",
+      uiSurface: "debug",
+      actionTarget: "open-secret-debugger",
+    });
+  }, [emitEvent, query]);
 
   const effectiveSolvedCells = useMemo(
     () => localSolvedCells ?? state?.solvedCells ?? [],
@@ -1145,34 +1162,53 @@ export function LiftGridPage() {
               <div
                 className={`liftgrid-board-wrap ${isBoardShaking ? "liftgrid-board-wrap--shake" : ""}`.trim()}
               >
-                <aside className="liftgrid-debug-overlay" aria-label="LiftGrid debug solutions">
-                  <div className="liftgrid-debug-overlay__head">
-                    <strong>Debug solutions</strong>
-                    <button
-                      type="button"
-                      className="liftgrid-debug-overlay__reset"
-                      onClick={() => void handleDebugReset()}
-                      disabled={resettingDebugGrid}
-                    >
-                      {resettingDebugGrid ? "Resetting..." : "Reset grid"}
-                    </button>
-                  </div>
-                  <div className="liftgrid-debug-overlay__grid">
-                    {debugSolutions.flat().map((cell) => (
-                      <div
-                        key={`${cell.rowIndex}:${cell.columnIndex}`}
-                        className="liftgrid-debug-overlay__cell"
-                      >
-                        <div className="liftgrid-debug-overlay__label">
-                          {cell.rowLabel} / {cell.columnLabel}
-                        </div>
-                        <div className="liftgrid-debug-overlay__value">
-                          {cell.matches.length > 0 ? cell.matches.join(", ") : "No match"}
-                        </div>
+                {showDebugOverlay ? (
+                  <aside className="liftgrid-debug-overlay" aria-label="LiftGrid debug solutions">
+                    <div className="liftgrid-debug-overlay__head">
+                      <strong>Debug solutions</strong>
+                      <div className="liftgrid-debug-overlay__actions">
+                        <button
+                          type="button"
+                          className="liftgrid-debug-overlay__reset"
+                          onClick={() => void handleDebugReset()}
+                          disabled={resettingDebugGrid}
+                        >
+                          {resettingDebugGrid ? "Resetting..." : "Reset grid"}
+                        </button>
+                        <button
+                          type="button"
+                          className="liftgrid-debug-overlay__close"
+                          aria-label="Close debugger"
+                          onClick={() => {
+                            setShowDebugOverlay(false);
+                            emitEvent({
+                              eventName: "interactive_click",
+                              uiSurface: "debug",
+                              actionTarget: "close-secret-debugger",
+                            });
+                          }}
+                        >
+                          X
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                </aside>
+                    </div>
+                    <div className="liftgrid-debug-overlay__grid">
+                      {debugSolutions.flat().map((cell) => (
+                        <div
+                          key={`${cell.rowIndex}:${cell.columnIndex}`}
+                          className="liftgrid-debug-overlay__cell"
+                        >
+                          <div className="liftgrid-debug-overlay__label">
+                            {cell.rowLabel} / {cell.columnLabel}
+                          </div>
+                          <div className="liftgrid-debug-overlay__value">
+                            {cell.matches.length > 0 ? cell.matches.join(", ") : "No match"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </aside>
+                ) : null}
                 <div className="liftgrid-board" role="grid" aria-label="LiftGrid daily board">
                 <div className="liftgrid-board__corner liftgrid-board__corner--brand">
                   <span className="liftgrid-board__brand">
