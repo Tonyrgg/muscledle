@@ -85,25 +85,6 @@ function getSolvedCell(
   return solvedCells.find((cell) => cell.rowIndex === rowIndex && cell.columnIndex === columnIndex) ?? null;
 }
 
-function formatGuessError(reason: string | null) {
-  switch (reason) {
-    case "unknown_exercise":
-      return "That exercise is not in the current Liftdle dataset.";
-    case "wrong_row_category":
-      return "That exercise does not match the row category.";
-    case "wrong_column_category":
-      return "That exercise does not match the column category.";
-    case "already_used":
-      return "That exercise is already used elsewhere in this grid.";
-    case "already_solved":
-      return "That cell is already solved.";
-    case "no_matching_cell":
-      return "That exercise does not fit any open cell in today's grid.";
-    default:
-      return "Guess rejected.";
-  }
-}
-
 function parseOptionalIndex(value: string | undefined) {
   if (!value) return null;
   const parsed = Number.parseInt(value, 10);
@@ -194,14 +175,29 @@ export function LiftGridPage() {
   const [feedbackChoice, setFeedbackChoice] = useState<LiftGridFeedbackChoice | null>(null);
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "submitting" | "done">("idle");
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "error">("idle");
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isBoardShaking, setIsBoardShaking] = useState(false);
   const stateRef = useRef<LiftGridPublicState | null>(null);
   const boardRenderedRef = useRef(false);
   const suggestionSignatureRef = useRef<string>("");
   const queryChangeTimerRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+  const shakeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+      if (shakeTimerRef.current !== null) {
+        window.clearTimeout(shakeTimerRef.current);
+      }
+    };
+  }, []);
 
   const emitEvent = useCallback(
     (input: Omit<LiftGridEventInput, "eventSource">) => {
@@ -398,6 +394,28 @@ export function LiftGridPage() {
     });
   }
 
+  function showRejectedGuessFeedback(message = "Exercise not present in grid") {
+    setToastMessage(message);
+    setIsBoardShaking(true);
+
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    if (shakeTimerRef.current !== null) {
+      window.clearTimeout(shakeTimerRef.current);
+    }
+
+    shakeTimerRef.current = window.setTimeout(() => {
+      setIsBoardShaking(false);
+      shakeTimerRef.current = null;
+    }, 420);
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+      toastTimerRef.current = null;
+    }, 2200);
+  }
+
   async function handleSubmitGuess(guessValue?: string) {
     if (!state) return;
     const nextGuess = (guessValue ?? query).trim();
@@ -412,14 +430,14 @@ export function LiftGridPage() {
 
     setSubmitting(true);
     setError(null);
+    setToastMessage(null);
     try {
       const response = await submitLiftGridGuessRequest({
         guess: nextGuess,
       });
 
       if (!response.correct) {
-        const formattedError = formatGuessError(response.reason);
-        setError(formattedError);
+        showRejectedGuessFeedback();
         emitEvent({
           eventName: "guess_result_rendered",
           uiSurface: "entry",
@@ -427,9 +445,7 @@ export function LiftGridPage() {
           inputLength: nextGuess.length,
           isCorrect: false,
           failureReason: response.reason,
-          metadata: {
-            message: formattedError,
-          },
+          metadata: { message: "Exercise not present in grid" },
         });
         return;
       }
@@ -473,7 +489,7 @@ export function LiftGridPage() {
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : "Failed to submit guess.";
-      setError(message);
+      showRejectedGuessFeedback();
       emitEvent({
         eventName: "guess_result_rendered",
         uiSurface: "entry",
@@ -549,19 +565,14 @@ export function LiftGridPage() {
     <ModePageShell className="liftgrid-page">
       <div className="mode-shell">
         <ModeHeroHeader
-          titleParts={[
-            { text: "LIFT" },
-            { text: "GRID", accent: true },
-          ]}
+          modeLead="LIFT"
+          modeAccent="GRID"
+          subtitle="Fill the grid. Prove your gym brain."
           className="liftgrid-hero"
         />
 
         <ModePanel className="liftgrid-panel">
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
-            <div className="liftgrid-panel__head">
-              <h2 className="liftgrid-panel__title">FILL THE GRID. PROVE YOUR GYM BRAIN.</h2>
-            </div>
-
           {loading ? (
             <div className="liftgrid-loading">
               <p className="liftgrid-loading__label">Loading today&apos;s grid...</p>
@@ -576,7 +587,10 @@ export function LiftGridPage() {
 
           {!loading && state ? (
             <>
-              <div className="liftgrid-board" role="grid" aria-label="LiftGrid daily board">
+              <div
+                className={`liftgrid-board-wrap ${isBoardShaking ? "liftgrid-board-wrap--shake" : ""}`.trim()}
+              >
+                <div className="liftgrid-board" role="grid" aria-label="LiftGrid daily board">
                 <div className="liftgrid-board__corner liftgrid-board__corner--brand">
                   <span className="liftgrid-board__brand">
                     <span className="liftgrid-board__brand-main">LIFT</span>
@@ -660,6 +674,7 @@ export function LiftGridPage() {
                     })}
                   </div>
                 ))}
+                </div>
               </div>
 
               <div className="liftgrid-entry">
@@ -675,12 +690,15 @@ export function LiftGridPage() {
                     })}
                 >
                   <GuessInput
+                    className="liftgrid-guess-input"
                     query={query}
                     selectedExerciseId={selectedExerciseId}
                     exercises={exercises}
                     loadingExercises={loading && exercises.length === 0}
                     disabled={state.isComplete}
                     submitting={submitting}
+                    autoDropdownPlacement
+                    preferredDropdownPlacement="up"
                     onQueryChange={(value) => {
                       setSelectedExerciseId(null);
                       setQuery(value);
@@ -704,11 +722,6 @@ export function LiftGridPage() {
                   />
                 </section>
 
-                {error && state ? (
-                  <p className="liftgrid-entry__error" aria-live="polite">
-                    {error}
-                  </p>
-                ) : null}
               </div>
 
               {state.isComplete ? (
@@ -759,6 +772,11 @@ export function LiftGridPage() {
                 </div>
               ) : null}
             </>
+          ) : null}
+          {toastMessage ? (
+            <div className="liftgrid-toast" aria-live="polite" role="status">
+              {toastMessage}
+            </div>
           ) : null}
           </div>
         </ModePanel>

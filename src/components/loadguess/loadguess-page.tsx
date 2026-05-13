@@ -531,13 +531,11 @@ export function LoadGuessPage() {
 
   return (
     <ModePageShell className="loadguess-page">
-      <ModeHeroHeader
-        titleParts={[
-          { text: "WEIGHT" },
-          { text: "GUESS", accent: true },
-        ]}
-        className="loadguess-hero"
-      />
+        <ModeHeroHeader
+          modeLead="WEIGHT"
+          modeAccent="GUESS"
+          className="loadguess-hero"
+        />
 
       <div
         className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""} ${

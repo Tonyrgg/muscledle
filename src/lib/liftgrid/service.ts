@@ -309,8 +309,8 @@ export async function submitLiftGridGuess(input: {
     .from("liftgrid_attempts")
     .insert({
       result_id: result.id,
-      row_index: validation.solvedCell?.rowIndex ?? null,
-      column_index: validation.solvedCell?.columnIndex ?? null,
+      row_index: validation.solvedCell?.rowIndex ?? -1,
+      column_index: validation.solvedCell?.columnIndex ?? -1,
       guess_text: input.guess.trim(),
       normalized_guess_text: input.guess.trim().toLowerCase(),
       matched_exercise_id: validation.solvedCell?.exerciseId ?? null,

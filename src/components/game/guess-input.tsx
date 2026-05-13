@@ -1,6 +1,6 @@
 'use client';
 
-import { type KeyboardEvent, type WheelEvent, useEffect, useId, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type WheelEvent, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { getMuscleGroupIconPath, resolveMuscleGroupIconKey } from "@/lib/exercises/icons";
 import type { LiveExerciseSuggestion } from "@/lib/game/client";
 
@@ -14,6 +14,9 @@ type GuessInputProps = {
   onQueryChange: (value: string) => void;
   onSelectExercise: (exercise: LiveExerciseSuggestion) => void;
   onSubmit: (exercise?: LiveExerciseSuggestion) => void;
+  autoDropdownPlacement?: boolean;
+  preferredDropdownPlacement?: "up" | "down";
+  className?: string;
 };
 
 type RankedExercise = {
@@ -117,10 +120,16 @@ export function GuessInput({
   onQueryChange,
   onSelectExercise,
   onSubmit,
+  autoDropdownPlacement = false,
+  preferredDropdownPlacement = "down",
+  className,
 }: GuessInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [dropdownPlacement, setDropdownPlacement] = useState<"up" | "down">(preferredDropdownPlacement);
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const fieldWrapRef = useRef<HTMLDivElement | null>(null);
   const listId = useId();
 
   const normalizedQuery = normalize(query);
@@ -142,6 +151,34 @@ export function GuessInput({
   const canSubmitFromButton =
     query.trim().length > 0 && !disabled && !loadingExercises && !submitting;
 
+  const updateDropdownPlacement = useCallback(() => {
+    if (!autoDropdownPlacement || typeof window === "undefined") {
+      return;
+    }
+
+    const anchor = fieldWrapRef.current;
+    if (!anchor) return;
+
+    const rect = anchor.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const gap = 8;
+    const minHeight = 140;
+    const spaceAbove = Math.max(0, rect.top - gap);
+    const spaceBelow = Math.max(0, viewportHeight - rect.bottom - gap);
+
+    let placeUp = preferredDropdownPlacement === "up";
+    if (preferredDropdownPlacement === "up") {
+      placeUp = spaceAbove >= minHeight || spaceAbove >= spaceBelow;
+    } else {
+      placeUp = !(spaceBelow >= minHeight || spaceBelow >= spaceAbove);
+    }
+
+    const available = Math.max(minHeight, (placeUp ? spaceAbove : spaceBelow) - gap);
+
+    setDropdownPlacement(placeUp ? "up" : "down");
+    setDropdownMaxHeight(Math.min(available, 320));
+  }, [autoDropdownPlacement, preferredDropdownPlacement]);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -156,6 +193,20 @@ export function GuessInput({
     };
   }, [showDropdown]);
 
+  useLayoutEffect(() => {
+    if (!showDropdown || !autoDropdownPlacement || typeof window === "undefined") {
+      return;
+    }
+
+    window.addEventListener("resize", updateDropdownPlacement);
+    window.addEventListener("scroll", updateDropdownPlacement, true);
+
+    return () => {
+      window.removeEventListener("resize", updateDropdownPlacement);
+      window.removeEventListener("scroll", updateDropdownPlacement, true);
+    };
+  }, [autoDropdownPlacement, showDropdown, suggestions.length, updateDropdownPlacement]);
+
   const handleSelect = (exercise: LiveExerciseSuggestion) => {
     onSelectExercise(exercise);
     setIsOpen(false);
@@ -165,6 +216,7 @@ export function GuessInput({
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown") {
       event.preventDefault();
+      updateDropdownPlacement();
       setIsOpen(true);
       setActiveIndex((prev) => (suggestions.length === 0 ? -1 : Math.min(prev + 1, suggestions.length - 1)));
       return;
@@ -172,6 +224,7 @@ export function GuessInput({
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
+      updateDropdownPlacement();
       setIsOpen(true);
       setActiveIndex((prev) => (suggestions.length === 0 ? -1 : Math.max(prev - 1, 0)));
       return;
@@ -211,6 +264,7 @@ export function GuessInput({
   };
 
   const handleInputFocus = () => {
+    updateDropdownPlacement();
     setIsOpen(true);
 
     if (typeof window === "undefined") {
@@ -237,9 +291,14 @@ export function GuessInput({
   };
 
   return (
-    <div className="guess-input">
+    <div className={`guess-input ${className ?? ""}`.trim()}>
       <div className="guess-input__row">
-        <div className="guess-input__field-wrap">
+        <div
+          ref={fieldWrapRef}
+          className={`guess-input__field-wrap ${
+            autoDropdownPlacement ? `guess-input__field-wrap--${dropdownPlacement}` : ""
+          }`.trim()}
+        >
           <input
             ref={inputRef}
             role="combobox"
@@ -259,6 +318,7 @@ export function GuessInput({
             }}
             onChange={(event) => {
               onQueryChange(event.target.value);
+              updateDropdownPlacement();
               setIsOpen(true);
             }}
             onKeyDown={handleInputKeyDown}
@@ -268,7 +328,15 @@ export function GuessInput({
           />
 
           {showDropdown ? (
-            <div id={listId} role="listbox" className="guess-input__dropdown" onWheel={handleDropdownWheel}>
+            <div
+              id={listId}
+              role="listbox"
+              className={`guess-input__dropdown ${
+                autoDropdownPlacement ? `guess-input__dropdown--${dropdownPlacement}` : ""
+              }`.trim()}
+              style={dropdownMaxHeight ? { maxHeight: `${dropdownMaxHeight}px` } : undefined}
+              onWheel={handleDropdownWheel}
+            >
               {loadingExercises ? (
                 <p className="guess-input__empty">LOADING EXERCISES...</p>
               ) : suggestions.length === 0 ? (

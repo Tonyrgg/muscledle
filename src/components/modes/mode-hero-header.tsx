@@ -1,34 +1,35 @@
-import type { ReactNode } from "react";
-import { ModeSignature } from "@/components/modes/mode-signature";
-import { ModeTitle, type ModeTitlePart } from "@/components/modes/mode-title";
-
 type ModeHeroHeaderProps = {
-  titleParts: ModeTitlePart[];
-  badge?: ReactNode;
-  description?: ReactNode;
+  modeLead: string;
+  modeAccent: string;
+  subtitle?: string;
   className?: string;
-  signatureHref?: string;
 };
 
 export function ModeHeroHeader({
-  titleParts,
-  badge,
-  description,
+  modeLead,
+  modeAccent,
+  subtitle,
   className,
-  signatureHref,
 }: ModeHeroHeaderProps) {
+  const fullModeLabel = `${modeLead}${modeAccent}`;
+
   return (
     <header className={`mode-hero ${className ?? ""}`.trim()}>
       <div className="mode-hero__bar">
-        <div className="mode-hero__signature-slot">
-          <ModeSignature href={signatureHref} showBy={false} />
+        <div className="mode-hero__content">
+          <h1 className="mode-hero__wordmark" aria-label={`LIFTDLE x ${fullModeLabel}`}>
+            <span className="mode-hero__segment">
+              <span className="mode-hero__segment-main">LIFT</span>
+              <span className="mode-hero__segment-accent">DLE</span>
+            </span>
+            <span className="mode-hero__separator">x</span>
+            <span className="mode-hero__segment">
+              <span className="mode-hero__segment-main">{modeLead}</span>
+              <span className="mode-hero__segment-accent">{modeAccent}</span>
+            </span>
+          </h1>
+          {subtitle ? <p className="mode-hero__subtitle">{subtitle}</p> : null}
         </div>
-        <div className="mode-hero__stack">
-          {badge ? <div className="mode-hero__badge">{badge}</div> : null}
-          <ModeTitle parts={titleParts} />
-          {description ? <div className="mode-hero__description">{description}</div> : null}
-        </div>
-        <div className="mode-hero__balance" aria-hidden="true" />
       </div>
     </header>
   );
