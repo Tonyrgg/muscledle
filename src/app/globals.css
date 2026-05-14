@@ -48,9 +48,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at top, rgba(255, 138, 0, 0.04), transparent 35%),
-    var(--page-bg);
+  background: var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
   overflow-x: clip;
@@ -7548,24 +7546,11 @@ button.game-quick-tools__item:active {
 
 /* Hub homepage */
 .hub-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 155.42px);
   position: relative;
   display: flex;
   flex-direction: column;
   padding: 0 1rem 1rem 1rem;
-}
-
-.hub-page::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.18;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 82%);
 }
 
 .hub-header,
@@ -7684,6 +7669,15 @@ button.game-quick-tools__item:active {
   width: 1.72rem;
   height: 1.72rem;
   display: block;
+  background: var(--accent);
+  -webkit-mask-image: var(--mode-icon-src);
+  mask-image: var(--mode-icon-src);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
 }
 
 .hub-card__pill {
