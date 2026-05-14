@@ -22,6 +22,7 @@ import {
 } from "@/lib/liftgrid/client";
 import { GuessInput } from "@/components/game/guess-input";
 import { DailyCelebration } from "@/components/game/daily-celebration";
+import { ModeIconNav } from "@/components/modes/mode-icon-nav";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
 import type { LiftGridEventInput, LiftGridFeedbackChoice, LiftGridPublicState, LiftGridSolvedCell } from "@/types/liftgrid";
 
@@ -1102,6 +1103,7 @@ export function LiftGridPage() {
       ) : null}
       <div className="mode-shell">
         <section className="liftgrid-panel">
+          <ModeIconNav activeMode="liftgrid" className="liftgrid-mode-nav" />
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (
             <div className="liftgrid-loading">

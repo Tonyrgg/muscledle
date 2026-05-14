@@ -10,6 +10,7 @@ import { DailyCelebration } from "@/components/game/daily-celebration";
 import { GuessInput } from "@/components/game/guess-input";
 import { VictoryPanel } from "@/components/game/victory-panel";
 import { ExerciseMediaView } from "@/components/media/exercise-media-view";
+import { ModeIconNav } from "@/components/modes/mode-icon-nav";
 import {
   fetchDailyTracker,
   fetchGameStats,
@@ -1687,40 +1688,7 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : (
             <>
           <header className="game-hero">
-            <div className="mode-switch" aria-label="Game mode switch">
-              <Link
-                href="/daily"
-                aria-current={mode === "daily" ? "page" : undefined}
-                className={`mode-switch__button mode-switch__button--link ${mode === "daily" ? "mode-switch__button--active" : ""}`}
-              >
-                Daily
-              </Link>
-              <button
-                type="button"
-                aria-pressed={mode === "infinite"}
-                className={`mode-switch__button ${mode === "infinite" ? "mode-switch__button--active" : ""}`}
-                onClick={() => handleModeChange("infinite")}
-              >
-                Marathon
-              </button>
-              <Link
-                href="/weightGuess"
-                className="mode-switch__button mode-switch__button--link"
-                aria-label="Open WeightGuess mode"
-              >
-                WeightGuess
-                <span className="mode-switch__badge" aria-hidden="true">
-                  new
-                </span>
-              </Link>
-              <Link
-                href="/liftgrid"
-                className="mode-switch__button mode-switch__button--link"
-                aria-label="Open LiftGrid mode"
-              >
-                LiftGrid
-              </Link>
-            </div>
+            <ModeIconNav activeMode="daily" />
             {mode === "daily" ? (
               <>
                 {dailyTracker ? (
