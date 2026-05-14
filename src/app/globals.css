@@ -1,16 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --page-bg: #1f1f1f;
-  --surface: #232323;
-  --surface-strong: #2a2a2a;
-  --border: #3a3a3a;
+  --bg-primary: #0b0b0d;
+  --bg-secondary: #111214;
+  --page-bg: var(--bg-primary);
+  --surface: #15161a;
+  --surface-hover: #17181c;
+  --surface-strong: #131417;
+  --surface-soft: #101114;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-medium: rgba(255, 255, 255, 0.1);
+  --border: var(--border-subtle);
   --text-primary: #f5f5f5;
-  --text-muted: #8e8e8e;
-  --accent: #f97316;
-  --feedback-green: #2bbf5a;
-  --feedback-yellow: #dfb10f;
-  --feedback-red: #e44a4a;
+  --text-secondary: #8d9199;
+  --text-muted: #5f636b;
+  --accent: #ff8a00;
+  --accent-soft: rgba(255, 138, 0, 0.14);
+  --accent-border: rgba(255, 138, 0, 0.35);
+  --feedback-green: #2f8e52;
+  --feedback-yellow: #9a7a2b;
+  --feedback-red: #8e2f2f;
+  --correct: #2f8e52;
+  --partial: #9a7a2b;
+  --wrong: #8e2f2f;
+  --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
+  --shadow-subtle: 0 6px 18px rgba(0, 0, 0, 0.12);
+  --label-tracking: 0.18em;
   --font-display: var(--font-oswald), sans-serif;
   --font-body: var(--font-roboto-condensed), sans-serif;
 }
@@ -30,10 +45,15 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--page-bg);
+  background:
+    radial-gradient(circle at top, rgba(255, 138, 0, 0.04), transparent 35%),
+    var(--page-bg);
   color: var(--text-primary);
   font-family: var(--font-body);
   overflow-x: clip;
+  letter-spacing: 0.01em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -7303,4 +7323,787 @@ button.game-quick-tools__item:active {
   .feedback-modal__grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Premium visual refinement */
+:where(button, a, input, select, textarea) {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    opacity 180ms ease;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 1px solid var(--accent-border);
+  outline-offset: 2px;
+}
+
+:where(
+  .game-prompt-panel,
+  .daily-hints__tile,
+  .daily-hints__content,
+  .game-quick-tools,
+  .game-quick-tools__item,
+  .victory-panel,
+  .victory-panel__learning,
+  .guess-input__field,
+  .guess-input__submit,
+  .guess-input__dropdown,
+  .attempts-exercise-cell,
+  .mode-switch__button,
+  .marathon-hud__bar,
+  .marathon-hud__stat,
+  .marathon-hud__failed-exercise-media,
+  .mode-hero__home,
+  .mode-panel,
+  .loadguess-unit-toggle,
+  .loadguess-feedback-card,
+  .loadguess-round-card,
+  .loadguess-video__frame,
+  .loadguess-video__control,
+  .loadguess-attempt-row,
+  .loadguess-attempt-row__index,
+  .loadguess-attempt-row__arrow,
+  .loadguess-attempt-row__submit,
+  .loadguess-attempt-row__value,
+  .loadguess-attempt-row__feedback,
+  .liftgrid-board__corner,
+  .liftgrid-board__header,
+  .liftgrid-cell,
+  .liftgrid-entry__input,
+  .liftgrid-entry__submit,
+  .liftgrid-finish__button,
+  .liftgrid-suggestions__option,
+  .liftgrid-toast,
+  .liftgrid-debug-overlay__cell,
+  .liftgrid-surrender__panel,
+  .exercise-page__card,
+  .legal-page__shell,
+  .feedback-modal__tab,
+  .feedback-modal__pill,
+  .feedback-modal__body input,
+  .feedback-modal__body select,
+  .feedback-modal__body textarea,
+  .feedback-modal__card,
+  .feedback-modal__attachments a,
+  .consent-fab,
+  .feedback-fab,
+  .consent-modal,
+  .info-sheet__panel,
+  .archive-detail-modal__panel,
+  .exercise-media-modal__panel
+) {
+  border-color: var(--border-subtle);
+  background: var(--surface-strong);
+  box-shadow: none;
+}
+
+:where(
+  .game-prompt-panel,
+  .daily-hints__tile,
+  .game-quick-tools__item,
+  .mode-switch__button,
+  .guess-input__submit,
+  .loadguess-unit-toggle__button,
+  .loadguess-video__control,
+  .loadguess-attempt-row__arrow,
+  .loadguess-attempt-row__submit,
+  .liftgrid-entry__submit,
+  .liftgrid-finish__button,
+  .liftgrid-suggestions__option,
+  .legal-page__cta,
+  .consent-fab,
+  .feedback-fab,
+  .feedback-modal__tab,
+  .feedback-modal__pill
+):hover,
+:where(
+  .game-prompt-panel,
+  .daily-hints__tile,
+  .game-quick-tools__item,
+  .mode-switch__button,
+  .guess-input__submit,
+  .loadguess-unit-toggle__button,
+  .loadguess-video__control,
+  .loadguess-attempt-row__arrow,
+  .loadguess-attempt-row__submit,
+  .liftgrid-entry__submit,
+  .liftgrid-finish__button,
+  .liftgrid-suggestions__option,
+  .legal-page__cta,
+  .consent-fab,
+  .feedback-fab,
+  .feedback-modal__tab,
+  .feedback-modal__pill
+):focus-visible {
+  border-color: var(--accent-border);
+  background: var(--surface-hover);
+  transform: translateY(-2px);
+}
+
+:where(
+  .auth-bootstrap-note,
+  .game-hero__subtitle,
+  .game-hero__state,
+  .brand-logo__tagline,
+  .victory-panel__kicker,
+  .victory-panel__stat-label,
+  .victory-panel__timezone,
+  .daily-hints__tile-label,
+  .daily-hints__tile-meta,
+  .daily-hints__attribute-label,
+  .attempts-header-cell,
+  .attempts-mobile-slot__label,
+  .attempts-mobile-progress__label,
+  .mode-hero__subtitle,
+  .liftgrid-panel__eyebrow,
+  .liftgrid-entry__label,
+  .liftgrid-used__label,
+  .liftgrid-loading__label,
+  .liftgrid-share__status,
+  .liftgrid-board__header small,
+  .loadguess-intro__eyebrow,
+  .loadguess-feedback-card__eyebrow,
+  .loadguess-round-card__eyebrow,
+  .exercise-page__kicker,
+  .exercise-page__section-kicker,
+  .legal-page__line--cta,
+  .feedback-modal__body label,
+  .feedback-modal__field-label,
+  .consent-modal__manage
+) {
+  letter-spacing: var(--label-tracking);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.game-shell,
+.mode-shell,
+.loadguess-shell {
+  gap: 1.2rem;
+}
+
+.game-hero,
+.loadguess-intro-stack {
+  gap: 0.3rem;
+}
+
+.brand-logo__tagline,
+.game-hero__subtitle,
+.mode-hero__subtitle {
+  color: rgba(245, 245, 245, 0.62);
+}
+
+.game-hero__home-link .brand-logo__wordmark,
+.game-hero__home-link .brand-logo__tagline {
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.game-hero__home-link:hover .brand-logo__wordmark,
+.game-hero__home-link:focus-visible .brand-logo__wordmark {
+  transform: translateY(-2px);
+}
+
+.game-prompt-panel,
+.victory-panel,
+.mode-panel,
+.loadguess-feedback-card,
+.loadguess-round-card,
+.legal-page__shell,
+.exercise-page__card,
+.consent-modal,
+.info-sheet__panel,
+.archive-detail-modal__panel,
+.exercise-media-modal__panel,
+.feedback-modal__card {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-strong);
+}
+
+.game-prompt-panel,
+.victory-panel,
+.mode-panel,
+.loadguess-feedback-card,
+.loadguess-round-card,
+.legal-page__shell,
+.exercise-page__card {
+  border-radius: 0.9rem;
+}
+
+.game-prompt-panel {
+  margin-top: 0.7rem;
+  padding: clamp(0.95rem, 2.8vw, 1.45rem);
+}
+
+.game-prompt-panel__title,
+.victory-panel__title,
+.liftgrid-panel__title,
+.exercise-page__title {
+  letter-spacing: 0.01em;
+}
+
+.game-prompt-panel__subtitle {
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.daily-hints {
+  margin-top: 1rem;
+}
+
+.daily-hints__tiles,
+.mode-switch,
+.game-quick-tools,
+.victory-panel__actions,
+.loadguess-playfield {
+  gap: 0.65rem;
+}
+
+.daily-hints__tile,
+.daily-hints__content,
+.daily-hints__visual,
+.daily-hints__tile-icon,
+.game-quick-tools,
+.game-quick-tools__item,
+.marathon-hud__bar,
+.marathon-hud__stat,
+.marathon-hud__failed-exercise-media,
+.attempts-exercise-cell {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-strong);
+}
+
+.daily-hints__tile-icon,
+.daily-hints__visual,
+.marathon-hud__failed-exercise-media {
+  background: var(--bg-secondary);
+}
+
+.daily-hints__tile-icon-image,
+.daily-hints__visual-skeleton::after,
+.exercise-icon-cell__skeleton::after {
+  filter: brightness(0) saturate(100%) invert(94%) opacity(0.92);
+}
+
+.daily-hints__tile-label,
+.daily-hints__name-mask,
+.game-quick-tools__value,
+.marathon-complete__score-value,
+.marathon-hud__stat strong {
+  color: var(--text-primary);
+}
+
+.daily-hints__tile-meta,
+.daily-hints__attribute-label,
+.marathon-hud__bar-label,
+.marathon-hud__failed-exercise,
+.marathon-complete__score-label {
+  color: var(--text-secondary);
+}
+
+.daily-hints__tile--active,
+.daily-hints__tile--active .daily-hints__tile-icon,
+.mode-switch__button--active,
+.feedback-modal__tab--active,
+.feedback-modal__pill--active {
+  border-color: var(--accent-border);
+}
+
+.daily-hints__tile--active .daily-hints__tile-icon-image {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2483%) hue-rotate(6deg) brightness(102%) contrast(97%);
+}
+
+.mode-switch__button,
+.guess-input__submit,
+.loadguess-unit-toggle,
+.loadguess-unit-toggle__button,
+.loadguess-video__control,
+.consent-fab,
+.feedback-fab,
+.feedback-modal__tab,
+.feedback-modal__pill {
+  border-radius: 0.75rem;
+}
+
+.mode-switch__button {
+  background: var(--surface-strong);
+  color: var(--text-secondary);
+}
+
+.mode-switch__button--active {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.mode-switch__badge {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg-primary);
+  animation: none;
+}
+
+.game-quick-tools {
+  padding: 0.55rem;
+  background: var(--surface);
+  border-radius: 0.95rem;
+}
+
+.game-quick-tools__item {
+  min-height: 4.4rem;
+  border-radius: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.game-quick-tools__item--streak {
+  background: color-mix(in srgb, var(--surface-strong) 88%, var(--accent-soft));
+}
+
+.game-quick-tools__label,
+.game-quick-tools__icon {
+  color: inherit;
+}
+
+.victory-panel__kicker,
+.victory-panel__family-match span,
+.victory-panel__stat-line span {
+  color: var(--accent);
+}
+
+.victory-panel__head,
+.victory-panel__stats,
+.victory-panel__learning-body,
+.victory-panel__share-text {
+  text-align: center;
+}
+
+.victory-panel__family-match,
+.liftgrid-toast,
+.liftgrid-surrender__panel,
+.liftgrid-debug-overlay__cell {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--surface-strong) 86%, var(--accent-soft));
+}
+
+.victory-panel__stat-line,
+.victory-panel__learning-line,
+.victory-panel__learning-list,
+.victory-panel__share-text,
+.consent-modal__text,
+.consent-modal__links,
+.feedback-modal__desc,
+.legal-page__shell p {
+  color: var(--text-secondary);
+}
+
+.victory-panel__learning-kicker,
+.victory-panel__learning-head {
+  color: var(--text-primary);
+}
+
+.guess-input__row {
+  gap: 0.65rem;
+}
+
+.guess-input__field,
+.guess-input__dropdown,
+.feedback-modal__body input,
+.feedback-modal__body select,
+.feedback-modal__body textarea,
+.liftgrid-entry__input {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-strong);
+  color: var(--text-primary);
+}
+
+.guess-input__field,
+.liftgrid-entry__input {
+  min-height: clamp(3.55rem, 7vw, 4rem);
+  border-radius: 0.88rem;
+  letter-spacing: 0.1em;
+}
+
+.guess-input__field::placeholder,
+.liftgrid-entry__input::placeholder,
+.feedback-modal__body input::placeholder,
+.feedback-modal__body textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.guess-input__submit,
+.liftgrid-entry__submit,
+.liftgrid-finish__button,
+.legal-page__cta {
+  border: 1px solid var(--accent-border);
+  background: color-mix(in srgb, var(--surface-strong) 82%, var(--accent-soft));
+  color: var(--text-primary);
+}
+
+.guess-input__submit:disabled,
+.liftgrid-entry__submit:disabled,
+.liftgrid-finish__button:disabled {
+  background: var(--surface-soft);
+  color: var(--text-muted);
+}
+
+.guess-input__dropdown {
+  border-radius: 0.88rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.guess-input__option {
+  border-top-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.guess-input__option:hover,
+.guess-input__option--active {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.attempts-body {
+  gap: 0.6rem;
+}
+
+.attempts-grid,
+.attempts-grid--header {
+  column-gap: 0.6rem;
+}
+
+.attempts-header-cell {
+  color: var(--text-secondary);
+}
+
+.attempts-exercise-cell,
+.exercise-icon-cell__skeleton,
+.loadguess-video__skeleton,
+.daily-hints__visual-skeleton {
+  background: var(--surface);
+}
+
+.exercise-icon-cell__skeleton::before,
+.loadguess-video__skeleton::before,
+.daily-hints__visual-skeleton::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 22%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.02) 78%, transparent 100%);
+}
+
+.exercise-icon-cell__gif,
+.liftgrid-cell__gif {
+  background: #e9e2d7;
+}
+
+.mode-hero__bar,
+.loadguess-hero .mode-hero__bar {
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(11, 11, 13, 0.72);
+  box-shadow: none;
+}
+
+.mode-hero__home {
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  background: var(--surface-strong);
+  box-shadow: none;
+}
+
+.mode-hero__home-icon {
+  filter: none;
+}
+
+.mode-hero__home:hover,
+.mode-hero__home:focus-visible {
+  color: var(--accent);
+}
+
+.mode-hero__separator {
+  color: var(--text-muted);
+}
+
+.loadguess-page,
+.loadguess-body {
+  padding-bottom: 1.4rem;
+}
+
+.loadguess-shell,
+.loadguess-playfield,
+.loadguess-summary-layout,
+.loadguess-intro-stack {
+  gap: 1rem;
+}
+
+.loadguess-unit-toggle {
+  padding: 0.28rem;
+  border-radius: 0.82rem;
+  background: var(--surface);
+}
+
+.loadguess-unit-toggle__button {
+  color: var(--text-secondary);
+}
+
+.loadguess-unit-toggle__button--active {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--surface-strong) 82%, var(--accent-soft));
+  color: var(--text-primary);
+}
+
+.loadguess-intro__copy,
+.loadguess-intro__copy--secondary,
+.loadguess-feedback-card__complete-copy,
+.loadguess-feedback-card__message,
+.loadguess-result__copy {
+  color: var(--text-secondary);
+}
+
+.loadguess-intro__title,
+.loadguess-intro__title--sub,
+.loadguess-feedback-card__complete-title,
+.loadguess-round-card__title,
+.liftgrid-finish__question {
+  color: var(--text-primary);
+}
+
+.loadguess-intro__stat,
+.loadguess-video__frame,
+.loadguess-attempt-row,
+.loadguess-attempt-row__index,
+.loadguess-attempt-row__arrow,
+.loadguess-attempt-row__value,
+.loadguess-attempt-row__submit,
+.loadguess-attempt-row__feedback {
+  border-color: var(--border-subtle);
+  background: var(--surface-strong);
+  box-shadow: none;
+}
+
+.loadguess-attempt-row--active {
+  border-color: var(--accent-border);
+}
+
+.loadguess-attempt-row__submit,
+.loadguess-result__action {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--surface-strong) 82%, var(--accent-soft));
+  color: var(--text-primary);
+}
+
+.loadguess-attempt-row__feedback--correct {
+  border-color: color-mix(in srgb, var(--correct) 70%, white 8%);
+  background: color-mix(in srgb, var(--correct) 18%, var(--surface-strong));
+}
+
+.loadguess-attempt-row__feedback--hot {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-strong));
+}
+
+.loadguess-attempt-row__feedback--warm {
+  border-color: color-mix(in srgb, var(--partial) 68%, white 8%);
+  background: color-mix(in srgb, var(--partial) 18%, var(--surface-strong));
+}
+
+.loadguess-attempt-row__feedback--medium,
+.loadguess-attempt-row__feedback--cold {
+  border-color: var(--border-medium);
+  background: color-mix(in srgb, var(--surface-strong) 92%, white 8%);
+}
+
+.liftgrid-panel__interaction-layer {
+  min-height: calc(100dvh - 10rem);
+}
+
+.liftgrid-panel__head {
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.liftgrid-panel__title,
+.liftgrid-board__header span,
+.liftgrid-cell__value,
+.liftgrid-finish__question {
+  color: var(--text-primary);
+}
+
+.liftgrid-panel__eyebrow,
+.liftgrid-entry__label,
+.liftgrid-used__label,
+.liftgrid-loading__label,
+.liftgrid-share__status,
+.liftgrid-board__header small,
+.liftgrid-entry__error {
+  color: var(--text-secondary);
+}
+
+.liftgrid-board {
+  gap: 0.42rem;
+}
+
+.liftgrid-board__corner,
+.liftgrid-board__header,
+.liftgrid-cell {
+  border-color: var(--border-subtle);
+}
+
+.liftgrid-board__corner,
+.liftgrid-cell--tone-light {
+  background: var(--surface-strong);
+}
+
+.liftgrid-board__header,
+.liftgrid-cell--tone-dark,
+.liftgrid-entry__input,
+.liftgrid-suggestions__option,
+.liftgrid-share__preview {
+  background: var(--surface);
+}
+
+.liftgrid-board__header-icon {
+  filter: brightness(0) saturate(100%) invert(90%) opacity(0.92);
+}
+
+.liftgrid-cell--solved {
+  border-color: var(--accent-border);
+  background: color-mix(in srgb, var(--surface-strong) 84%, var(--accent-soft));
+}
+
+.liftgrid-cell--revealed {
+  border-color: color-mix(in srgb, var(--wrong) 58%, white 8%);
+  background: color-mix(in srgb, var(--surface-strong) 86%, rgba(142, 47, 47, 0.18));
+}
+
+.liftgrid-cell__ghost-icon {
+  opacity: 0.12;
+}
+
+.liftgrid-cell__value {
+  background: rgba(11, 11, 13, 0.82);
+  backdrop-filter: none;
+  letter-spacing: 0.05em;
+}
+
+.liftgrid-cell__placeholder,
+.liftgrid-debug-overlay__value,
+.liftgrid-share__preview,
+.feedback-modal__message,
+.exercise-page__related-link,
+.exercise-page__line,
+.legal-page__line {
+  color: var(--text-secondary);
+}
+
+.liftgrid-share {
+  border-top-color: var(--border-subtle);
+}
+
+.liftgrid-finish__button--active,
+.legal-page__cta:hover,
+.legal-page__cta:focus-visible {
+  background: color-mix(in srgb, var(--surface-hover) 76%, var(--accent-soft));
+  border-color: var(--accent-border);
+  color: var(--text-primary);
+}
+
+.consent-overlay,
+.exercise-media-modal,
+.info-sheet,
+.archive-detail-modal {
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.consent-modal,
+.info-sheet__panel,
+.archive-detail-modal__panel,
+.exercise-media-modal__panel,
+.feedback-modal {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.consent-modal__links a,
+.feedback-modal__attachments a:hover,
+.feedback-modal__attachments a:focus-visible,
+.exercise-page__related-link:hover,
+.exercise-page__related-link:focus-visible {
+  color: var(--accent);
+}
+
+.consent-modal__toggle,
+.feedback-modal__attachments a,
+.feedback-modal__tab,
+.feedback-modal__pill {
+  border-color: var(--border-subtle);
+  background: var(--surface);
+}
+
+.feedback-modal__body input,
+.feedback-modal__body select,
+.feedback-modal__body textarea,
+.feedback-modal__card {
+  color: var(--text-primary);
+}
+
+.feedback-modal__meta,
+.consent-modal__toggle small,
+.exercise-page__section-head {
+  color: var(--text-secondary);
+}
+
+.feedback-modal__badge {
+  border-color: var(--border-medium);
+}
+
+.feedback-modal__badge--new {
+  color: var(--text-primary);
+}
+
+.feedback-modal__badge--triaged {
+  color: #b8cad9;
+  border-color: rgba(184, 202, 217, 0.3);
+}
+
+.feedback-modal__badge--in_progress {
+  color: #d7c194;
+  border-color: rgba(215, 193, 148, 0.3);
+}
+
+.feedback-modal__badge--waiting_user {
+  color: #c0b8d1;
+  border-color: rgba(192, 184, 209, 0.28);
+}
+
+.feedback-modal__badge--resolved,
+.feedback-modal__badge--closed {
+  color: #afc8b7;
+  border-color: rgba(175, 200, 183, 0.28);
+}
+
+.consent-fab,
+.feedback-fab {
+  background: rgba(11, 11, 13, 0.92);
+  color: var(--text-primary);
+}
+
+.consent-fab:hover,
+.feedback-fab:hover {
+  background: var(--surface-hover);
+}
+
+.legal-page__shell,
+.exercise-page__card {
+  padding: 0.82rem;
+}
+
+.legal-page__shell h2,
+.exercise-page__section-kicker {
+  color: var(--text-primary);
+}
+
+.exercise-page__section-head {
+  border-bottom-color: var(--border-subtle);
 }
