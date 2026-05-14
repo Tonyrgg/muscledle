@@ -1,18 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Oswald, Roboto_Condensed } from "next/font/google";
+import { Inter, Oswald, Yellowtail } from "next/font/google";
 import "./globals.css";
 import { GlobalOverlays } from "@/components/app/global-overlays";
 
-const robotoCondensed = Roboto_Condensed({
-  variable: "--font-roboto-condensed",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const oswald = Oswald({
   variable: "--font-oswald",
   subsets: ["latin"],
   display: "swap",
+});
+
+const yellowtail = Yellowtail({
+  variable: "--font-yellowtail",
+  subsets: ["latin"],
+  display: "swap",
+  weight: "400",
 });
 
 const SITE_URL = "https://liftdle.com";
@@ -100,7 +108,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${robotoCondensed.variable} ${oswald.variable} h-full antialiased`}
+      className={`${inter.variable} ${oswald.variable} ${yellowtail.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full bg-background text-on-background font-body">
         <GlobalOverlays />

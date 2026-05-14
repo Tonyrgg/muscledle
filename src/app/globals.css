@@ -26,8 +26,11 @@
   --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.18);
   --shadow-subtle: 0 6px 18px rgba(0, 0, 0, 0.12);
   --label-tracking: 0.18em;
-  --font-display: var(--font-oswald), sans-serif;
-  --font-body: var(--font-roboto-condensed), sans-serif;
+  --font-logo: var(--font-oswald), sans-serif;
+  --font-display: var(--font-inter), sans-serif;
+  --font-body: var(--font-inter), sans-serif;
+  --font-subtitle: var(--font-inter), sans-serif;
+  --font-script: var(--font-yellowtail), cursive;
 }
 
 @theme inline {
@@ -133,11 +136,11 @@ input {
 
 .brand-logo__wordmark {
   margin: clamp(0.4rem, 1.8vw, 1rem) 0 0;
-  font-family: var(--font-display), "Oswald", sans-serif;
+  font-family: var(--font-logo), "Oswald", sans-serif;
   font-size: clamp(2.15rem, 8.4vw, 5rem);
   font-style: italic;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.11em;
   line-height: 0.9;
   text-transform: uppercase;
 }
@@ -150,13 +153,36 @@ input {
   color: var(--accent);
 }
 
+.brand-logo__tagline-group {
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+  padding-right: clamp(1.5rem, 5vw, 3rem);
+  padding-bottom: clamp(0.8rem, 1.8vw, 1.2rem);
+}
+
 .brand-logo__tagline {
   margin: 0;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.65em;
+  font-family: var(--font-subtitle), sans-serif;
+  font-size: clamp(0.75rem, 1vw, 0.875rem);
+  font-weight: 500;
+  letter-spacing: 0.42em;
   text-transform: uppercase;
-  color: #a2a2a2;
+  color: rgba(245, 245, 245, 0.68);
+}
+
+.brand-logo__splashline {
+  position: absolute;
+  right: 0.15rem;
+  bottom: 0;
+  font-family: var(--font-script), cursive;
+  font-size: clamp(1rem, 2vw, 1.375rem);
+  font-weight: 400;
+  line-height: 1;
+  color: #ffd028;
+  white-space: nowrap;
+  transform: translate(12%, 38%) rotate(-10deg);
+  transform-origin: center;
 }
 
 .game-hero__home-link {
@@ -178,12 +204,12 @@ input {
 
 .game-hero__title {
   margin: clamp(0.4rem, 1.8vw, 1rem) 0 0;
-  font-family: var(--font-display), "Oswald", sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: clamp(2.15rem, 8.4vw, 5rem);
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 0.9;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
   text-transform: uppercase;
 }
 
@@ -197,12 +223,12 @@ input {
 
 .game-hero__subtitle {
   margin: 0.6rem 0 0;
-  font-family: var(--font-body), "Roboto Condensed", sans-serif;
-  font-size: clamp(0.68rem, 1.5vw, 0.88rem);
-  font-weight: 700;
-  letter-spacing: 0.45em;
+  font-family: var(--font-subtitle), sans-serif;
+  font-size: clamp(0.75rem, 1vw, 0.875rem);
+  font-weight: 500;
+  letter-spacing: 0.42em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(245, 245, 245, 0.72);
 }
 
 .game-prompt-panel {
@@ -217,10 +243,10 @@ input {
 .game-prompt-panel__title {
   margin: 0;
   color: var(--text-primary);
-  font-family: var(--font-body), "Roboto Condensed", sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: clamp(1rem, 2vw, 1.18rem);
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.02em;
   text-transform: uppercase;
   line-height: 1.15;
 }
@@ -228,7 +254,7 @@ input {
 .game-prompt-panel__subtitle {
   margin: 0.4rem 0 0;
   color: var(--text-muted);
-  font-family: var(--font-body), "Roboto Condensed", sans-serif;
+  font-family: var(--font-body), sans-serif;
   font-size: clamp(0.8rem, 1.8vw, 0.92rem);
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -514,9 +540,9 @@ input {
   background: #222;
   color: #a7a7a7;
   padding: 0.5rem 0.75rem;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   text-decoration: none;
@@ -3696,6 +3722,16 @@ button.game-quick-tools__item:active {
     text-align: center;
   }
 
+  .brand-logo__tagline-group {
+    width: 100%;
+    padding-right: 1.8rem;
+    padding-bottom: 1rem;
+  }
+
+  .brand-logo__splashline {
+    transform: translate(4%, 26%) rotate(-8deg);
+  }
+
   .daily-hints-host--desktop {
     display: none;
   }
@@ -4285,11 +4321,12 @@ button.game-quick-tools__item:active {
   justify-content: center;
   gap: 1rem;
   color: #f5f5f5;
-  font-family: var(--font-display), "Oswald", sans-serif;
+  font-family: var(--font-display), sans-serif;
   font-size: clamp(1.82rem, 5.6vw, 4rem);
-  font-style: italic;
-  font-weight: 900;
+  font-style: normal;
+  font-weight: 800;
   line-height: 0.92;
+  letter-spacing: -0.03em;
   text-align: center;
   text-transform: uppercase;
 }
@@ -4300,7 +4337,7 @@ button.game-quick-tools__item:active {
 
 .mode-hero__wordmark .mode-hero__segment:last-child {
   font-size: 0.74em;
-  transform: translate(-10px, 0);
+  transform: translate(-4px, 0);
 }
 
 .mode-hero__segment-main {
@@ -4322,12 +4359,12 @@ button.game-quick-tools__item:active {
 
 .mode-hero__subtitle {
   margin: 0;
-  font-family: var(--font-body), "Roboto Condensed", sans-serif;
-  font-size: clamp(0.68rem, 1.5vw, 0.78rem);
-  font-weight: 700;
-  letter-spacing: 0.45em;
+  font-family: var(--font-subtitle), sans-serif;
+  font-size: clamp(0.75rem, 1vw, 0.875rem);
+  font-weight: 500;
+  letter-spacing: 0.42em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: rgba(245, 245, 245, 0.72);
   text-align: center;
 }
 
@@ -7445,9 +7482,7 @@ button.game-quick-tools__item:active {
 
 :where(
   .auth-bootstrap-note,
-  .game-hero__subtitle,
   .game-hero__state,
-  .brand-logo__tagline,
   .victory-panel__kicker,
   .victory-panel__stat-label,
   .victory-panel__timezone,
@@ -7457,7 +7492,6 @@ button.game-quick-tools__item:active {
   .attempts-header-cell,
   .attempts-mobile-slot__label,
   .attempts-mobile-progress__label,
-  .mode-hero__subtitle,
   .liftgrid-panel__eyebrow,
   .liftgrid-entry__label,
   .liftgrid-used__label,
@@ -7493,7 +7527,7 @@ button.game-quick-tools__item:active {
 .brand-logo__tagline,
 .game-hero__subtitle,
 .mode-hero__subtitle {
-  color: rgba(245, 245, 245, 0.62);
+  color: rgba(245, 245, 245, 0.72);
 }
 
 .game-hero__home-link .brand-logo__wordmark,

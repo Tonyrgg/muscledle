@@ -11,7 +11,10 @@ export function Logo({ className, withTagline = false }: LogoProps) {
         <span className="brand-logo__accent">DLE</span>
       </h1>
       {withTagline ? (
-        <p className="brand-logo__tagline">Guess the exercise</p>
+        <div className="brand-logo__tagline-group">
+          <p className="brand-logo__tagline">Guess the exercise</p>
+          <span className="brand-logo__splashline">daily challenge</span>
+        </div>
       ) : null}
     </div>
   );
