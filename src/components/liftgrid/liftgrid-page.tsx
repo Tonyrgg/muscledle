@@ -1195,39 +1195,7 @@ export function LiftGridPage() {
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (
             <div className="liftgrid-loading">
-              <div className="liftgrid-loading__inner" aria-hidden="true">
-                <div className="liftgrid-loading__topline">
-                  <span className="liftgrid-loading__badge" />
-                  <span className="liftgrid-loading__title" />
-                </div>
-                <div className="liftgrid-loading__mockboard">
-                  <span className="liftgrid-loading__cell liftgrid-loading__cell--corner" />
-                  {Array.from({ length: 3 }, (_, index) => (
-                    <span
-                      key={`liftgrid-loading-column-${index}`}
-                      className="liftgrid-loading__cell liftgrid-loading__cell--header"
-                    />
-                  ))}
-                  {Array.from({ length: 3 }, (_, rowIndex) => (
-                    <div
-                      key={`liftgrid-loading-row-${rowIndex}`}
-                      className="liftgrid-loading__mockrow"
-                    >
-                      <span className="liftgrid-loading__cell liftgrid-loading__cell--header" />
-                      {Array.from({ length: 3 }, (_, columnIndex) => (
-                        <span
-                          key={`liftgrid-loading-body-${rowIndex}-${columnIndex}`}
-                          className={`liftgrid-loading__cell ${
-                            (rowIndex + columnIndex) % 2 === 0
-                              ? "liftgrid-loading__cell--light"
-                              : "liftgrid-loading__cell--dark"
-                          }`.trim()}
-                        />
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <span className="liftgrid-loading__spinner" aria-hidden="true" />
               <p className="liftgrid-loading__label">Loading today&apos;s grid...</p>
             </div>
           ) : null}

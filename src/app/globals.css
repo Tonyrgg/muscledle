@@ -5804,110 +5804,18 @@ button.game-quick-tools__item:active {
 }
 
 .liftgrid-loading {
-  gap: 0.8rem;
-  padding: 0.8rem 0;
-}
-
-.liftgrid-loading__inner {
-  display: grid;
   justify-items: center;
-  gap: 0.7rem;
+  gap: 0.9rem;
+  padding: 1rem 0;
 }
 
-.liftgrid-loading__topline {
-  width: min(100%, 15rem);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-}
-
-.liftgrid-loading__badge,
-.liftgrid-loading__title,
-.liftgrid-loading__cell {
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 255, 255, 0.02),
-      rgba(255, 255, 255, 0.06),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(36, 27, 22, 0.92);
-  background-size: 220% 100%;
-  animation: liftgrid-loading-shimmer 1.35s linear infinite;
-}
-
-.liftgrid-loading__badge {
-  width: 2rem;
-  height: 0.52rem;
-  border: 1px solid rgba(249, 115, 22, 0.2);
-}
-
-.liftgrid-loading__title {
-  width: 7rem;
-  height: 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.liftgrid-loading__mockboard {
-  width: min(100%, 14.5rem);
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.24rem;
-}
-
-.liftgrid-loading__cell {
-  aspect-ratio: 1;
-  border: 1px solid rgba(249, 115, 22, 0.12);
-}
-
-.liftgrid-loading__mockrow {
-  display: contents;
-}
-
-.liftgrid-loading__cell--corner {
-  border-color: rgba(249, 115, 22, 0.32);
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 189, 140, 0.03),
-      rgba(255, 189, 140, 0.09),
-      rgba(255, 189, 140, 0.03)
-    ),
-    rgba(59, 44, 35, 0.92);
-}
-
-.liftgrid-loading__cell--header {
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 255, 255, 0.02),
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(48, 38, 31, 0.9);
-}
-
-.liftgrid-loading__cell--light {
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 255, 255, 0.02),
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(54, 47, 43, 0.82);
-}
-
-.liftgrid-loading__cell--dark {
-  background:
-    linear-gradient(
-      100deg,
-      rgba(255, 255, 255, 0.015),
-      rgba(255, 255, 255, 0.04),
-      rgba(255, 255, 255, 0.015)
-    ),
-    rgba(31, 25, 22, 0.9);
+.liftgrid-loading__spinner {
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: rollover-spin 700ms linear infinite;
 }
 
 .liftgrid-loading__label {
@@ -6493,15 +6401,6 @@ button.game-quick-tools__item:active {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes liftgrid-loading-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -20% 0;
   }
 }
 
