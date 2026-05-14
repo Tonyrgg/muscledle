@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LoadGuessAttempts } from "@/components/loadguess/loadguess-attempts";
 import { LoadGuessVideo } from "@/components/loadguess/loadguess-video";
-import { ModeHeroHeader } from "@/components/modes/mode-hero-header";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
 import { ModePanel } from "@/components/modes/mode-panel";
 import { UnitToggle } from "@/components/loadguess/unit-toggle";
@@ -531,12 +530,6 @@ export function LoadGuessPage() {
 
   return (
     <ModePageShell className="loadguess-page">
-        <ModeHeroHeader
-          modeLead="WEIGHT"
-          modeAccent="GUESS"
-          className="loadguess-hero"
-        />
-
       <div
         className={`loadguess-body ${shouldShowRoundSummary ? "loadguess-body--summary" : ""} ${
           shouldShowIntro ? "loadguess-body--intro" : ""

@@ -8,6 +8,7 @@ type LogoProps = {
   withTagline?: boolean;
   withSplashline?: boolean;
   splashlineVariant?: "default" | "standalone";
+  splashlineText?: string;
 };
 
 export function Logo({
@@ -15,8 +16,12 @@ export function Logo({
   withTagline = false,
   withSplashline = false,
   splashlineVariant = "default",
+  splashlineText,
 }: LogoProps) {
-  const splashline = useMemo(() => getRandomLiftdleSplashline(), []);
+  const splashline = useMemo(
+    () => splashlineText ?? getRandomLiftdleSplashline(),
+    [splashlineText],
+  );
 
   return (
     <div className={`brand-logo ${className ?? ""}`.trim()} aria-label="Liftdle">

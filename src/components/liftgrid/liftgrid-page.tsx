@@ -22,7 +22,6 @@ import {
 } from "@/lib/liftgrid/client";
 import { GuessInput } from "@/components/game/guess-input";
 import { DailyCelebration } from "@/components/game/daily-celebration";
-import { ModeHeroHeader } from "@/components/modes/mode-hero-header";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
 import type { LiftGridEventInput, LiftGridFeedbackChoice, LiftGridPublicState, LiftGridSolvedCell } from "@/types/liftgrid";
 
@@ -1102,13 +1101,6 @@ export function LiftGridPage() {
         />
       ) : null}
       <div className="mode-shell">
-        <ModeHeroHeader
-          modeLead="LIFT"
-          modeAccent="GRID"
-          subtitle="Fill the grid. Prove your gym brain."
-          className="liftgrid-hero"
-        />
-
         <section className="liftgrid-panel">
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (

@@ -3,6 +3,7 @@ import { Caveat_Brush, Inter, Oswald } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { GlobalOverlays } from "@/components/app/global-overlays";
+import { SharedBrandHeader } from "@/components/brand/shared-brand-header";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -113,6 +114,7 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning className="min-h-full bg-background text-on-background font-body">
         <GlobalOverlays />
+        <SharedBrandHeader />
         {children}
         <SpeedInsights />
       </body>

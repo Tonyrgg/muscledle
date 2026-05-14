@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Logo } from "@/components/brand/logo";
 
 const SITE_URL = "https://liftdle.com";
 const OG_IMAGE_PATH = "/og-image.png";
@@ -164,13 +163,6 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homepageJsonLd) }}
       />
-
-      <header className="hub-header">
-        <div className="hub-brand">
-          <Logo withSplashline splashlineVariant="standalone" />
-        </div>
-      </header>
-
       <main className="hub-main">
         <section className="hub-grid" aria-label="Liftdle game modes">
           {hubCards.map((card) => (

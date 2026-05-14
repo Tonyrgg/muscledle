@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Logo } from "@/components/brand/logo";
 import { AnonymousAuthBootstrap } from "@/components/game/anonymous-auth-bootstrap";
 import { AttemptsTable } from "@/components/game/attempts-table";
 import { DailyHints } from "@/components/game/daily-hints";
@@ -28,6 +27,7 @@ import {
 } from "@/lib/exercises/icons";
 import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
+import { LIFTDLE_HEADER_MODE_EVENT } from "@/lib/liftdleHeader";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
@@ -567,6 +567,16 @@ export function GameShell({ initialState }: GameShellProps) {
       setToast((current) => (current?.id === id ? null : current));
     }, 3600);
   }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(LIFTDLE_HEADER_MODE_EVENT, {
+        detail: {
+          label: mode === "daily" ? "Daily" : "Marathon",
+        },
+      }),
+    );
+  }, [mode]);
 
   useEffect(() => {
     if (!revealingAttemptId) {
@@ -1677,9 +1687,6 @@ export function GameShell({ initialState }: GameShellProps) {
           ) : (
             <>
           <header className="game-hero">
-            <Link className="game-hero__home-link" href="/" aria-label="Go to homepage">
-              <Logo withTagline />
-            </Link>
             <div className="mode-switch" aria-label="Game mode switch">
               <Link
                 href="/daily"
