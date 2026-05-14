@@ -330,6 +330,7 @@ export function FeedbackCenter() {
       <button
         type="button"
         ref={fabRef}
+        id="feedback"
         className="feedback-fab"
         onClick={() => {
           setOpen(true);

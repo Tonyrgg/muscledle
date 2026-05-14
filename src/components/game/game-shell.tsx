@@ -1681,14 +1681,13 @@ export function GameShell({ initialState }: GameShellProps) {
               <Logo withTagline />
             </Link>
             <div className="mode-switch" aria-label="Game mode switch">
-              <button
-                type="button"
-                aria-pressed={mode === "daily"}
-                className={`mode-switch__button ${mode === "daily" ? "mode-switch__button--active" : ""}`}
-                onClick={() => handleModeChange("daily")}
+              <Link
+                href="/daily"
+                aria-current={mode === "daily" ? "page" : undefined}
+                className={`mode-switch__button mode-switch__button--link ${mode === "daily" ? "mode-switch__button--active" : ""}`}
               >
                 Daily
-              </button>
+              </Link>
               <button
                 type="button"
                 aria-pressed={mode === "infinite"}

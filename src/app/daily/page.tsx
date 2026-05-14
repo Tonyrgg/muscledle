@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { DailyGamePage } from "@/components/game/daily-game-page";
+
+export const dynamic = "force-dynamic";
 
 const SITE_URL = "https://liftdle.com";
-const OG_IMAGE_PATH = "/og/liftdle-og.png";
-const META_TITLE = "Liftdle Daily Mode - Guess Today’s Gym Exercise";
+const OG_IMAGE_PATH = "/og-image.png";
+const META_TITLE = "Liftdle Daily - Guess Today’s Exercise";
 const META_DESCRIPTION =
-  "Play Liftdle Daily Mode and guess the exercise of the day using clues for muscle group, equipment, movement pattern, reps, and training goal.";
+  "Play Liftdle Daily and guess the hidden exercise using muscle, equipment, movement pattern, reps, and training goal clues.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: META_TITLE,
   description: META_DESCRIPTION,
   alternates: {
@@ -16,11 +19,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: META_TITLE,
     description: META_DESCRIPTION,
-    url: "/daily",
+    url: `${SITE_URL}/daily`,
+    siteName: "Liftdle",
     type: "website",
     images: [
       {
         url: OG_IMAGE_PATH,
+        width: 1200,
+        height: 630,
         alt: META_TITLE,
       },
     ],
@@ -35,44 +41,26 @@ export const metadata: Metadata = {
 
 const dailyJsonLd = {
   "@context": "https://schema.org",
-  "@type": "WebPage",
-  name: "Liftdle Daily Mode",
-  url: `${SITE_URL}/daily`,
-  description: META_DESCRIPTION,
-  inLanguage: "en",
-  isPartOf: {
-    "@type": "WebSite",
-    name: "Liftdle",
-    url: SITE_URL,
-  },
+  "@graph": [
+    {
+      "@type": "WebPage",
+      name: "Liftdle Daily",
+      url: `${SITE_URL}/daily`,
+      description: META_DESCRIPTION,
+      inLanguage: "en",
+    },
+    {
+      "@type": "WebApplication",
+      name: "Liftdle Daily",
+      url: `${SITE_URL}/daily`,
+      description: META_DESCRIPTION,
+      applicationCategory: "GameApplication",
+      operatingSystem: "Any",
+      inLanguage: "en",
+    },
+  ],
 };
 
-export default function DailyPage() {
-  return (
-    <main className="legal-page">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(dailyJsonLd) }}
-      />
-      <section className="legal-page__shell">
-        <h1 className="legal-page__title">Daily Mode</h1>
-        <p className="legal-page__line">One exercise per day, reset at midnight Europe/Rome</p>
-
-        <h2>What You Get</h2>
-        <p>A fresh daily target exercise for all players.</p>
-        <p>Consistent clue-based gameplay built around real gym movements.</p>
-
-        <h2>Why Play Daily</h2>
-        <p>Build a streak, compare your solves over time, and improve exercise recognition speed.</p>
-        <p>Use post-game notes and archive browsing to sharpen your next attempt.</p>
-
-        <div className="legal-page__cta-wrap">
-          <p className="legal-page__line legal-page__line--cta">Play now</p>
-          <Link href="/" className="legal-page__cta">
-            Open today&apos;s Liftdle
-          </Link>
-        </div>
-      </section>
-    </main>
-  );
+export default async function DailyPage() {
+  return <DailyGamePage jsonLd={dailyJsonLd} />;
 }
