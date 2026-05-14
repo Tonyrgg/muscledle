@@ -4518,7 +4518,7 @@ button.game-quick-tools__item:active {
 /* Shared mode shell */
 .mode-page {
   width: 100%;
-  min-height: 100dvh;
+  min-height: calc(calc(100vh - 155.42px));
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
@@ -6159,7 +6159,6 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell__placeholder-copy {
   position: absolute;
-  left: 0.5rem;
   right: 0.5rem;
   bottom: 0.5rem;
   z-index: 2;
