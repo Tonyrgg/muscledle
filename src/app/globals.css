@@ -298,7 +298,6 @@ input {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-top: 1rem;
 }
 
 .brand-logo {
@@ -1568,7 +1567,7 @@ button.game-quick-tools__item:active {
 }
 
 .victory-panel__timezone {
-  margin: 0.1rem 0 0;
+  margin: 0 0 0.5rem 0;
   color: #8f8f8f;
   font-size: 0.56rem;
   letter-spacing: 0.08em;
@@ -5719,9 +5718,19 @@ button.game-quick-tools__item:active {
 }
 
 .liftgrid-panel {
-  width: min(100%, 900px);
+  --liftgrid-board-gap: clamp(0.32rem, 0.52vw, 0.42rem);
+  --liftgrid-cell-size: clamp(
+    4.65rem,
+    min(
+      calc((100vw - clamp(2rem, 7vw, 7rem)) / 4),
+      calc((100dvh - clamp(18.5rem, 31vh, 22rem)) / 4)
+    ),
+    8.5rem
+  );
+  --liftgrid-board-width: calc((var(--liftgrid-cell-size) * 4) + (var(--liftgrid-board-gap) * 3));
+  width: min(100%, calc(var(--liftgrid-board-width) + 0.5rem));
   justify-items: stretch;
-  gap: 1rem;
+  gap: clamp(0.78rem, 1.6vh, 1.05rem);
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -5731,6 +5740,7 @@ button.game-quick-tools__item:active {
 
 .liftgrid-panel__interaction-layer {
   display: grid;
+  justify-items: center;
   align-content: center;
   gap: 0;
   min-height: 0;
@@ -5910,11 +5920,10 @@ button.game-quick-tools__item:active {
 }
 
 .liftgrid-board {
-  --liftgrid-cell-size: clamp(6.25rem, 13vw, 8.1rem);
   display: grid;
   grid-template-columns: repeat(4, var(--liftgrid-cell-size));
   grid-auto-rows: var(--liftgrid-cell-size);
-  gap: 0.38rem;
+  gap: var(--liftgrid-board-gap);
   width: fit-content;
   max-width: 100%;
   margin-inline: auto;
@@ -5942,10 +5951,10 @@ button.game-quick-tools__item:active {
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: 0.38rem;
+  gap: clamp(0.28rem, calc(var(--liftgrid-cell-size) * 0.055), 0.42rem);
   border: 1px solid rgba(249, 115, 22, 0.18);
   background: rgba(18, 13, 10, 0.72);
-  padding: 0.64rem;
+  padding: clamp(0.34rem, calc(var(--liftgrid-cell-size) * 0.085), 0.64rem);
   text-align: center;
   width: var(--liftgrid-cell-size);
   height: var(--liftgrid-cell-size);
@@ -5957,14 +5966,14 @@ button.game-quick-tools__item:active {
   align-content: center;
   justify-items: center;
   justify-content: center;
-  gap: 0.56rem;
-  padding-inline: 0.64rem;
+  gap: clamp(0.28rem, calc(var(--liftgrid-cell-size) * 0.075), 0.56rem);
+  padding-inline: clamp(0.34rem, calc(var(--liftgrid-cell-size) * 0.085), 0.64rem);
   text-align: center;
 }
 
 .liftgrid-board__header span {
   color: #f8efe8;
-  font-size: 0.98rem;
+  font-size: clamp(0.72rem, calc(var(--liftgrid-cell-size) * 0.148), 0.98rem);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -5982,7 +5991,7 @@ button.game-quick-tools__item:active {
   gap: 0.06rem;
   color: #f5f5f5;
   font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(0.85rem, 2vw, 1.25rem);
+  font-size: clamp(0.72rem, calc(var(--liftgrid-cell-size) * 0.195), 1.25rem);
   font-style: italic;
   font-weight: 900;
   line-height: 0.9;
@@ -5997,12 +6006,12 @@ button.game-quick-tools__item:active {
 .liftgrid-board__header-icon-wrap {
   display: grid;
   place-items: center;
-  width: min(72%, 4.8rem);
+  width: min(72%, calc(var(--liftgrid-cell-size) * 0.72));
   aspect-ratio: 1;
 }
 
 .liftgrid-board__header-icon-wrap--row {
-  width: min(92%, 5.95rem);
+  width: min(92%, calc(var(--liftgrid-cell-size) * 0.92));
   justify-self: center;
 }
 
@@ -6056,7 +6065,7 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell__ghost-icon-wrap {
   position: absolute;
-  inset: 4px 4px 1.9rem;
+  inset: 4px 4px clamp(1.35rem, calc(var(--liftgrid-cell-size) * 0.28), 1.9rem);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -6116,15 +6125,16 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell__value {
   position: absolute;
-  left: 0.42rem;
-  right: 0.42rem;
-  bottom: 0.34rem;
+  left: clamp(0.24rem, calc(var(--liftgrid-cell-size) * 0.055), 0.42rem);
+  right: clamp(0.24rem, calc(var(--liftgrid-cell-size) * 0.055), 0.42rem);
+  bottom: clamp(0.22rem, calc(var(--liftgrid-cell-size) * 0.04), 0.34rem);
   z-index: 3;
-  padding: 0.24rem 0.35rem;
+  padding: clamp(0.16rem, calc(var(--liftgrid-cell-size) * 0.03), 0.24rem)
+    clamp(0.2rem, calc(var(--liftgrid-cell-size) * 0.04), 0.35rem);
   background: rgba(18, 13, 10, 0.82);
   backdrop-filter: blur(3px);
   color: #fff5ee;
-  font-size: 0.72rem;
+  font-size: clamp(0.5rem, calc(var(--liftgrid-cell-size) * 0.108), 0.72rem);
   font-weight: 800;
   letter-spacing: 0.03em;
   line-height: 1.08;
@@ -6134,13 +6144,13 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell__placeholder {
   position: absolute;
-  top: calc(50% - 0.55rem);
+  top: calc(50% - clamp(0.38rem, calc(var(--liftgrid-cell-size) * 0.08), 0.55rem));
   left: 50%;
   z-index: 3;
   transform: translate(-50%, -50%);
   color: rgba(255, 255, 255, 0.72);
   font-family: var(--font-display), "Oswald", sans-serif;
-  font-size: clamp(1.55rem, 4vw, 2rem);
+  font-size: clamp(1.15rem, calc(var(--liftgrid-cell-size) * 0.3), 2rem);
   font-style: italic;
   font-weight: 900;
   line-height: 1;
@@ -6149,11 +6159,11 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell__placeholder-copy {
   position: absolute;
-  right: 0.5rem;
-  bottom: 0.5rem;
+  right: clamp(0.28rem, calc(var(--liftgrid-cell-size) * 0.06), 0.5rem);
+  bottom: clamp(0.28rem, calc(var(--liftgrid-cell-size) * 0.06), 0.5rem);
   z-index: 2;
   color: rgba(255, 255, 255, 0.22);
-  font-size: 0.54rem;
+  font-size: clamp(0.4rem, calc(var(--liftgrid-cell-size) * 0.082), 0.54rem);
   font-weight: 700;
   letter-spacing: 0.12em;
   line-height: 1.2;
@@ -6164,9 +6174,9 @@ button.game-quick-tools__item:active {
 
 .liftgrid-entry {
   display: grid;
-  gap: 0.9rem;
-  width: min(100%, min(62dvh, 51rem));
-  margin: 1.2rem auto 0;
+  gap: clamp(0.62rem, 1.15vh, 0.9rem);
+  width: min(100%, var(--liftgrid-board-width));
+  margin: clamp(0.78rem, 1.6vh, 1.2rem) auto 0;
 }
 
 .liftgrid-board-wrap {
@@ -6525,6 +6535,7 @@ button.game-quick-tools__item:active {
 .liftgrid-victory-card {
   margin-top: 1.35rem;
   margin-bottom: 1.35rem;
+  width: 100%;
 }
 
 .liftgrid-share__preview {
@@ -6738,85 +6749,6 @@ button.game-quick-tools__item:active {
   .mode-hero__subtitle {
     font-size: clamp(0.58rem, 2.2vw, 0.72rem);
     letter-spacing: 0.32em;
-  }
-
-  .liftgrid-panel {
-    width: 100%;
-  }
-
-  .shared-brand-header--mode {
-    padding-top: 1.2rem;
-    padding-bottom: 0.45rem;
-  }
-
-  .shared-brand-header--mode .brand-logo__wordmark {
-    font-size: clamp(3.9rem, 8vw, 5.1rem);
-  }
-
-  .shared-brand-header--mode .brand-logo__splashline--standalone {
-    font-size: clamp(1.46rem, 1.85vw, 1.38rem);
-    max-width: min(22vw, 10rem);
-  }
-
-  .mode-shell {
-    gap: 0.72rem;
-  }
-
-  .liftgrid-panel {
-    gap: 0.72rem;
-  }
-
-  .liftgrid-mode-nav {
-    transform: scale(0.92);
-    transform-origin: center top;
-  }
-
-  .liftgrid-panel__interaction-layer,
-  .liftgrid-victory-card {
-    padding-left: 0.2rem;
-    padding-right: 0.2rem;
-    box-sizing: border-box;
-  }
-
-  .liftgrid-board {
-    --liftgrid-cell-size: 5rem;
-    width: fit-content;
-  }
-
-  .liftgrid-entry {
-    gap: 0.62rem;
-    width: min(100%, 20.5rem);
-    margin-top: 0.5rem;
-  }
-
-  .liftgrid-board__header span {
-    font-size: 0.6rem;
-  }
-
-  .liftgrid-board__header-icon-wrap {
-    width: min(68%, 2.85rem);
-  }
-
-  .liftgrid-board__header-icon-wrap--row {
-    width: min(82%, 3.2rem);
-  }
-
-  .liftgrid-board__brand {
-    font-size: 0.74rem;
-  }
-
-  .liftgrid-cell__value {
-    font-size: 0.52rem;
-  }
-
-  .liftgrid-cell__placeholder {
-    font-size: 1.05rem;
-  }
-
-  .liftgrid-cell__placeholder-copy {
-    font-size: 0.46rem;
-    right: 0.34rem;
-    bottom: 0.34rem;
   }
 
   .loadguess-video__frame {
@@ -8703,7 +8635,6 @@ button.game-quick-tools__item:active {
   .game-hero__state,
   .victory-panel__kicker,
   .victory-panel__stat-label,
-  .victory-panel__timezone,
   .daily-hints__tile-label,
   .daily-hints__tile-meta,
   .daily-hints__attribute-label,
@@ -8740,12 +8671,6 @@ button.game-quick-tools__item:active {
 @media (max-width: 1240px) {
   .mode-shell {
     gap: 0.72rem;
-  }
-}
-
-@media (max-height: 820px) and (min-width: 761px) {
-  .mode-shell {
-    gap: 0.52rem;
   }
 }
 
@@ -9029,7 +8954,8 @@ button.game-quick-tools__item:active {
 .liftgrid-mode-nav {
   display: flex;
   justify-content: center;
-  padding-bottom: 1.2rem;
+  padding-top: clamp(0.3rem, 0.8vh, 0.5rem);
+  padding-bottom: clamp(0.9rem, 1.8vh, 1.35rem);
 }
 
 .game-quick-tools {
@@ -9337,39 +9263,6 @@ button.game-quick-tools__item:active {
 .liftgrid-board__corner,
 .liftgrid-cell--tone-light {
   background: #292c31;
-}
-
-@media (max-height: 820px) and (min-width: 761px) {
-  .shared-brand-header--mode {
-    padding-top: 0.9rem;
-    padding-bottom: 0.3rem;
-  }
-
-  .shared-brand-header--mode .brand-logo__wordmark {
-    font-size: clamp(3.25rem, 6.8vw, 4.55rem);
-  }
-
-  .shared-brand-header--mode .brand-logo__splashline--standalone {
-    font-size: 1.48rem;
-    max-width: 8.2rem;
-  }
-
-  .mode-shell {
-    gap: 0.52rem;
-  }
-
-  .liftgrid-panel {
-    gap: 0.52rem;
-  }
-
-  .liftgrid-board {
-    --liftgrid-cell-size: 4.45rem;
-  }
-
-  .liftgrid-entry {
-    gap: 0.52rem;
-    margin-top: 0.36rem;
-  }
 }
 
 .liftgrid-board__header,

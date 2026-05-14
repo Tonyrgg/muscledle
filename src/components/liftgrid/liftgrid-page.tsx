@@ -611,8 +611,24 @@ export function LiftGridPage() {
     if (!completionStateInitializedRef.current) {
       completionStateInitializedRef.current = true;
       previousCompleteRef.current = effectiveIsComplete;
+      setShowVictoryCelebration(false);
       setShowVictoryCard(effectiveIsComplete);
-      return;
+
+      if (!effectiveIsComplete) {
+        return;
+      }
+
+      const timer = window.setTimeout(() => {
+        victoryCardRef.current?.scrollIntoView({
+          behavior: "auto",
+          block: "start",
+          inline: "nearest",
+        });
+      }, 0);
+
+      return () => {
+        window.clearTimeout(timer);
+      };
     }
 
     const justCompleted = effectiveIsComplete && !previousCompleteRef.current;
