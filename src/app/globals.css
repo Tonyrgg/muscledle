@@ -8841,7 +8841,6 @@ button.game-quick-tools__item:active {
 }
 
 .liftgrid-mode-nav {
-  margin: 0 auto 1.4rem;
   display: flex;
   justify-content: center;
 }
