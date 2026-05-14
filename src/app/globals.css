@@ -1656,11 +1656,6 @@ button.game-quick-tools__item:active {
   margin-top: 0.22rem;
 }
 
-.victory-panel__share-card {
-  margin-top: 0.8rem;
-  padding: 0.7rem;
-}
-
 .victory-panel__grid {
   margin: 0.68rem auto 0;
   display: flex;
