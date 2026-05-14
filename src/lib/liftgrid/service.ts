@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { trackEvent } from "@/lib/analytics/track";
 import { gameDateRome } from "@/lib/game/date";
+import { AuthRequiredError } from "@/lib/game/shared";
 import {
   buildLiftGridPuzzle,
   toLiftGridExercise,
@@ -17,6 +18,8 @@ import type {
   LiftGridGuessResponse,
   LiftGridPublicState,
   LiftGridSolvedCell,
+  PublicLiftGridStats,
+  PublicLiftGridStatsPoint,
 } from "@/types/liftgrid";
 
 type LiftGridResultRow = {
@@ -34,6 +37,26 @@ type LiftGridAttemptInsertRow = {
 };
 
 type LiftGridExerciseRow = Exercise;
+
+type LiftGridStatsRow = {
+  game_date: string;
+  status: "in_progress" | "completed";
+  completed_count: number | null;
+};
+
+function parseDateKey(input: string): number {
+  const [year, month, day] = input.split("-").map((value) => Number(value));
+  return Date.UTC(year, month - 1, day);
+}
+
+function dayDiff(from: string, to: string): number {
+  const deltaMs = parseDateKey(to) - parseDateKey(from);
+  return Math.round(deltaMs / 86400000);
+}
+
+function round1(value: number): number {
+  return Number(value.toFixed(1));
+}
 
 function normalizeSolvedCells(
   solvedCells: LiftGridSolvedCell[] | null | undefined,
@@ -264,6 +287,104 @@ async function getOrCreateLiftGridResult(args: {
   }
 
   return createResultRow(args);
+}
+
+export async function getLiftGridStats(): Promise<PublicLiftGridStats> {
+  const viewer = await getViewerIdentity();
+  if (!viewer.userId && !viewer.sessionPublicId) {
+    throw new AuthRequiredError();
+  }
+
+  const admin = createAdminClient();
+  let query = admin
+    .from("liftgrid_results")
+    .select("game_date, status, completed_count")
+    .order("game_date", { ascending: true });
+
+  if (viewer.userId) {
+    query = query.eq("user_id", viewer.userId);
+  } else {
+    query = query.is("user_id", null).eq("session_public_id", viewer.sessionPublicId);
+  }
+
+  const { data, error } = await query.returns<LiftGridStatsRow[]>();
+  if (error) {
+    throw new Error(`Failed to load LiftGrid stats: ${error.message}`);
+  }
+
+  const rows = (data ?? []).filter(
+    (row) => (row.completed_count ?? 0) > 0 || row.status === "completed",
+  );
+  const gamesPlayed = rows.length;
+  const wins = rows.filter((row) => row.status === "completed");
+  const gamesWon = wins.length;
+  const winRate = gamesPlayed > 0 ? round1((gamesWon / gamesPlayed) * 100) : 0;
+  const averageCompletedCells =
+    gamesPlayed > 0
+      ? round1(rows.reduce((sum, row) => sum + (row.completed_count ?? 0), 0) / gamesPlayed)
+      : 0;
+  const averageCompletionRate =
+    gamesPlayed > 0 ? round1((averageCompletedCells / 9) * 100) : 0;
+
+  let maxStreak = 0;
+  let runningStreak = 0;
+  let currentStreak = 0;
+  let lastWinDate: string | null = null;
+  let prevDate: string | null = null;
+  let prevWasWin = false;
+  const todayGameDate = gameDateRome();
+
+  for (const row of rows) {
+    const isPendingToday = row.status === "in_progress" && row.game_date === todayGameDate;
+    if (isPendingToday) {
+      continue;
+    }
+
+    const isWin = row.status === "completed";
+    if (!isWin) {
+      runningStreak = 0;
+      currentStreak = 0;
+      prevDate = row.game_date;
+      prevWasWin = false;
+      continue;
+    }
+
+    if (prevDate !== null && prevWasWin && dayDiff(prevDate, row.game_date) === 1) {
+      runningStreak += 1;
+    } else {
+      runningStreak = 1;
+    }
+
+    if (runningStreak > maxStreak) {
+      maxStreak = runningStreak;
+    }
+
+    currentStreak = runningStreak;
+    lastWinDate = row.game_date;
+    prevDate = row.game_date;
+    prevWasWin = true;
+  }
+
+  if (currentStreak > 0 && lastWinDate !== null && dayDiff(lastWinDate, todayGameDate) > 1) {
+    currentStreak = 0;
+  }
+
+  const completionHistory: PublicLiftGridStatsPoint[] = rows.slice(-30).map((row) => ({
+    gameDate: row.game_date,
+    completedCount: row.completed_count ?? 0,
+    status: row.status,
+  }));
+
+  return {
+    gamesPlayed,
+    gamesWon,
+    winRate,
+    averageCompletedCells,
+    averageCompletionRate,
+    currentStreak,
+    maxStreak,
+    completionHistory,
+  };
 }
 
 function cleanText(value: string | null | undefined, maxLength: number): string | null {

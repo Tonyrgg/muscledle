@@ -7,6 +7,7 @@ import type {
   LiftGridFeedbackChoice,
   LiftGridGuessResponse,
   LiftGridPublicState,
+  PublicLiftGridStats,
 } from "@/types/liftgrid";
 
 type ErrorPayload = {
@@ -67,6 +68,20 @@ export async function fetchLiftGridToday(): Promise<LiftGridPublicState> {
   return parseOrThrow<LiftGridPublicState>(
     response,
     `Failed to load LiftGrid (${response.status}).`,
+  );
+}
+
+export async function fetchLiftGridStats(): Promise<PublicLiftGridStats> {
+  const headers = await buildClientHeaders();
+  const response = await fetch("/api/liftgrid/stats", {
+    method: "GET",
+    cache: "no-store",
+    headers,
+  });
+
+  return parseOrThrow<PublicLiftGridStats>(
+    response,
+    `Failed to load LiftGrid stats (${response.status}).`,
   );
 }
 

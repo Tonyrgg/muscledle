@@ -590,7 +590,7 @@ export function GameShell({ initialState }: GameShellProps) {
           ? (event.detail as { action?: unknown })
           : null;
 
-      if (detail?.action === "stats" || detail?.action === "streak") {
+      if (detail?.action === "stats") {
         setFooterModal("stats");
       } else if (detail?.action === "how-to-play") {
         setFooterModal("how-to-play");

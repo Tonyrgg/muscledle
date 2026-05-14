@@ -46,6 +46,23 @@ export type LiftGridGuessResponse = {
 
 export type LiftGridFeedbackChoice = "yes_make_it" | "maybe" | "not_for_me";
 
+export type PublicLiftGridStatsPoint = {
+  gameDate: string;
+  completedCount: number;
+  status: "in_progress" | "completed";
+};
+
+export type PublicLiftGridStats = {
+  gamesPlayed: number;
+  gamesWon: number;
+  winRate: number;
+  averageCompletedCells: number;
+  averageCompletionRate: number;
+  currentStreak: number;
+  maxStreak: number;
+  completionHistory: PublicLiftGridStatsPoint[];
+};
+
 export type LiftGridEventSource = "client" | "server";
 
 export type LiftGridEventName =

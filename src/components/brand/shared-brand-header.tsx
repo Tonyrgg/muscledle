@@ -52,7 +52,8 @@ export function SharedBrandHeader() {
 
   const pathnameLabel = getLiftdleHeaderLabel(pathname);
   const isHub = pathname === "/";
-  const showDailyActions = pathname?.startsWith("/daily") ?? false;
+  const showModeActions =
+    (pathname?.startsWith("/daily") ?? false) || (pathname?.startsWith("/liftgrid") ?? false);
   const splashlineText = isHub ? hubLabel : modeOverride ?? pathnameLabel ?? "Liftdle";
 
   const emitHeaderAction = (action: LiftdleHeaderAction) => {
@@ -66,7 +67,7 @@ export function SharedBrandHeader() {
   return (
     <header
       className={`hub-header shared-brand-header ${isHub ? "shared-brand-header--hub" : "shared-brand-header--mode"} ${
-        showDailyActions ? "shared-brand-header--daily-tools" : ""
+        showModeActions ? "shared-brand-header--has-tools" : ""
       }`.trim()}
     >
       <div className="shared-brand-header__row">
@@ -92,8 +93,8 @@ export function SharedBrandHeader() {
           </div>
         </div>
         <div className="shared-brand-header__slot shared-brand-header__slot--end">
-          {showDailyActions ? (
-            <div className="shared-brand-header__actions" aria-label="Daily actions">
+          {showModeActions ? (
+            <div className="shared-brand-header__actions" aria-label="Mode actions">
               <button
                 type="button"
                 className="shared-brand-header__tool"
@@ -116,17 +117,16 @@ export function SharedBrandHeader() {
                 </svg>
                 <span className="shared-brand-header__tool-tooltip">How to play</span>
               </button>
-              <button
-                type="button"
-                className="shared-brand-header__tool shared-brand-header__tool--accent"
+              <div
+                className="shared-brand-header__tool shared-brand-header__tool--accent shared-brand-header__tool--static"
                 aria-label={`Current streak ${currentStreak}`}
-                onClick={() => emitHeaderAction("streak")}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="shared-brand-header__tool-icon">
                   <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" fill="currentColor" />
                 </svg>
+                <span className="shared-brand-header__tool-count">{currentStreak}</span>
                 <span className="shared-brand-header__tool-tooltip">Streak {currentStreak}</span>
-              </button>
+              </div>
             </div>
           ) : null}
         </div>

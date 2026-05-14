@@ -14,6 +14,7 @@ import {
   buildLiftGridShareText,
 } from "@/lib/liftgrid/puzzle";
 import {
+  fetchLiftGridStats,
   fetchLiftGridToday,
   resetLiftGridRequest,
   submitLiftGridFeedbackRequest,
@@ -24,7 +25,17 @@ import { GuessInput } from "@/components/game/guess-input";
 import { DailyCelebration } from "@/components/game/daily-celebration";
 import { ModeIconNav } from "@/components/modes/mode-icon-nav";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
-import type { LiftGridEventInput, LiftGridFeedbackChoice, LiftGridPublicState, LiftGridSolvedCell } from "@/types/liftgrid";
+import {
+  LIFTDLE_HEADER_OPEN_EVENT,
+  LIFTDLE_HEADER_STREAK_EVENT,
+} from "@/lib/liftdleHeader";
+import type {
+  LiftGridEventInput,
+  LiftGridFeedbackChoice,
+  LiftGridPublicState,
+  LiftGridSolvedCell,
+  PublicLiftGridStats,
+} from "@/types/liftgrid";
 
 const FEEDBACK_OPTIONS: Array<{ label: string; value: LiftGridFeedbackChoice }> = [
   { label: "Yes, make it", value: "yes_make_it" },
@@ -265,7 +276,11 @@ function LiftGridExerciseMedia({ exercise, fallbackIconPath }: LiftGridExerciseM
 }
 
 export function LiftGridPage() {
+  const [headerModal, setHeaderModal] = useState<"how-to-play" | "stats" | null>(null);
   const [state, setState] = useState<LiftGridPublicState | null>(null);
+  const [stats, setStats] = useState<PublicLiftGridStats | null>(null);
+  const [statsStatus, setStatsStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [statsError, setStatsError] = useState<string | null>(null);
   const [localSolvedCells, setLocalSolvedCells] = useState<LiftGridSolvedCell[] | null>(null);
   const [exercises, setExercises] = useState<LiveExerciseSuggestion[]>([]);
   const [query, setQuery] = useState("");
@@ -396,6 +411,35 @@ export function LiftGridPage() {
     [],
   );
 
+  const loadStats = useCallback(
+    async (options?: { silent?: boolean; force?: boolean }) => {
+      if (statsStatus === "loading") {
+        return;
+      }
+
+      if (statsStatus === "success" && !options?.force) {
+        return;
+      }
+
+      setStatsStatus("loading");
+      setStatsError(null);
+
+      try {
+        const payload = await fetchLiftGridStats();
+        setStats(payload);
+        setStatsStatus("success");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load LiftGrid stats.";
+        setStatsError(message);
+        setStatsStatus("error");
+        if (!options?.silent) {
+          setToastMessage(message);
+        }
+      }
+    },
+    [statsStatus],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -468,6 +512,70 @@ export function LiftGridPage() {
       },
     });
   }, [emitEvent, state]);
+
+  useEffect(() => {
+    const handleHeaderAction = (event: Event) => {
+      const detail =
+        event instanceof CustomEvent && event.detail && typeof event.detail === "object"
+          ? (event.detail as { action?: unknown })
+          : null;
+
+      if (detail?.action === "stats") {
+        setHeaderModal("stats");
+      } else if (detail?.action === "how-to-play") {
+        setHeaderModal("how-to-play");
+      }
+    };
+
+    window.addEventListener(LIFTDLE_HEADER_OPEN_EVENT, handleHeaderAction as EventListener);
+    return () =>
+      window.removeEventListener(LIFTDLE_HEADER_OPEN_EVENT, handleHeaderAction as EventListener);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(LIFTDLE_HEADER_STREAK_EVENT, {
+        detail: {
+          value: stats?.currentStreak ?? 0,
+        },
+      }),
+    );
+  }, [stats?.currentStreak]);
+
+  useEffect(() => {
+    if (statsStatus !== "idle") {
+      return;
+    }
+
+    void loadStats({ silent: true });
+  }, [loadStats, statsStatus]);
+
+  useEffect(() => {
+    if (headerModal === "stats" && statsStatus === "idle") {
+      void loadStats({ silent: true });
+    }
+  }, [headerModal, loadStats, statsStatus]);
+
+  useEffect(() => {
+    if (!headerModal) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setHeaderModal(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [headerModal]);
 
   const suggestions = useMemo(() => {
     if (!query.trim()) return [];
@@ -665,6 +773,7 @@ export function LiftGridPage() {
       };
     }
 
+    void loadStats({ silent: true, force: true });
     setShowVictoryCard(false);
     setVictoryCelebrationSeed((current) => current + 1);
     setShowVictoryCelebration(true);
@@ -684,7 +793,7 @@ export function LiftGridPage() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [didSurrender, effectiveIsComplete, state]);
+  }, [didSurrender, effectiveIsComplete, loadStats, state]);
 
   const debugSolutions = useMemo(() => {
     if (!state) return [];
@@ -1517,6 +1626,123 @@ export function LiftGridPage() {
                 </section>
               ) : null}
             </>
+          ) : null}
+          {headerModal ? (
+            <section
+              className="info-sheet"
+              aria-label="LiftGrid information modal"
+              onClick={() => setHeaderModal(null)}
+            >
+              <div className="info-sheet__panel" onClick={(event) => event.stopPropagation()}>
+                <div className="info-sheet__head">
+                  <h2 className="info-sheet__title">
+                    {headerModal === "how-to-play" ? "LiftGrid How To Play" : "LiftGrid Statistics"}
+                  </h2>
+                  <button
+                    type="button"
+                    className="exercise-media-modal__close"
+                    onClick={() => setHeaderModal(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {headerModal === "how-to-play" ? (
+                  <div className="info-sheet__body">
+                    <section className="info-sheet__section">
+                      <h3 className="info-sheet__section-title">How it works</h3>
+                      <p>Each row and column intersection hides one valid exercise.</p>
+                      <p>Choose an exercise that matches both the row muscle focus and the column equipment.</p>
+                      <p>Every exercise can be used only once across the whole grid.</p>
+                    </section>
+
+                    <section className="info-sheet__section">
+                      <h3 className="info-sheet__section-title">Winning the grid</h3>
+                      <p>Fill all 9 cells to clear the daily LiftGrid.</p>
+                      <p>If you surrender, the board reveals the remaining cells but the run does not count as a clear.</p>
+                    </section>
+
+                    <section className="info-sheet__section">
+                      <h3 className="info-sheet__section-title">Quick tips</h3>
+                      <p>Lock the obvious equipment matches first and keep versatile exercises for the hardest cells.</p>
+                      <p>Rejected guesses either do not fit that row and column pair or were already used elsewhere in the board.</p>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="info-sheet__body">
+                    {statsStatus === "loading" ? (
+                      <section className="info-sheet__section">
+                        <p>Loading stats...</p>
+                      </section>
+                    ) : stats ? (
+                      <>
+                        <section className="info-sheet__section">
+                          <div className="stats-sheet__kpis">
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Games</span>
+                              <strong>{stats.gamesPlayed}</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Clears</span>
+                              <strong>{stats.gamesWon}</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Win Rate</span>
+                              <strong>{stats.winRate}%</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Avg Cells</span>
+                              <strong>{stats.averageCompletedCells}</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Avg Completion</span>
+                              <strong>{stats.averageCompletionRate}%</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Current Streak</span>
+                              <strong>{stats.currentStreak}</strong>
+                            </div>
+                            <div className="stats-sheet__kpi">
+                              <span className="stats-sheet__kpi-label">Max Streak</span>
+                              <strong>{stats.maxStreak}</strong>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className="info-sheet__section">
+                          <h3 className="info-sheet__section-title">Last 30 Grids</h3>
+                          {stats.completionHistory.length > 0 ? (
+                            <p>
+                              Recent average: {stats.averageCompletedCells}/9 cells completed, with a current streak of{" "}
+                              {stats.currentStreak}.
+                            </p>
+                          ) : (
+                            <p>No completed LiftGrid history yet.</p>
+                          )}
+                        </section>
+                      </>
+                    ) : statsStatus === "error" ? (
+                      <section className="info-sheet__section">
+                        <p>{statsError ?? "Stats are currently unavailable."}</p>
+                        <button
+                          type="button"
+                          className="exercise-media-modal__close stats-sheet__retry"
+                          onClick={() => {
+                            void loadStats({ force: true });
+                          }}
+                        >
+                          Retry
+                        </button>
+                      </section>
+                    ) : (
+                      <section className="info-sheet__section">
+                        <p>Stats are currently unavailable.</p>
+                      </section>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
           ) : null}
           {toastMessage ? (
             <div className="liftgrid-toast" aria-live="polite" role="status">

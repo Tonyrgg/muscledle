@@ -105,7 +105,7 @@ body {
   width: min(100%, 1180px);
 }
 
-.shared-brand-header--daily-tools {
+.shared-brand-header--has-tools {
   --shared-header-side-width: 12rem;
 }
 
@@ -140,12 +140,12 @@ body {
   display: block;
 }
 
-.shared-brand-header--daily-tools .shared-brand-header__slot {
+.shared-brand-header--has-tools .shared-brand-header__slot {
   flex-basis: var(--shared-header-side-width);
   min-width: var(--shared-header-side-width);
 }
 
-.shared-brand-header--daily-tools .shared-brand-header__slot--center {
+.shared-brand-header--has-tools .shared-brand-header__slot--center {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -197,10 +197,35 @@ body {
   color: var(--accent);
 }
 
+.shared-brand-header__tool--static {
+  cursor: default;
+}
+
+.shared-brand-header__tool--static:hover,
+.shared-brand-header__tool--static:focus-visible {
+  transform: none;
+}
+
 .shared-brand-header__tool-icon {
   width: 1.34rem;
   height: 1.34rem;
   display: block;
+}
+
+.shared-brand-header__tool-count {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: currentColor;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
 }
 
 .shared-brand-header__tool-tooltip {
@@ -8236,22 +8261,26 @@ button.game-quick-tools__item:active {
     margin-top: 0.45rem;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__slot--end {
+  .shared-brand-header--has-tools .shared-brand-header__slot--end {
     order: 1;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__actions {
+  .shared-brand-header--has-tools .shared-brand-header__actions {
     gap: 0.42rem;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__tool {
+  .shared-brand-header--has-tools .shared-brand-header__tool {
     width: 2.8rem;
     height: 2.8rem;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__tool-icon {
+  .shared-brand-header--has-tools .shared-brand-header__tool-icon {
     width: 1.02rem;
     height: 1.02rem;
+  }
+
+  .shared-brand-header--has-tools .shared-brand-header__tool-count {
+    font-size: 0.76rem;
   }
 
   .shared-brand-header__home {
