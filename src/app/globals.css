@@ -7425,17 +7425,22 @@ button.game-quick-tools__item:active {
 }
 
 .hub-brand__splashline {
-    font-family: var(--font-script), cursive;
-    color: #ffc906;
-    transform-origin: 100%;
-    white-space: nowrap;
-    font-size: clamp(1rem, 1.8vw, 2.4rem);
-    font-weight: 400;
-    line-height: 1;
-    position: absolute;
-    bottom: clamp(1.25rem, -.8vw, -.15rem);
-    right: clamp(-2.65rem, -2.8vw, -4.05rem);
-    transform: rotate(343deg);
+  position: absolute;
+  right: clamp(-0.35rem, -0.2vw, 0.1rem);
+  top: 58%;
+  z-index: 2;
+  font-family: var(--font-script), cursive;
+  font-size: clamp(1.15rem, 2vw, 1.95rem);
+  font-weight: 400;
+  line-height: 1;
+  color: #e8d7a8;
+  white-space: nowrap;
+  transform: translateY(-8%) rotate(-12deg);
+  transform-origin: right center;
+  text-shadow:
+    0 1px 0 rgba(50, 24, 0, 0.95),
+    0 2px 6px rgba(0, 0, 0, 0.72),
+    -1px 1px 0 rgba(0, 0, 0, 0.48);
 }
 
 .hub-main {
