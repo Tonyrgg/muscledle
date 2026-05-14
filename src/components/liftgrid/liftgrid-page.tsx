@@ -24,7 +24,6 @@ import { GuessInput } from "@/components/game/guess-input";
 import { DailyCelebration } from "@/components/game/daily-celebration";
 import { ModeHeroHeader } from "@/components/modes/mode-hero-header";
 import { ModePageShell } from "@/components/modes/mode-page-shell";
-import { ModePanel } from "@/components/modes/mode-panel";
 import type { LiftGridEventInput, LiftGridFeedbackChoice, LiftGridPublicState, LiftGridSolvedCell } from "@/types/liftgrid";
 
 const FEEDBACK_OPTIONS: Array<{ label: string; value: LiftGridFeedbackChoice }> = [
@@ -1110,7 +1109,7 @@ export function LiftGridPage() {
           className="liftgrid-hero"
         />
 
-        <ModePanel className="liftgrid-panel">
+        <section className="liftgrid-panel">
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (
             <div className="liftgrid-loading">
@@ -1476,7 +1475,7 @@ export function LiftGridPage() {
             </div>
           ) : null}
           </div>
-        </ModePanel>
+        </section>
       </div>
     </ModePageShell>
   );

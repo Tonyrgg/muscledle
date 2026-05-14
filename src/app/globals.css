@@ -5624,12 +5624,25 @@ button.game-quick-tools__item:active {
   text-align: center;
 }
 
+.liftgrid-board__header--row {
+  align-content: center;
+  justify-items: start;
+  justify-content: start;
+  gap: 0.5rem;
+  padding-inline: 0.78rem 0.62rem;
+  text-align: left;
+}
+
 .liftgrid-board__header span {
   color: #f8efe8;
   font-size: 0.98rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.liftgrid-board__header--column span {
+  color: var(--accent);
 }
 
 .liftgrid-board__brand {
@@ -5660,7 +5673,8 @@ button.game-quick-tools__item:active {
 }
 
 .liftgrid-board__header-icon-wrap--row {
-  width: min(68%, 4.4rem);
+  width: min(46%, 2.9rem);
+  justify-self: start;
 }
 
 .liftgrid-board__header-icon {
@@ -7399,21 +7413,29 @@ button.game-quick-tools__item:active {
 }
 
 .hub-brand {
+  position: relative;
   display: grid;
   justify-items: center;
-  gap: 0.15rem;
+  gap: 0;
   text-align: center;
 }
 
+.hub-brand .brand-logo__wordmark {
+  font-size: clamp(2.9rem, 9.8vw, 6.35rem);
+}
+
 .hub-brand__splashline {
-  display: inline-block;
-  margin-top: -0.15rem;
-  font-family: var(--font-script), cursive;
-  font-size: clamp(1rem, 2vw, 1.375rem);
-  font-weight: 400;
-  line-height: 1;
-  color: #ffd028;
-  transform: rotate(-10deg);
+    font-family: var(--font-script), cursive;
+    color: #ffc906;
+    transform-origin: 100%;
+    white-space: nowrap;
+    font-size: clamp(1rem, 1.8vw, 2.4rem);
+    font-weight: 400;
+    line-height: 1;
+    position: absolute;
+    bottom: clamp(1.25rem, -.8vw, -.15rem);
+    right: clamp(-2.65rem, -2.8vw, -4.05rem);
+    transform: rotate(343deg);
 }
 
 .hub-main {
@@ -7436,16 +7458,13 @@ button.game-quick-tools__item:active {
   position: relative;
   isolation: isolate;
   flex: 1 1 440px;
-  max-width: 520px;
-  min-height: 272px;
+  max-width: 470px;
+  min-height: 252px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1.15rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
     #101114;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 16px 40px rgba(0, 0, 0, 0.22);
   padding: 1.35rem 1.35rem 1.15rem;
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -7482,7 +7501,6 @@ button.game-quick-tools__item:active {
   width: 3.1rem;
   height: 3.1rem;
   align-items: center;
-  justify-content: center;
   color: var(--accent);
 }
 
@@ -7619,10 +7637,6 @@ button.game-quick-tools__item:active {
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
     var(--surface-hover);
   transform: translateY(-2px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 24px 52px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 138, 0, 0.08);
 }
 
 .hub-card:hover .hub-card__description,

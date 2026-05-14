@@ -182,9 +182,8 @@ export default function Home() {
 
       <footer className="hub-footer">
         <nav className="hub-footer__links" aria-label="Hub footer links">
-          <Link href="/how-to-play">How to Play</Link>
+          <Link href="/how-to-play">About</Link>
           <Link href="/archive">Archive</Link>
-          <a href="#feedback">Feedback</a>
         </nav>
         <p className="hub-footer__copy">© 2026 Liftdle. All rights reserved.</p>
       </footer>

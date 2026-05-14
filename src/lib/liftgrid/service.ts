@@ -5,6 +5,8 @@ import {
   buildLiftGridPuzzle,
   toLiftGridExercise,
   validateLiftGridGuess,
+  type LiftGridExercise,
+  type LiftGridPuzzle,
 } from "@/lib/liftgrid/puzzle";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
@@ -32,6 +34,103 @@ type LiftGridAttemptInsertRow = {
 };
 
 type LiftGridExerciseRow = Exercise;
+
+function normalizeSolvedCells(
+  solvedCells: LiftGridSolvedCell[] | null | undefined,
+  puzzle: LiftGridPuzzle,
+  exercises: LiftGridExercise[],
+) {
+  const exerciseById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  const seenCellKeys = new Set<string>();
+  const seenExerciseIds = new Set<string>();
+  const normalized: LiftGridSolvedCell[] = [];
+
+  for (const cell of solvedCells ?? []) {
+    const rowIndex = Math.trunc(cell.rowIndex);
+    const columnIndex = Math.trunc(cell.columnIndex);
+
+    if (
+      !Number.isInteger(rowIndex) ||
+      !Number.isInteger(columnIndex) ||
+      rowIndex < 0 ||
+      columnIndex < 0 ||
+      rowIndex >= puzzle.rowValues.length ||
+      columnIndex >= puzzle.columnValues.length
+    ) {
+      continue;
+    }
+
+    const key = `${rowIndex}:${columnIndex}`;
+    if (seenCellKeys.has(key) || seenExerciseIds.has(cell.exerciseId)) {
+      continue;
+    }
+
+    const exercise = exerciseById.get(cell.exerciseId);
+    if (!exercise) {
+      continue;
+    }
+
+    const rowValue = puzzle.rowValues[rowIndex];
+    const columnValue = puzzle.columnValues[columnIndex];
+    const validation = validateLiftGridGuess({
+      exercises,
+      puzzle,
+      solvedCells: normalized,
+      guess: exercise.display_name,
+    });
+
+    if (
+      !validation.correct ||
+      !validation.solvedCell ||
+      validation.solvedCell.rowIndex !== rowIndex ||
+      validation.solvedCell.columnIndex !== columnIndex
+    ) {
+      const exerciseRowValues = exercise.muscle_group
+        .split(/[\/,&|]+/g)
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean);
+      const exerciseColumnValues = exercise.equipment.map((entry) => entry.trim().toLowerCase());
+
+      if (!exerciseRowValues.includes(rowValue) || !exerciseColumnValues.includes(columnValue)) {
+        continue;
+      }
+    }
+
+    seenCellKeys.add(key);
+    seenExerciseIds.add(cell.exerciseId);
+    normalized.push({
+      rowIndex,
+      columnIndex,
+      exerciseId: cell.exerciseId,
+      exerciseName: exercise.display_name,
+    });
+  }
+
+  return normalized;
+}
+
+async function persistNormalizedResult(args: {
+  resultId: string;
+  solvedCells: LiftGridSolvedCell[];
+  totalCells: number;
+}) {
+  const admin = createAdminClient();
+  const completedCount = args.solvedCells.length;
+  const status = completedCount === args.totalCells ? "completed" : "in_progress";
+  const { error } = await admin
+    .from("liftgrid_results")
+    .update({
+      solved_cells: args.solvedCells,
+      completed_count: completedCount,
+      status,
+      finished_at: status === "completed" ? new Date().toISOString() : null,
+    })
+    .eq("id", args.resultId);
+
+  if (error) {
+    throw new Error(`Failed to normalize LiftGrid result: ${error.message}`);
+  }
+}
 
 function isUniqueViolation(error: { code?: string | null; message?: string | null } | null | undefined) {
   if (!error) return false;
@@ -252,8 +351,22 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
     sessionPublicId: identity.sessionPublicId,
   });
 
-  const solvedCells = result?.solved_cells ?? [];
   const totalCells = puzzle.rowValues.length * puzzle.columnValues.length;
+  const solvedCells = normalizeSolvedCells(result?.solved_cells, puzzle, exercises);
+  const storedCompletedCount = result?.completed_count ?? 0;
+
+  if (
+    result &&
+    (solvedCells.length !== (result.solved_cells ?? []).length ||
+      storedCompletedCount !== solvedCells.length ||
+      (result.status === "completed") !== (solvedCells.length === totalCells))
+  ) {
+    await persistNormalizedResult({
+      resultId: result.id,
+      solvedCells,
+      totalCells,
+    });
+  }
 
   return {
     gameDate,
@@ -281,7 +394,21 @@ export async function submitLiftGridGuess(input: {
     sessionPublicId: identity.sessionPublicId,
   });
   const totalCells = puzzle.rowValues.length * puzzle.columnValues.length;
-  const solvedCells = result?.solved_cells ?? [];
+  const solvedCells = normalizeSolvedCells(result?.solved_cells, puzzle, exercises);
+
+  if (
+    result &&
+    (solvedCells.length !== (result.solved_cells ?? []).length ||
+      (result.completed_count ?? 0) !== solvedCells.length ||
+      (result.status === "completed") !== (solvedCells.length === totalCells))
+  ) {
+    await persistNormalizedResult({
+      resultId: result.id,
+      solvedCells,
+      totalCells,
+    });
+  }
+
   const validation = validateLiftGridGuess({
     exercises,
     puzzle,
