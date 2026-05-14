@@ -1661,16 +1661,6 @@ button.game-quick-tools__item:active {
   padding: 0.7rem;
 }
 
-.victory-panel__share-text {
-  margin: 0;
-  text-align: center;
-  color: #d8e9ec;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  line-height: 1.3;
-}
-
 .victory-panel__grid {
   margin: 0.68rem auto 0;
   display: flex;
@@ -6555,6 +6545,7 @@ button.game-quick-tools__item:active {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: pre-wrap;
+  text-align: center;
 }
 
 @media (max-width: 1240px) {
@@ -6757,6 +6748,33 @@ button.game-quick-tools__item:active {
     width: 100%;
   }
 
+  .shared-brand-header--mode {
+    padding-top: 1.2rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .shared-brand-header--mode .brand-logo__wordmark {
+    font-size: clamp(3.9rem, 8vw, 5.1rem);
+  }
+
+  .shared-brand-header--mode .brand-logo__splashline--standalone {
+    font-size: clamp(0.96rem, 1.65vw, 1.18rem);
+    max-width: min(22vw, 10rem);
+  }
+
+  .mode-shell {
+    gap: 0.72rem;
+  }
+
+  .liftgrid-panel {
+    gap: 0.72rem;
+  }
+
+  .liftgrid-mode-nav {
+    transform: scale(0.92);
+    transform-origin: center top;
+  }
+
   .liftgrid-panel__interaction-layer,
   .liftgrid-victory-card {
     padding-left: 0.2rem;
@@ -6765,32 +6783,44 @@ button.game-quick-tools__item:active {
   }
 
   .liftgrid-board {
-    --liftgrid-cell-size: min(21vw, 4.95rem);
+    --liftgrid-cell-size: 5rem;
     width: fit-content;
   }
 
+  .liftgrid-entry {
+    gap: 0.62rem;
+    width: min(100%, 20.5rem);
+    margin-top: 0.5rem;
+  }
+
   .liftgrid-board__header span {
-    font-size: 0.68rem;
+    font-size: 0.6rem;
   }
 
   .liftgrid-board__header-icon-wrap {
-    width: min(70%, 3.15rem);
+    width: min(68%, 2.85rem);
   }
 
   .liftgrid-board__header-icon-wrap--row {
-    width: min(76%, 3.2rem);
+    width: min(82%, 3.2rem);
   }
 
   .liftgrid-board__brand {
-    font-size: 0.82rem;
+    font-size: 0.74rem;
   }
 
   .liftgrid-cell__value {
-    font-size: 0.58rem;
+    font-size: 0.52rem;
   }
 
   .liftgrid-cell__placeholder {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+  }
+
+  .liftgrid-cell__placeholder-copy {
+    font-size: 0.46rem;
+    right: 0.34rem;
+    bottom: 0.34rem;
   }
 
   .loadguess-video__frame {
@@ -8567,6 +8597,18 @@ button.game-quick-tools__item:active {
   gap: 1.2rem;
 }
 
+@media (max-width: 1240px) {
+  .mode-shell {
+    gap: 0.72rem;
+  }
+}
+
+@media (max-height: 820px) and (min-width: 761px) {
+  .mode-shell {
+    gap: 0.52rem;
+  }
+}
+
 .game-hero,
 .loadguess-intro-stack {
   gap: 0.3rem;
@@ -8877,13 +8919,6 @@ button.game-quick-tools__item:active {
   color: var(--accent);
 }
 
-.victory-panel__head,
-.victory-panel__stats,
-.victory-panel__learning-body,
-.victory-panel__share-text {
-  text-align: center;
-}
-
 .victory-panel__family-match,
 .liftgrid-toast,
 .liftgrid-surrender__panel,
@@ -8895,7 +8930,6 @@ button.game-quick-tools__item:active {
 .victory-panel__stat-line,
 .victory-panel__learning-line,
 .victory-panel__learning-list,
-.victory-panel__share-text,
 .consent-modal__text,
 .consent-modal__links,
 .feedback-modal__desc,
@@ -9163,6 +9197,39 @@ button.game-quick-tools__item:active {
 .liftgrid-board__corner,
 .liftgrid-cell--tone-light {
   background: #292c31;
+}
+
+@media (max-height: 820px) and (min-width: 761px) {
+  .shared-brand-header--mode {
+    padding-top: 0.9rem;
+    padding-bottom: 0.3rem;
+  }
+
+  .shared-brand-header--mode .brand-logo__wordmark {
+    font-size: clamp(3.25rem, 6.8vw, 4.55rem);
+  }
+
+  .shared-brand-header--mode .brand-logo__splashline--standalone {
+    font-size: 0.98rem;
+    max-width: 8.2rem;
+  }
+
+  .mode-shell {
+    gap: 0.52rem;
+  }
+
+  .liftgrid-panel {
+    gap: 0.52rem;
+  }
+
+  .liftgrid-board {
+    --liftgrid-cell-size: 4.45rem;
+  }
+
+  .liftgrid-entry {
+    gap: 0.52rem;
+    margin-top: 0.36rem;
+  }
 }
 
 .liftgrid-board__header,

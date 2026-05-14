@@ -1475,7 +1475,6 @@ export function LiftGridPage() {
                   </div>
 
                   <div className="victory-panel__share-card">
-                    <p className="victory-panel__share-text">Share result</p>
                     <pre className="liftgrid-share__preview">{shareText}</pre>
                     <div className="victory-panel__actions">
                       <button
