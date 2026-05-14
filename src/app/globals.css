@@ -298,6 +298,7 @@ input {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  padding-top: 1rem;
 }
 
 .brand-logo {
@@ -6753,7 +6754,7 @@ button.game-quick-tools__item:active {
   }
 
   .shared-brand-header--mode .brand-logo__splashline--standalone {
-    font-size: clamp(0.96rem, 1.65vw, 1.18rem);
+    font-size: clamp(1.46rem, 1.85vw, 1.38rem);
     max-width: min(22vw, 10rem);
   }
 
@@ -7806,18 +7807,37 @@ button.game-quick-tools__item:active {
 
 .hub-grid {
   width: 100%;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.hub-grid__row {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 1.45rem;
 }
 
-.hub-card {
-  position: relative;
-  isolation: isolate;
+.hub-grid__row--primary .hub-card {
   flex: 1 1 420px;
   max-width: 470px;
   min-height: 252px;
+}
+
+.hub-grid__row--secondary {
+  gap: 1rem;
+}
+
+.hub-grid__row--secondary .hub-card {
+  flex: 0 1 360px;
+  max-width: 380px;
+  min-height: 208px;
+}
+
+.hub-card {
+  position: relative;
+  isolation: isolate;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: .4rem;
   background:
@@ -7953,6 +7973,15 @@ button.game-quick-tools__item:active {
     linear-gradient(180deg, transparent 0 34%, rgba(0, 0, 0, 0.3) 100%),
     url("/icons/barbell.svg") right 1.25rem center / 60% auto no-repeat;
   filter: brightness(0.24) saturate(0.45);
+}
+
+.hub-card--moregames .hub-card__visual {
+  background:
+    linear-gradient(180deg, transparent 0 40%, rgba(0, 0, 0, 0.22) 100%),
+    radial-gradient(circle at 26% 36%, rgba(255, 255, 255, 0.04), transparent 22%),
+    radial-gradient(circle at 66% 58%, rgba(255, 255, 255, 0.035), transparent 24%),
+    radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.03), transparent 20%);
+  filter: none;
 }
 
 .hub-card__body {
@@ -8109,6 +8138,105 @@ button.game-quick-tools__item:active {
   transform: none;
 }
 
+.hub-card--compact {
+  min-height: 208px;
+  padding: 1.15rem 1.15rem 1rem;
+}
+
+.hub-card--compact .hub-card__icon {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.hub-card--compact .hub-card__icon-svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.hub-card--compact .hub-card__body {
+  left: 1.15rem;
+  right: 1.15rem;
+  bottom: 1rem;
+}
+
+.hub-card--compact .hub-card__title {
+  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+}
+
+.hub-card--compact .hub-card__description {
+  right: 3rem;
+  max-width: 22ch;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.hub-card--coming-soon {
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0)),
+    #111216;
+}
+
+.hub-card--coming-soon .hub-card__icon {
+  color: rgba(245, 245, 245, 0.58);
+}
+
+.hub-card--coming-soon .hub-card__line {
+  background: rgba(245, 245, 245, 0.5);
+}
+
+.hub-card--coming-soon .hub-card__pill {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(245, 245, 245, 0.68);
+}
+
+.hub-card--coming-soon .hub-card__title,
+.hub-card--coming-soon .hub-card__arrow {
+  color: rgba(245, 245, 245, 0.76);
+}
+
+.hub-card--coming-soon .hub-card__description {
+  color: rgba(141, 145, 153, 0.88);
+}
+
+.hub-card--coming-soon .hub-card__visual {
+  opacity: 0.32;
+}
+
+.hub-card--coming-soon:hover,
+.hub-card--coming-soon:focus-visible,
+.hub-card--coming-soon:focus-within {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0)),
+    #111216;
+  box-shadow: none;
+}
+
+.hub-card--coming-soon:hover .hub-card__arrow,
+.hub-card--coming-soon:focus-visible .hub-card__arrow,
+.hub-card--coming-soon:focus-within .hub-card__arrow,
+.hub-card--coming-soon:hover .hub-card__line,
+.hub-card--coming-soon:focus-visible .hub-card__line,
+.hub-card--coming-soon:focus-within .hub-card__line,
+.hub-card--coming-soon:hover .hub-card__title,
+.hub-card--coming-soon:focus-visible .hub-card__title,
+.hub-card--coming-soon:focus-within .hub-card__title,
+.hub-card--coming-soon:hover .hub-card__visual,
+.hub-card--coming-soon:focus-visible .hub-card__visual,
+.hub-card--coming-soon:focus-within .hub-card__visual {
+  transform: none;
+}
+
+.hub-card--coming-soon:hover .hub-card__description,
+.hub-card--coming-soon:focus-visible .hub-card__description,
+.hub-card--coming-soon:focus-within .hub-card__description {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 .hub-footer {
   flex: 0 0 auto;
   width: min(100%, 1180px);
@@ -8157,11 +8285,21 @@ button.game-quick-tools__item:active {
     gap: 1rem;
   }
 
-  .hub-card {
+  .hub-grid__row {
+    gap: 1rem;
+  }
+
+  .hub-grid__row--primary .hub-card {
     flex: 1 1 300px;
     max-width: 312px;
     min-height: 216px;
     padding: 1.1rem 1.1rem 1rem;
+  }
+
+  .hub-grid__row--secondary .hub-card {
+    flex-basis: 280px;
+    max-width: 300px;
+    min-height: 188px;
   }
 
   .hub-card__icon {
@@ -8302,7 +8440,14 @@ button.game-quick-tools__item:active {
     gap: 1.1rem;
   }
 
-  .hub-card {
+  .hub-grid__row {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.1rem;
+  }
+
+  .hub-grid__row--primary .hub-card,
+  .hub-grid__row--secondary .hub-card {
     flex-basis: 100%;
     max-width: 36rem;
     min-height: 232px;
@@ -9205,7 +9350,7 @@ button.game-quick-tools__item:active {
   }
 
   .shared-brand-header--mode .brand-logo__splashline--standalone {
-    font-size: 0.98rem;
+    font-size: 1.48rem;
     max-width: 8.2rem;
   }
 

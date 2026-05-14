@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { GameModeKey } from "@/lib/game-modes";
 import { ModeIcon } from "@/components/modes/mode-icon";
 
 const SITE_URL = "https://liftdle.com";
@@ -58,8 +59,9 @@ const homepageJsonLd = {
   ],
 };
 
-const hubCards = [
+const primaryHubCards = [
   {
+    iconMode: "daily" as const,
     mode: "daily" as const,
     title: "Daily",
     href: "/daily",
@@ -70,6 +72,7 @@ const hubCards = [
     ariaLabel: "Open Daily mode",
   },
   {
+    iconMode: "liftgrid" as const,
     mode: "liftgrid" as const,
     title: "LiftGrid",
     href: "/liftgrid",
@@ -79,19 +82,35 @@ const hubCards = [
     className: "hub-card--liftgrid",
     ariaLabel: "Open LiftGrid mode",
   },
+] as const;
+
+const secondaryHubCards = [
   {
+    iconMode: "weightguess" as const,
     mode: "weightguess" as const,
     title: "WeightGuess",
     href: null,
     description: "Watch the lift and guess the weight.",
     status: "Coming Soon",
     disabled: true,
-    className: "hub-card--weightguess hub-card--disabled",
+    className: "hub-card--weightguess hub-card--disabled hub-card--coming-soon hub-card--compact",
     ariaLabel: "WeightGuess coming soon",
+  },
+  {
+    iconMode: "marathon" as const,
+    mode: "weightguess" as const,
+    title: "More Games",
+    href: null,
+    description: "More competitive modes are on the way.",
+    status: "Coming Soon",
+    disabled: true,
+    className: "hub-card--moregames hub-card--disabled hub-card--coming-soon hub-card--compact",
+    ariaLabel: "More games coming soon",
   },
 ] as const;
 
 function HubCard({
+  iconMode,
   mode,
   title,
   href,
@@ -100,12 +119,22 @@ function HubCard({
   disabled,
   className,
   ariaLabel,
-}: (typeof hubCards)[number]) {
+}: {
+  iconMode: GameModeKey;
+  mode: GameModeKey;
+  title: string;
+  href: string | null;
+  description: string;
+  status: string | null;
+  disabled: boolean;
+  className: string;
+  ariaLabel: string;
+}) {
   const cardInner = (
     <>
       <div className="hub-card__topline">
         <span className="hub-card__icon">
-          <ModeIcon mode={mode} className="hub-card__icon-svg" alt="" />
+          <ModeIcon mode={iconMode} className="hub-card__icon-svg" alt="" />
         </span>
         {status ? <span className="hub-card__pill">{status}</span> : null}
       </div>
@@ -147,9 +176,16 @@ export default function Home() {
       />
       <main className="hub-main">
         <section className="hub-grid" aria-label="Liftdle game modes">
-          {hubCards.map((card) => (
-            <HubCard key={card.title} {...card} />
-          ))}
+          <div className="hub-grid__row hub-grid__row--primary">
+            {primaryHubCards.map((card) => (
+              <HubCard key={card.title} {...card} />
+            ))}
+          </div>
+          <div className="hub-grid__row hub-grid__row--secondary">
+            {secondaryHubCards.map((card) => (
+              <HubCard key={card.title} {...card} />
+            ))}
+          </div>
         </section>
       </main>
 
