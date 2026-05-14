@@ -186,6 +186,7 @@ export default function Home() {
         </nav>
         <p className="hub-footer__copy">© 2026 Liftdle. All rights reserved.</p>
       </footer>
+      <div id="mobile-floating-pills-host" className="mobile-floating-pills-host hub-mobile-pills" aria-hidden />
     </div>
   );
 }
