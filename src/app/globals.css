@@ -8301,6 +8301,12 @@ button.game-quick-tools__item:active {
 }
 
 @media (max-width: 760px) {
+  .daily-tracker-copy {
+    font-size: 0.64rem;
+    letter-spacing: 0.13em;
+    column-gap: 0.24rem;
+  }
+
   .shared-brand-header {
     padding: 1.45rem 0.9rem 0;
   }
@@ -8314,28 +8320,32 @@ button.game-quick-tools__item:active {
     min-width: 2.45rem;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__row {
+  .shared-brand-header--mode .shared-brand-header__row {
     flex-wrap: wrap;
     justify-content: center;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__slot--start,
-  .shared-brand-header--daily-tools .shared-brand-header__slot--end {
+  .shared-brand-header--mode .shared-brand-header__slot--start,
+  .shared-brand-header--mode .shared-brand-header__slot--end {
     flex: 0 0 auto;
     min-width: 0;
   }
 
-  .shared-brand-header--daily-tools .shared-brand-header__slot--center {
-    order: 3;
+  .shared-brand-header--mode .shared-brand-header__slot--center {
+    order: 2;
     flex: 0 0 100%;
-    margin-top: 0.6rem;
+    margin-top: 0.45rem;
+  }
+
+  .shared-brand-header--daily-tools .shared-brand-header__slot--end {
+    order: 1;
   }
 
   .shared-brand-header--daily-tools .shared-brand-header__actions {
     gap: 0.42rem;
   }
 
-.shared-brand-header--daily-tools .shared-brand-header__tool {
+  .shared-brand-header--daily-tools .shared-brand-header__tool {
     width: 2.8rem;
     height: 2.8rem;
   }
@@ -8453,12 +8463,12 @@ button.game-quick-tools__item:active {
     width: 100%;
   }
 
-  .shared-brand-header--daily-tools .brand-logo__wordmark {
+  .shared-brand-header--mode .brand-logo__wordmark {
     font-size: clamp(3.3rem, 16vw, 4.5rem);
     letter-spacing: 0.1em;
   }
 
-  .shared-brand-header--daily-tools .brand-logo__splashline--standalone {
+  .shared-brand-header--mode .brand-logo__splashline--standalone {
     right: 0.18rem;
     bottom: 0.02rem;
     max-width: min(34vw, 7rem);
