@@ -199,7 +199,7 @@ input {
 .brand-logo__splashline--standalone {
   z-index: 2;
   max-width: min(46vw, 24rem);
-  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  font-size: clamp(1.15rem, 2vw, 1.65rem);
   text-align: center;
   --splashline-transform: translate(40%, 40%) rotate(-12deg);
 }
@@ -7560,7 +7560,7 @@ button.game-quick-tools__item:active {
   max-width: 470px;
   min-height: 252px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.15rem;
+  border-radius: .4rem;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
     #101114;
@@ -7698,14 +7698,13 @@ button.game-quick-tools__item:active {
   align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 3.15rem;
 }
 
 .hub-card__title {
   margin: 0;
   flex: 1 1 auto;
   max-width: none;
-  font-size: clamp(1.8rem, 3vw, 2.65rem);
+  font-size: clamp(1.8rem, 3vw, 1.65rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 0.92;
