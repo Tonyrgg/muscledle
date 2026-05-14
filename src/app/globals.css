@@ -198,20 +198,10 @@ input {
 
 .brand-logo__splashline--standalone {
   z-index: 2;
-  transform-origin: center center;
   max-width: min(46vw, 24rem);
-  font-size: clamp(1.15rem, 2vw, 1.95rem);
-  bottom: auto;
-}
-
-.brand-logo__splashline--standalone.brand-logo__splashline--long {
-  top: 40%;
-  right: clamp(-8.35rem, -7.2vw, -2.9rem);
-}
-
-.brand-logo__splashline--standalone.brand-logo__splashline--short {
-top: 52%;
-    right: clamp(-5.35rem, -7.2vw, -2.9rem);
+  font-size: clamp(1.15rem, 2vw, 1.45rem);
+  text-align: center;
+  --splashline-transform: translate(40%, 40%) rotate(-12deg);
 }
 
 @keyframes brand-splashline-breathe {

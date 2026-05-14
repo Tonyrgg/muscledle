@@ -17,12 +17,6 @@ export function Logo({
   splashlineVariant = "default",
 }: LogoProps) {
   const splashline = useMemo(() => getRandomLiftdleSplashline(), []);
-  const splashlineLengthClass =
-    splashlineVariant === "standalone"
-      ? splashline.length > 28
-        ? "brand-logo__splashline--long"
-        : "brand-logo__splashline--short"
-      : "";
 
   return (
     <div className={`brand-logo ${className ?? ""}`.trim()} aria-label="Liftdle">
@@ -38,9 +32,7 @@ export function Logo({
           </span>
         </div>
       ) : withSplashline ? (
-        <span
-          className={`brand-logo__splashline brand-logo__splashline--${splashlineVariant} ${splashlineLengthClass}`.trim()}
-        >
+        <span className={`brand-logo__splashline brand-logo__splashline--${splashlineVariant}`.trim()}>
           <span className="brand-logo__splashline-text">{splashline}</span>
         </span>
       ) : null}
