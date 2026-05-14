@@ -33,13 +33,15 @@ export function Logo({
       {withTagline ? (
         <div className="brand-logo__tagline-group">
           <p className="brand-logo__tagline">Guess the exercise</p>
-          <span className="brand-logo__splashline">{splashline}</span>
+          <span className="brand-logo__splashline">
+            <span className="brand-logo__splashline-text">{splashline}</span>
+          </span>
         </div>
       ) : withSplashline ? (
         <span
           className={`brand-logo__splashline brand-logo__splashline--${splashlineVariant} ${splashlineLengthClass}`.trim()}
         >
-          {splashline}
+          <span className="brand-logo__splashline-text">{splashline}</span>
         </span>
       ) : null}
     </div>

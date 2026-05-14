@@ -171,6 +171,7 @@ input {
 }
 
 .brand-logo__splashline {
+  --splashline-transform: translate(12%, 75%) rotate(-10deg);
   position: absolute;
   right: 0.15rem;
   bottom: 0;
@@ -182,21 +183,25 @@ input {
   color: #e8d7a8;
   max-width: min(38vw, 19rem);
   white-space: nowrap;
-  transform: translate(12%, 38%) rotate(-10deg);
-  transform-origin: center;
+  transform: var(--splashline-transform);
+  transform-origin: center center;
+}
+
+.brand-logo__splashline-text {
+  display: inline-block;
   text-shadow:
     0 1px 0 rgba(50, 24, 0, 0.95),
     0 2px 6px rgba(0, 0, 0, 0.72),
     -1px 1px 0 rgba(0, 0, 0, 0.48);
+  animation: brand-splashline-breathe 1.8s linear infinite;
 }
 
 .brand-logo__splashline--standalone {
   z-index: 2;
-  transform-origin: 100%;
+  transform-origin: center center;
   max-width: min(46vw, 24rem);
   font-size: clamp(1.15rem, 2vw, 1.95rem);
   bottom: auto;
-  transform: translateY(-8%) rotate(-12deg);
 }
 
 .brand-logo__splashline--standalone.brand-logo__splashline--long {
@@ -207,6 +212,17 @@ input {
 .brand-logo__splashline--standalone.brand-logo__splashline--short {
 top: 52%;
     right: clamp(-5.35rem, -7.2vw, -2.9rem);
+}
+
+@keyframes brand-splashline-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
 }
 
 .game-hero__home-link {
@@ -481,7 +497,14 @@ top: 52%;
   position: absolute;
   inset: 0 auto 0 0;
   width: 42%;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 16%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.03) 84%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 16%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.03) 84%,
+    transparent 100%
+  );
   animation: skeleton-glow-travel 1.2s linear infinite;
 }
 
@@ -494,8 +517,7 @@ top: 52%;
   height: 4rem;
   background: url("/icons/dumbell.svg") center / contain no-repeat;
   opacity: 0.22;
-  filter:
-    brightness(0) saturate(100%) invert(97%)
+  filter: brightness(0) saturate(100%) invert(97%)
     drop-shadow(0 0 10px rgba(255, 255, 255, 0.12));
   transform: translate(-50%, -50%);
 }
@@ -1735,7 +1757,14 @@ button.game-quick-tools__item:active {
   position: absolute;
   inset: 0 auto 0 0;
   width: 42%;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 16%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.03) 84%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 16%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.03) 84%,
+    transparent 100%
+  );
   animation: skeleton-glow-travel 1.2s linear infinite;
 }
 
@@ -1748,8 +1777,7 @@ button.game-quick-tools__item:active {
   height: 4rem;
   background: url("/icons/dumbell.svg") center / contain no-repeat;
   opacity: 0.22;
-  filter:
-    brightness(0) saturate(100%) invert(97%)
+  filter: brightness(0) saturate(100%) invert(97%)
     drop-shadow(0 0 10px rgba(255, 255, 255, 0.12));
   transform: translate(-50%, -50%);
 }
@@ -3757,7 +3785,7 @@ button.game-quick-tools__item:active {
     font-size: clamp(0.86rem, 3.2vw, 1.02rem);
     white-space: normal;
     line-height: 0.96;
-    transform: translate(4%, 26%) rotate(-8deg);
+    --splashline-transform: translate(4%, 26%) rotate(-8deg);
     text-align: right;
   }
 
@@ -4575,7 +4603,11 @@ button.game-quick-tools__item:active {
   border: 1px solid rgba(249, 115, 22, 0.34);
   border-radius: 0.82rem;
   background:
-    linear-gradient(180deg, rgba(255, 139, 58, 0.08), rgba(255, 139, 58, 0) 34%),
+    linear-gradient(
+      180deg,
+      rgba(255, 139, 58, 0.08),
+      rgba(255, 139, 58, 0) 34%
+    ),
     #1d1d1d;
   padding: clamp(1rem, 2.8vw, 1.35rem);
   text-align: center;
@@ -4588,10 +4620,10 @@ button.game-quick-tools__item:active {
 
 .loadguess-feedback-card--summary {
   width: 360px;
-    position: absolute;
-    top: 50%;
-    left: calc(100% + 30px);
-    transform: translateY(-75%);
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 30px);
+  transform: translateY(-75%);
 }
 
 .loadguess-feedback-card--submitting {
@@ -4978,7 +5010,11 @@ button.game-quick-tools__item:active {
   border: 1px solid #3f3f3f;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 38%, rgba(255, 139, 58, 0.1), transparent 30%),
+    radial-gradient(
+      circle at 50% 38%,
+      rgba(255, 139, 58, 0.1),
+      transparent 30%
+    ),
     linear-gradient(180deg, #171717 0%, #121212 100%);
 }
 
@@ -5007,7 +5043,11 @@ button.game-quick-tools__item:active {
   gap: 1rem;
   padding: 1.2rem;
   background:
-    linear-gradient(135deg, rgba(255, 139, 58, 0.06), rgba(255, 139, 58, 0) 42%),
+    linear-gradient(
+      135deg,
+      rgba(255, 139, 58, 0.06),
+      rgba(255, 139, 58, 0) 42%
+    ),
     linear-gradient(180deg, rgba(22, 22, 22, 0.94), rgba(14, 14, 14, 0.98));
 }
 
@@ -5087,7 +5127,12 @@ button.game-quick-tools__item:active {
 .loadguess-video__skeleton-bar {
   height: 0.44rem;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(255, 139, 58, 0.18), rgba(255, 218, 194, 0.5), rgba(255, 139, 58, 0.14));
+  background: linear-gradient(
+    90deg,
+    rgba(255, 139, 58, 0.18),
+    rgba(255, 218, 194, 0.5),
+    rgba(255, 139, 58, 0.14)
+  );
   background-size: 180% 100%;
   animation: loadguess-video-skeleton-flow 1.4s linear infinite;
 }
@@ -5550,7 +5595,12 @@ button.game-quick-tools__item:active {
 .liftgrid-loading__title,
 .liftgrid-loading__cell {
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.02)
+    ),
     rgba(36, 27, 22, 0.92);
   background-size: 220% 100%;
   animation: liftgrid-loading-shimmer 1.35s linear infinite;
@@ -5587,25 +5637,45 @@ button.game-quick-tools__item:active {
 .liftgrid-loading__cell--corner {
   border-color: rgba(249, 115, 22, 0.32);
   background:
-    linear-gradient(100deg, rgba(255, 189, 140, 0.03), rgba(255, 189, 140, 0.09), rgba(255, 189, 140, 0.03)),
+    linear-gradient(
+      100deg,
+      rgba(255, 189, 140, 0.03),
+      rgba(255, 189, 140, 0.09),
+      rgba(255, 189, 140, 0.03)
+    ),
     rgba(59, 44, 35, 0.92);
 }
 
 .liftgrid-loading__cell--header {
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.02)
+    ),
     rgba(48, 38, 31, 0.9);
 }
 
 .liftgrid-loading__cell--light {
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.02),
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.02)
+    ),
     rgba(54, 47, 43, 0.82);
 }
 
 .liftgrid-loading__cell--dark {
   background:
-    linear-gradient(100deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
+    linear-gradient(
+      100deg,
+      rgba(255, 255, 255, 0.015),
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.015)
+    ),
     rgba(31, 25, 22, 0.9);
 }
 
@@ -5712,8 +5782,8 @@ button.game-quick-tools__item:active {
   height: 100%;
   object-fit: contain;
   object-position: center;
-  filter: brightness(0) saturate(100%) invert(56%) sepia(82%) saturate(1338%) hue-rotate(347deg)
-    brightness(101%) contrast(98%);
+  filter: brightness(0) saturate(100%) invert(56%) sepia(82%) saturate(1338%)
+    hue-rotate(347deg) brightness(101%) contrast(98%);
 }
 
 .liftgrid-board__header-icon--row {
@@ -5739,7 +5809,11 @@ button.game-quick-tools__item:active {
 .liftgrid-cell--solved {
   border-color: rgba(249, 115, 22, 0.56);
   background:
-    linear-gradient(180deg, rgba(249, 115, 22, 0.16), rgba(249, 115, 22, 0) 60%),
+    linear-gradient(
+      180deg,
+      rgba(249, 115, 22, 0.16),
+      rgba(249, 115, 22, 0) 60%
+    ),
     rgba(55, 55, 55, 0.94);
 }
 
@@ -5813,8 +5887,8 @@ button.game-quick-tools__item:active {
   width: 64%;
   height: 64%;
   opacity: 0.84;
-  filter: brightness(0) saturate(100%) invert(80%) sepia(25%) saturate(749%) hue-rotate(335deg)
-    brightness(104%) contrast(101%);
+  filter: brightness(0) saturate(100%) invert(80%) sepia(25%) saturate(749%)
+    hue-rotate(335deg) brightness(104%) contrast(101%);
 }
 
 .liftgrid-cell__value {
@@ -7400,8 +7474,8 @@ button.game-quick-tools__item:active {
     bottom: auto;
   }
 
-.feedback-modal__grid {
-  grid-template-columns: 1fr;
+  .feedback-modal__grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -7455,19 +7529,22 @@ button.game-quick-tools__item:active {
 }
 
 .hub-brand__splashline {
-    z-index: 2;
-    font-family: var(--font-script), cursive;
-    color: #e8d7a8;
-    white-space: nowrap;
-    transform-origin: 100%;
-    text-shadow: 0 1px #321800f2, 0 2px 6px #000000b8, -1px 1px #0000007a;
-    font-size: clamp(1.15rem, 2vw, 2.25rem);
-    font-weight: 400;
-    line-height: 1;
-    position: absolute;
-    top: 53%;
-    right: clamp(-2.35rem, -2vw, .1rem);
-    transform: translateY(-8%) rotate(-12deg);
+  z-index: 2;
+  font-family: var(--font-script), cursive;
+  color: #e8d7a8;
+  white-space: nowrap;
+  transform-origin: 100%;
+  text-shadow:
+    0 1px #321800f2,
+    0 2px 6px #000000b8,
+    -1px 1px #0000007a;
+  font-size: clamp(1.15rem, 2vw, 2.25rem);
+  font-weight: 400;
+  line-height: 1;
+  position: absolute;
+  top: 53%;
+  right: clamp(-2.35rem, -2vw, 0.1rem);
+  transform: translateY(-8%) rotate(-12deg);
 }
 
 .hub-main {
@@ -7574,8 +7651,14 @@ button.game-quick-tools__item:active {
 
 .hub-card--daily .hub-card__visual {
   background:
-    linear-gradient(180deg, transparent 0 34%, rgba(0, 0, 0, 0.18) 58%, rgba(0, 0, 0, 0.36) 100%),
-    url("/muscle-icons/back-shoulders.svg") right 1rem center / 58% auto no-repeat;
+    linear-gradient(
+      180deg,
+      transparent 0 34%,
+      rgba(0, 0, 0, 0.18) 58%,
+      rgba(0, 0, 0, 0.36) 100%
+    ),
+    url("/muscle-icons/back-shoulders.svg") right 1rem center / 58% auto
+      no-repeat;
   filter: brightness(0.38) saturate(0.75);
 }
 
@@ -7584,8 +7667,14 @@ button.game-quick-tools__item:active {
     linear-gradient(180deg, transparent 0 40%, rgba(0, 0, 0, 0.26) 100%),
     linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size: auto, 3.35rem 3.35rem, 3.35rem 3.35rem;
-  background-position: center, right 1.2rem top 3.5rem, right 1.2rem top 3.5rem;
+  background-size:
+    auto,
+    3.35rem 3.35rem,
+    3.35rem 3.35rem;
+  background-position:
+    center,
+    right 1.2rem top 3.5rem,
+    right 1.2rem top 3.5rem;
 }
 
 .hub-card--weightguess .hub-card__visual {
@@ -8126,7 +8215,8 @@ button.game-quick-tools__item:active {
 }
 
 .daily-hints__tile--active .daily-hints__tile-icon-image {
-  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2483%) hue-rotate(6deg) brightness(102%) contrast(97%);
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2483%)
+    hue-rotate(6deg) brightness(102%) contrast(97%);
 }
 
 .mode-switch__button,
@@ -8300,7 +8390,14 @@ button.game-quick-tools__item:active {
 .exercise-icon-cell__skeleton::before,
 .loadguess-video__skeleton::before,
 .daily-hints__visual-skeleton::before {
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.02) 22%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.02) 78%, transparent 100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 22%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.02) 78%,
+    transparent 100%
+  );
 }
 
 .exercise-icon-cell__gif,
@@ -8485,7 +8582,11 @@ button.game-quick-tools__item:active {
 
 .liftgrid-cell--revealed {
   border-color: color-mix(in srgb, var(--wrong) 58%, white 8%);
-  background: color-mix(in srgb, var(--surface-strong) 86%, rgba(142, 47, 47, 0.18));
+  background: color-mix(
+    in srgb,
+    var(--surface-strong) 86%,
+    rgba(142, 47, 47, 0.18)
+  );
 }
 
 .liftgrid-cell__ghost-icon {
