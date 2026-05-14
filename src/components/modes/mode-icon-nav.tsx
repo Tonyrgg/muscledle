@@ -1,9 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { ModeIcon } from "@/components/modes/mode-icon";
-import type { GameModeKey } from "@/lib/game-modes";
+import {
+  useTrackableModeCompletions,
+  type TrackableModeKey,
+  type TrackableModeCompletions,
+} from "@/components/modes/use-trackable-mode-completions";
 
 type ModeIconNavItem = {
-  mode: GameModeKey;
+  mode: TrackableModeKey;
   label: string;
   href: string;
 };
@@ -22,11 +28,14 @@ const MODE_ICON_NAV_ITEMS: readonly ModeIconNavItem[] = [
 ] as const;
 
 type ModeIconNavProps = {
-  activeMode: GameModeKey;
+  activeMode: TrackableModeKey;
   className?: string;
+  completionOverrides?: Partial<TrackableModeCompletions>;
 };
 
-export function ModeIconNav({ activeMode, className }: ModeIconNavProps) {
+export function ModeIconNav({ activeMode, className, completionOverrides }: ModeIconNavProps) {
+  const completions = useTrackableModeCompletions(completionOverrides);
+
   return (
     <nav
       className={`mode-icon-nav ${className ?? ""}`.trim()}
@@ -42,9 +51,21 @@ export function ModeIconNav({ activeMode, className }: ModeIconNavProps) {
             aria-current={activeMode === item.mode ? "page" : undefined}
             className={`mode-icon-nav__item ${
               activeMode === item.mode ? "mode-icon-nav__item--active" : ""
+            } ${
+              completions[item.mode] ? "mode-icon-nav__item--completed" : ""
             }`.trim()}
           >
             <ModeIcon mode={item.mode} className="mode-icon mode-icon-nav__icon" alt="" />
+            {completions[item.mode] ? (
+              <span className="mode-icon-nav__check" aria-hidden="true">
+                <svg viewBox="0 0 16 16" className="mode-icon-nav__check-icon">
+                  <path
+                    d="M6.55 10.95 3.7 8.1l-1.1 1.1 3.95 3.95 6.85-6.85-1.1-1.1z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+            ) : null}
             <span className="mode-icon-nav__tooltip" role="tooltip">
               {item.label}
             </span>

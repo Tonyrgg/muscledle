@@ -30,6 +30,7 @@ import {
   LIFTDLE_HEADER_OPEN_EVENT,
   LIFTDLE_HEADER_STREAK_EVENT,
 } from "@/lib/liftdleHeader";
+import { writeTrackableModeCompletion } from "@/lib/mode-completion-cache";
 import type {
   LiftGridEventInput,
   LiftGridFeedbackChoice,
@@ -455,6 +456,7 @@ export function LiftGridPage() {
         if (cancelled) return;
 
         setState(todayState);
+        writeTrackableModeCompletion("liftgrid", todayState.isComplete, todayState.gameDate);
         setExercises(liveExercises);
         emitEvent({
           eventName: "today_state_received",
@@ -964,6 +966,7 @@ export function LiftGridPage() {
             }
           : current,
       );
+      writeTrackableModeCompletion("liftgrid", response.isComplete, state.gameDate);
       setLocalSolvedCells((current) => (current ? [...current, solvedCell] : current));
       setQuery("");
       setSelectedExerciseId(null);
@@ -1084,6 +1087,7 @@ export function LiftGridPage() {
                     }
                   : current,
               );
+              writeTrackableModeCompletion("liftgrid", response.isComplete, state.gameDate);
               setIsSurrendering(false);
             }, 20);
           }
@@ -1164,6 +1168,7 @@ export function LiftGridPage() {
     try {
       const nextState = await resetLiftGridRequest();
       setState(nextState);
+      writeTrackableModeCompletion("liftgrid", nextState.isComplete, nextState.gameDate);
       setLocalSolvedCells(null);
       setRevealedCellKeys([]);
       setQuery("");
@@ -1212,7 +1217,11 @@ export function LiftGridPage() {
       ) : null}
       <div className="mode-shell">
         <section className="liftgrid-panel">
-          <ModeIconNav activeMode="liftgrid" className="liftgrid-mode-nav" />
+          <ModeIconNav
+            activeMode="liftgrid"
+            className="liftgrid-mode-nav"
+            completionOverrides={{ liftgrid: effectiveIsComplete }}
+          />
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (
             <div className="liftgrid-loading">
