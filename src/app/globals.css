@@ -8958,6 +8958,19 @@ button.game-quick-tools__item:active {
   padding-bottom: clamp(0.9rem, 1.8vh, 1.35rem);
 }
 
+@media (max-width: 760px) {
+  .liftgrid-panel {
+    --liftgrid-cell-size: clamp(
+      4.65rem,
+      min(
+        calc((95vw - clamp(2rem, 7vw, 7rem)) / 4),
+        calc((100dvh - clamp(18.5rem, 31vh, 22rem)) / 4)
+      ),
+      8.5rem
+    );
+  }
+}
+
 .game-quick-tools {
   padding: 0.55rem;
   background: var(--surface);

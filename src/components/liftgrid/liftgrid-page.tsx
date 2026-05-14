@@ -608,6 +608,10 @@ export function LiftGridPage() {
   }, [effectiveIsComplete, focusTick, submitting]);
 
   useEffect(() => {
+    if (!state) {
+      return;
+    }
+
     if (!completionStateInitializedRef.current) {
       completionStateInitializedRef.current = true;
       previousCompleteRef.current = effectiveIsComplete;
@@ -680,7 +684,7 @@ export function LiftGridPage() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [didSurrender, effectiveIsComplete]);
+  }, [didSurrender, effectiveIsComplete, state]);
 
   const debugSolutions = useMemo(() => {
     if (!state) return [];
