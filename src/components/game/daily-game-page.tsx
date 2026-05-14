@@ -19,7 +19,7 @@ export async function DailyGamePage({ jsonLd = null }: DailyGamePageProps) {
   }
 
   return (
-    <>
+    <div className="daily-game-page">
       {jsonLd ? (
         <script
           type="application/ld+json"
@@ -27,6 +27,6 @@ export async function DailyGamePage({ jsonLd = null }: DailyGamePageProps) {
         />
       ) : null}
       <GameShell initialState={initialState} />
-    </>
+    </div>
   );
 }
