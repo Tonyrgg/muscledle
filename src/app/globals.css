@@ -206,10 +206,44 @@ body {
   transform: none;
 }
 
+.shared-brand-header__tool--streak-active {
+  border-color: var(--accent-border);
+}
+
 .shared-brand-header__tool-icon {
   width: 1.34rem;
   height: 1.34rem;
   display: block;
+}
+
+.shared-brand-header__tool-icon--streak {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.shared-brand-header__tool-icon--streak-idle {
+  opacity: 0.17;
+}
+
+.shared-brand-header__tool-icon-lottie {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.shared-brand-header__tool-icon-fallback {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: rgba(245, 245, 245, 0.48);
+  -webkit-mask: url("/mode-icons/fire.svg") center / contain no-repeat;
+  mask: url("/mode-icons/fire.svg") center / contain no-repeat;
+  pointer-events: none;
 }
 
 .shared-brand-header__tool-count {
@@ -223,7 +257,7 @@ body {
   letter-spacing: 0;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: currentColor;
+  color: #f5f5f5;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   pointer-events: none;
 }
@@ -8277,6 +8311,11 @@ button.game-quick-tools__item:active {
   .shared-brand-header--has-tools .shared-brand-header__tool-icon {
     width: 1.02rem;
     height: 1.02rem;
+  }
+
+  .shared-brand-header--has-tools .shared-brand-header__tool-icon--streak {
+    width: 2.2rem;
+    height: 2.2rem;
   }
 
   .shared-brand-header--has-tools .shared-brand-header__tool-count {

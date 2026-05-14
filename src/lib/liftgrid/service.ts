@@ -13,10 +13,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getAuthenticatedUser } from "@/lib/supabase/server";
 import type { Exercise } from "@/types/exercise";
 import type {
+  LiftGridCategoryKey,
   LiftGridEventInput,
   LiftGridFeedbackChoice,
   LiftGridGuessResponse,
   LiftGridPublicState,
+  LiftGridRevealResponse,
   LiftGridSolvedCell,
   PublicLiftGridStats,
   PublicLiftGridStatsPoint,
@@ -56,6 +58,146 @@ function dayDiff(from: string, to: string): number {
 
 function round1(value: number): number {
   return Number(value.toFixed(1));
+}
+
+function getExerciseCategoryValues(
+  exercise: LiftGridExercise,
+  categoryKey: LiftGridCategoryKey,
+) {
+  if (categoryKey === "muscle_group") {
+    const values = new Set<string>();
+    const addValue = (value: string | null | undefined) => {
+      if (!value) return;
+      for (const part of value
+        .split(/[\/,&|]+/g)
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)) {
+        values.add(part);
+      }
+    };
+
+    addValue(exercise.muscle_group);
+    for (const muscle of exercise.muscle ?? []) {
+      addValue(muscle);
+    }
+
+    return [...values];
+  }
+
+  const rawValue = exercise[categoryKey];
+  const values = Array.isArray(rawValue) ? rawValue : [rawValue];
+  return values.map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+}
+
+function buildLiftGridSolvedAssignment(args: {
+  puzzle: LiftGridPuzzle;
+  exercises: LiftGridExercise[];
+  solvedCells: LiftGridSolvedCell[];
+}): LiftGridSolvedCell[] | null {
+  const { puzzle, exercises, solvedCells } = args;
+  const exercisesById = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  const allCells = puzzle.rowValues.flatMap((_, rowIndex) =>
+    puzzle.columnValues.map((__, columnIndex) => ({
+      rowIndex,
+      columnIndex,
+      key: `${rowIndex}:${columnIndex}`,
+    })),
+  );
+
+  const candidatesByCell = new Map<string, LiftGridExercise[]>();
+  for (const cell of allCells) {
+    const rowValue = puzzle.rowValues[cell.rowIndex];
+    const columnValue = puzzle.columnValues[cell.columnIndex];
+    candidatesByCell.set(
+      cell.key,
+      exercises.filter(
+        (exercise) =>
+          getExerciseCategoryValues(exercise, puzzle.rowCategoryKey).includes(rowValue) &&
+          getExerciseCategoryValues(exercise, puzzle.columnCategoryKey).includes(columnValue),
+      ),
+    );
+  }
+
+  const tryBuild = (preserveSolvedCells: boolean) => {
+    const assigned = new Map<string, LiftGridExercise>();
+    const usedExerciseIds = new Set<string>();
+    const lockedKeys = new Set<string>();
+
+    if (preserveSolvedCells) {
+      for (const solvedCell of solvedCells) {
+        const key = `${solvedCell.rowIndex}:${solvedCell.columnIndex}`;
+        const solvedExercise = exercisesById.get(solvedCell.exerciseId);
+        const candidates = candidatesByCell.get(key) ?? [];
+
+        if (
+          !solvedExercise ||
+          !candidates.some((candidate) => candidate.id === solvedExercise.id) ||
+          usedExerciseIds.has(solvedExercise.id)
+        ) {
+          return null;
+        }
+
+        assigned.set(key, solvedExercise);
+        usedExerciseIds.add(solvedExercise.id);
+        lockedKeys.add(key);
+      }
+    }
+
+    const targetCells = allCells
+      .filter((cell) => !lockedKeys.has(cell.key))
+      .sort((left, right) => {
+        const leftCount = candidatesByCell.get(left.key)?.length ?? Number.MAX_SAFE_INTEGER;
+        const rightCount = candidatesByCell.get(right.key)?.length ?? Number.MAX_SAFE_INTEGER;
+        return leftCount - rightCount;
+      });
+
+    const assign = (index: number): boolean => {
+      if (index >= targetCells.length) {
+        return true;
+      }
+
+      const cell = targetCells[index];
+      const candidates = candidatesByCell.get(cell.key) ?? [];
+
+      for (const exercise of candidates) {
+        if (usedExerciseIds.has(exercise.id)) {
+          continue;
+        }
+
+        usedExerciseIds.add(exercise.id);
+        assigned.set(cell.key, exercise);
+
+        if (assign(index + 1)) {
+          return true;
+        }
+
+        assigned.delete(cell.key);
+        usedExerciseIds.delete(exercise.id);
+      }
+
+      return false;
+    };
+
+    if (!assign(0)) {
+      return null;
+    }
+
+    return allCells.flatMap((cell) => {
+      const exercise = assigned.get(cell.key);
+      if (!exercise) {
+        return [];
+      }
+
+      return [{
+        rowIndex: cell.rowIndex,
+        columnIndex: cell.columnIndex,
+        exerciseId: exercise.id,
+        exerciseName: exercise.display_name,
+      } satisfies LiftGridSolvedCell];
+    });
+  };
+
+  return tryBuild(true) ?? tryBuild(false);
 }
 
 function normalizeSolvedCells(
@@ -500,6 +642,36 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
     completedCount: solvedCells.length,
     totalCells,
     isComplete: solvedCells.length === totalCells,
+  };
+}
+
+export async function revealLiftGridSolution(): Promise<LiftGridRevealResponse> {
+  const gameDate = gameDateRome();
+  const [identity, exercises] = await Promise.all([getViewerIdentity(), getLiftGridExercises()]);
+  const puzzle = buildLiftGridPuzzle(exercises, gameDate);
+  const result = await getOrCreateLiftGridResult({
+    gameDate,
+    userId: identity.userId,
+    sessionPublicId: identity.sessionPublicId,
+  });
+
+  const totalCells = puzzle.rowValues.length * puzzle.columnValues.length;
+  const solvedCells = normalizeSolvedCells(result?.solved_cells, puzzle, exercises);
+  const assigned = buildLiftGridSolvedAssignment({
+    puzzle,
+    exercises,
+    solvedCells,
+  });
+
+  if (!assigned) {
+    throw new Error("Could not reveal the remaining grid.");
+  }
+
+  return {
+    solvedCells: assigned,
+    completedCount: assigned.length,
+    totalCells,
+    isComplete: assigned.length === totalCells,
   };
 }
 

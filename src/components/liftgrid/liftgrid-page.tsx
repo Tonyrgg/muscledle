@@ -16,6 +16,7 @@ import {
 import {
   fetchLiftGridStats,
   fetchLiftGridToday,
+  revealLiftGridRequest,
   resetLiftGridRequest,
   submitLiftGridFeedbackRequest,
   submitLiftGridGuessRequest,
@@ -1023,91 +1024,6 @@ export function LiftGridPage() {
       }
     }
 
-    const sortedPending = [...pendingCells].sort((left, right) => {
-      const leftCount = solutionCandidatesByCell.get(left.key)?.length ?? Number.MAX_SAFE_INTEGER;
-      const rightCount = solutionCandidatesByCell.get(right.key)?.length ?? Number.MAX_SAFE_INTEGER;
-      return leftCount - rightCount;
-    });
-
-    const buildAssignedMap = (preserveSolvedCells: boolean) => {
-      const assigned = new Map<string, LiveExerciseSuggestion>();
-      const usedExerciseIds = new Set<string>();
-      const lockedKeys = new Set<string>();
-
-      if (preserveSolvedCells) {
-        for (const solvedCell of effectiveSolvedCells) {
-          const key = cellKey(solvedCell.rowIndex, solvedCell.columnIndex);
-          const solvedExercise = exercisesById.get(solvedCell.exerciseId);
-          const candidates = solutionCandidatesByCell.get(key) ?? [];
-
-          if (
-            !solvedExercise ||
-            !candidates.some((candidate) => candidate.id === solvedExercise.id) ||
-            usedExerciseIds.has(solvedExercise.id)
-          ) {
-            return null;
-          }
-
-          assigned.set(key, solvedExercise);
-          usedExerciseIds.add(solvedExercise.id);
-          lockedKeys.add(key);
-        }
-      }
-
-      const allCells = state.rows.flatMap((_, rowIndex) =>
-        state.columns.map((__, columnIndex) => ({
-          rowIndex,
-          columnIndex,
-          key: cellKey(rowIndex, columnIndex),
-        })),
-      );
-
-      const targetCells = allCells
-        .filter((cell) => !lockedKeys.has(cell.key))
-        .sort((left, right) => {
-          const leftCount = solutionCandidatesByCell.get(left.key)?.length ?? Number.MAX_SAFE_INTEGER;
-          const rightCount = solutionCandidatesByCell.get(right.key)?.length ?? Number.MAX_SAFE_INTEGER;
-          return leftCount - rightCount;
-        });
-
-      const assignSolutions = (index: number): boolean => {
-        if (index >= targetCells.length) {
-          return true;
-        }
-
-        const cell = targetCells[index];
-        const candidates = solutionCandidatesByCell.get(cell.key) ?? [];
-
-        for (const exercise of candidates) {
-          if (usedExerciseIds.has(exercise.id)) {
-            continue;
-          }
-
-          usedExerciseIds.add(exercise.id);
-          assigned.set(cell.key, exercise);
-
-          if (assignSolutions(index + 1)) {
-            return true;
-          }
-
-          assigned.delete(cell.key);
-          usedExerciseIds.delete(exercise.id);
-        }
-
-        return false;
-      };
-
-      return assignSolutions(0) ? assigned : null;
-    };
-
-    const assigned = buildAssignedMap(true) ?? buildAssignedMap(false);
-
-    if (!assigned) {
-      showRejectedGuessFeedback("Could not reveal the remaining grid");
-      setShowSurrenderDialog(false);
-      return;
-    }
-
     emitEvent({
       eventName: "interactive_click",
       uiSurface: "entry",
@@ -1118,72 +1034,68 @@ export function LiftGridPage() {
     });
 
     setIsSurrendering(true);
-    setShowSurrenderDialog(false);
-    setShowVictoryCard(false);
-    setShowVictoryCelebration(false);
-    setShareStatus("idle");
-    setQuery("");
-    setSelectedExerciseId(null);
-    setGameOutcome("lose");
-    setLocalSolvedCells(
-      state.rows.flatMap((_, rowIndex) =>
-        state.columns.flatMap((__, columnIndex) => {
-          const key = cellKey(rowIndex, columnIndex);
-          const exercise = assigned.get(key);
+    try {
+      const response = await revealLiftGridRequest();
+      const assigned = new Map(
+        response.solvedCells.map((cell) => [cellKey(cell.rowIndex, cell.columnIndex), cell]),
+      );
 
-          if (!exercise) {
-            return [];
+      setShowSurrenderDialog(false);
+      setShowVictoryCard(false);
+      setShowVictoryCelebration(false);
+      setShareStatus("idle");
+      setQuery("");
+      setSelectedExerciseId(null);
+      setGameOutcome("lose");
+      setLocalSolvedCells(response.solvedCells);
+
+      const revealOrder = shuffleArray(pendingCells);
+      const revealDelayMs = 110;
+
+      revealOrder.forEach((cell, index) => {
+        window.setTimeout(() => {
+          const solvedCell = assigned.get(cell.key);
+          if (!solvedCell) {
+            return;
           }
 
-          return [
-            {
-              rowIndex,
-              columnIndex,
-              exerciseId: exercise.id,
-              exerciseName: exercise.display_name,
-            } satisfies LiftGridSolvedCell,
-          ];
-        }),
-      ),
-    );
+          setLocalSolvedCells((current) => {
+            const existing = current ?? state.solvedCells;
+            if (existing.some((entry) => entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex)) {
+              return existing.map((entry) =>
+                entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex
+                  ? solvedCell
+                  : entry,
+              );
+            }
+            return [...existing, solvedCell];
+          });
+          setRevealedCellKeys((current) => [...current, cell.key]);
 
-    const revealOrder = shuffleArray(pendingCells);
-    const revealDelayMs = 110;
-
-    revealOrder.forEach((cell, index) => {
-      window.setTimeout(() => {
-        const exercise = assigned.get(cell.key);
-        if (!exercise) {
-          return;
-        }
-
-        const solvedCell: LiftGridSolvedCell = {
-          rowIndex: cell.rowIndex,
-          columnIndex: cell.columnIndex,
-          exerciseId: exercise.id,
-          exerciseName: exercise.display_name,
-        };
-
-        setLocalSolvedCells((current) => {
-          const existing = current ?? state.solvedCells;
-          if (existing.some((entry) => entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex)) {
-            return existing.map((entry) =>
-              entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex
-                ? solvedCell
-                : entry,
-            );
+          if (index === revealOrder.length - 1) {
+            window.setTimeout(() => {
+              setState((current) =>
+                current
+                  ? {
+                      ...current,
+                      solvedCells: response.solvedCells,
+                      completedCount: response.completedCount,
+                      isComplete: response.isComplete,
+                    }
+                  : current,
+              );
+              setIsSurrendering(false);
+            }, 20);
           }
-          return [...existing, solvedCell];
-        });
-        setRevealedCellKeys((current) => [...current, cell.key]);
-
-        if (index === revealOrder.length - 1) {
-          window.setTimeout(() => {
-            setIsSurrendering(false);
-          }, 20);
-        }
-      }, revealDelayMs * index);
-    });
+        }, revealDelayMs * index);
+      });
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : "Could not reveal the remaining grid";
+      showRejectedGuessFeedback(message);
+      setShowSurrenderDialog(false);
+      setIsSurrendering(false);
+    }
   }
 
   async function handleFeedback(choice: LiftGridFeedbackChoice) {

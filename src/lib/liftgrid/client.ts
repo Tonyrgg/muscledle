@@ -7,6 +7,7 @@ import type {
   LiftGridFeedbackChoice,
   LiftGridGuessResponse,
   LiftGridPublicState,
+  LiftGridRevealResponse,
   PublicLiftGridStats,
 } from "@/types/liftgrid";
 
@@ -118,6 +119,19 @@ export async function submitLiftGridFeedbackRequest(choice: LiftGridFeedbackChoi
   await parseOrThrow<{ ok: true }>(
     response,
     `Failed to submit LiftGrid feedback (${response.status}).`,
+  );
+}
+
+export async function revealLiftGridRequest(): Promise<LiftGridRevealResponse> {
+  const headers = await buildClientHeaders();
+  const response = await fetch("/api/liftgrid/reveal", {
+    method: "POST",
+    headers,
+  });
+
+  return parseOrThrow<LiftGridRevealResponse>(
+    response,
+    `Failed to reveal LiftGrid (${response.status}).`,
   );
 }
 

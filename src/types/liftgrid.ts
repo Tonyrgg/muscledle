@@ -44,6 +44,13 @@ export type LiftGridGuessResponse = {
   isComplete: boolean;
 };
 
+export type LiftGridRevealResponse = {
+  solvedCells: LiftGridSolvedCell[];
+  completedCount: number;
+  totalCells: number;
+  isComplete: boolean;
+};
+
 export type LiftGridFeedbackChoice = "yes_make_it" | "maybe" | "not_for_me";
 
 export type PublicLiftGridStatsPoint = {
