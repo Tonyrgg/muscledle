@@ -167,8 +167,7 @@ export default function Home() {
 
       <header className="hub-header">
         <div className="hub-brand">
-          <Logo />
-          <span className="hub-brand__splashline">daily challenge</span>
+          <Logo withSplashline splashlineVariant="standalone" />
         </div>
       </header>
 

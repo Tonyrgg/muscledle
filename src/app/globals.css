@@ -174,11 +174,13 @@ input {
   position: absolute;
   right: 0.15rem;
   bottom: 0;
+  display: inline-block;
   font-family: var(--font-script), cursive;
   font-size: clamp(1rem, 2vw, 1.375rem);
   font-weight: 400;
   line-height: 1;
-  color: #ffd028;
+  color: #e8d7a8;
+  max-width: min(38vw, 19rem);
   white-space: nowrap;
   transform: translate(12%, 38%) rotate(-10deg);
   transform-origin: center;
@@ -186,6 +188,25 @@ input {
     0 1px 0 rgba(50, 24, 0, 0.95),
     0 2px 6px rgba(0, 0, 0, 0.72),
     -1px 1px 0 rgba(0, 0, 0, 0.48);
+}
+
+.brand-logo__splashline--standalone {
+  z-index: 2;
+  transform-origin: 100%;
+  max-width: min(46vw, 24rem);
+  font-size: clamp(1.15rem, 2vw, 1.95rem);
+  bottom: auto;
+  transform: translateY(-8%) rotate(-12deg);
+}
+
+.brand-logo__splashline--standalone.brand-logo__splashline--long {
+  top: 40%;
+  right: clamp(-8.35rem, -7.2vw, -2.9rem);
+}
+
+.brand-logo__splashline--standalone.brand-logo__splashline--short {
+top: 52%;
+    right: clamp(-5.35rem, -7.2vw, -2.9rem);
 }
 
 .game-hero__home-link {
@@ -3732,7 +3753,12 @@ button.game-quick-tools__item:active {
   }
 
   .brand-logo__splashline {
+    max-width: min(62vw, 12rem);
+    font-size: clamp(0.86rem, 3.2vw, 1.02rem);
+    white-space: normal;
+    line-height: 0.96;
     transform: translate(4%, 26%) rotate(-8deg);
+    text-align: right;
   }
 
   .daily-hints-host--desktop {
