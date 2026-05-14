@@ -7723,7 +7723,6 @@ button.game-quick-tools__item:active {
   width: min(100%, 1180px);
   margin-top: auto;
   padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
   display: grid;
   justify-items: center;
   gap: 0.7rem;
