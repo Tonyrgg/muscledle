@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Oswald, Yellowtail } from "next/font/google";
+import { Caveat_Brush, Inter, Oswald } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { GlobalOverlays } from "@/components/app/global-overlays";
 
@@ -16,8 +17,8 @@ const oswald = Oswald({
   display: "swap",
 });
 
-const yellowtail = Yellowtail({
-  variable: "--font-yellowtail",
+const caveatBrush = Caveat_Brush({
+  variable: "--font-caveat-brush",
   subsets: ["latin"],
   display: "swap",
   weight: "400",
@@ -108,11 +109,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${oswald.variable} ${yellowtail.variable} h-full antialiased`}
+      className={`${inter.variable} ${oswald.variable} ${caveatBrush.variable} h-full antialiased`}
     >
       <body suppressHydrationWarning className="min-h-full bg-background text-on-background font-body">
         <GlobalOverlays />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
