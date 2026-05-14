@@ -7911,17 +7911,15 @@ button.game-quick-tools__item:active {
 
 .hub-card--liftgrid .hub-card__visual {
   background:
-    linear-gradient(180deg, transparent 0 40%, rgba(0, 0, 0, 0.26) 100%),
-    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-  background-size:
-    auto,
-    3.35rem 3.35rem,
-    3.35rem 3.35rem;
-  background-position:
-    center,
-    right 1.2rem top 3.5rem,
-    right 1.2rem top 3.5rem;
+    linear-gradient(
+      180deg,
+      transparent 0 34%,
+      rgba(0, 0, 0, 0.18) 58%,
+      rgba(0, 0, 0, 0.38) 100%
+    ),
+    url("/liftgrid-card-image.png") right -1.8rem center / 90% auto no-repeat;
+  opacity: 0.44;
+  filter: blur(1.8px) brightness(0.34) saturate(0.72);
 }
 
 .hub-card--weightguess .hub-card__visual {
