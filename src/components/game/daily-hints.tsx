@@ -195,7 +195,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
     () => [
       {
         id: "attribute",
-        label: "Attribute clue",
+        label: "Attribute clues",
         threshold: ATTRIBUTE_HINT_THRESHOLD,
         unlocked: wrongCount >= ATTRIBUTE_HINT_THRESHOLD,
         remainingWrong: Math.max(0, ATTRIBUTE_HINT_THRESHOLD - wrongCount),
@@ -203,7 +203,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
       },
       {
         id: "visual",
-        label: "Visual hint",
+        label: "Visual hints",
         threshold: VISUAL_HINT_THRESHOLD,
         unlocked: wrongCount >= VISUAL_HINT_THRESHOLD,
         remainingWrong: Math.max(0, VISUAL_HINT_THRESHOLD - wrongCount),
@@ -211,7 +211,7 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
       },
       {
         id: "name",
-        label: "Name clue",
+        label: "Name clues",
         threshold: NAME_HINT_THRESHOLD,
         unlocked: wrongCount >= NAME_HINT_THRESHOLD,
         remainingWrong: Math.max(0, NAME_HINT_THRESHOLD - wrongCount),
@@ -323,29 +323,35 @@ export function DailyHints({ attempts, targetExercise }: DailyHintsProps) {
   return (
     <section className="daily-hints" aria-label="Daily hints">
       <div className="daily-hints__tiles">
-        {hints.map((hint) => {
+        {hints.map((hint, index) => {
           const isLocked = !hint.unlocked;
           const isActive = activeHint === hint.id && hint.unlocked;
 
           return (
-            <button
-              key={hint.id}
-              type="button"
-              className={`daily-hints__tile ${isLocked ? "daily-hints__tile--locked" : ""} ${isActive ? "daily-hints__tile--active" : ""}`}
-              onClick={() => {
-                if (!hint.unlocked) return;
-                setSelectedHint((current) => (current === hint.id ? null : hint.id));
-              }}
-              disabled={isLocked}
-              aria-pressed={isActive}
-              aria-label={`${hint.label} ${hint.unlocked ? "unlocked" : hint.lockCopy.toLowerCase()}`}
-            >
-              <HintIcon id={hint.id} />
-              <span className="daily-hints__tile-label">{hint.label}</span>
-              <span className="daily-hints__tile-meta">
-                {hint.unlocked ? "Unlocked" : hint.lockCopy}
-              </span>
-            </button>
+            <div key={hint.id} className="daily-hints__tile-slot">
+              <button
+                type="button"
+                className={`daily-hints__tile ${isLocked ? "daily-hints__tile--locked" : "daily-hints__tile--unlocked"} ${isActive ? "daily-hints__tile--active" : ""}`}
+                onClick={() => {
+                  if (!hint.unlocked) return;
+                  setSelectedHint((current) => (current === hint.id ? null : hint.id));
+                }}
+                disabled={isLocked}
+                aria-pressed={isActive}
+                aria-label={`${hint.label} ${hint.unlocked ? "unlocked" : hint.lockCopy.toLowerCase()}`}
+              >
+                <HintIcon id={hint.id} />
+                <span className="daily-hints__tile-copy">
+                  <span className="daily-hints__tile-label">{hint.label}</span>
+                  <span className="daily-hints__tile-meta">
+                    {hint.unlocked ? "Ready to reveal" : hint.lockCopy}
+                  </span>
+                </span>
+              </button>
+              {index < hints.length - 1 ? (
+                <span className="daily-hints__divider" aria-hidden="true" />
+              ) : null}
+            </div>
           );
         })}
       </div>

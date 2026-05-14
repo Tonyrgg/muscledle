@@ -28,7 +28,11 @@ import {
 } from "@/lib/exercises/icons";
 import { getRepsDirection } from "@/lib/exercises/reps-direction";
 import { preloadExerciseMedia } from "@/lib/game/exercise-media-client";
-import { LIFTDLE_HEADER_MODE_EVENT } from "@/lib/liftdleHeader";
+import {
+  LIFTDLE_HEADER_MODE_EVENT,
+  LIFTDLE_HEADER_OPEN_EVENT,
+  LIFTDLE_HEADER_STREAK_EVENT,
+} from "@/lib/liftdleHeader";
 import { useExerciseMediaAssets } from "@/lib/media/use-exercise-media-assets";
 import { evaluateGuess, isCorrectGuess } from "@/lib/exercises/evaluate";
 import type { Exercise } from "@/types/exercise";
@@ -82,7 +86,7 @@ type MarathonTransitionState = {
   attemptsSnapshot: PublicGameAttempt[];
 };
 
-type FooterModal = "how-to-play" | "stats" | null;
+type FooterModal = "how-to-play" | "stats" | "hints" | null;
 type DailyVictoryPhase = "idle" | "revealing" | "celebrating" | "complete";
 
 const FEEDBACK_REVEAL_DURATION_MS = 1700;
@@ -578,6 +582,35 @@ export function GameShell({ initialState }: GameShellProps) {
       }),
     );
   }, [mode]);
+
+  useEffect(() => {
+    const handleHeaderAction = (event: Event) => {
+      const detail =
+        event instanceof CustomEvent && event.detail && typeof event.detail === "object"
+          ? (event.detail as { action?: unknown })
+          : null;
+
+      if (detail?.action === "stats" || detail?.action === "streak") {
+        setFooterModal("stats");
+      } else if (detail?.action === "how-to-play") {
+        setFooterModal("how-to-play");
+      }
+    };
+
+    window.addEventListener(LIFTDLE_HEADER_OPEN_EVENT, handleHeaderAction as EventListener);
+    return () =>
+      window.removeEventListener(LIFTDLE_HEADER_OPEN_EVENT, handleHeaderAction as EventListener);
+  }, []);
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent(LIFTDLE_HEADER_STREAK_EVENT, {
+        detail: {
+          value: stats?.currentStreak ?? 0,
+        },
+      }),
+    );
+  }, [stats?.currentStreak]);
 
   useEffect(() => {
     if (!revealingAttemptId) {
@@ -1696,63 +1729,32 @@ export function GameShell({ initialState }: GameShellProps) {
                     {formatDailyTrackerMessage(dailyTracker, dailyTrackerCopyIndex)}
                   </p>
                 ) : null}
-                <section className="game-quick-tools game-quick-tools--desktop" aria-label="Game tools">
-                  <button
-                    type="button"
-                    className="game-quick-tools__item"
-                    onClick={() => setFooterModal("stats")}
-                    aria-label="Open statistics"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                      <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
-                    </svg>
-                    <span className="game-quick-tools__label">Stats</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="game-quick-tools__item"
-                    onClick={() => setFooterModal("how-to-play")}
-                    aria-label="Open how to play"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                      <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
-                    </svg>
-                    <span className="game-quick-tools__label">How To Play</span>
-                  </button>
-                  <div
-                    className="game-quick-tools__item game-quick-tools__item--streak"
-                    aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
-                      <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
-                    </svg>
-                    <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
-                    <span className="game-quick-tools__label">Current Streak</span>
-                  </div>
-                </section>
               </>
             ) : null}
 
             {shouldShowDailyPrompt ? (
               <div
-                className="game-prompt-panel"
+                className="game-prompt-panel game-prompt-panel--daily"
                 role="status"
                 aria-live="polite"
               >
-                <h2 className="game-prompt-panel__title">
-                  Guess the exercise.
-                </h2>
-                <p className="game-prompt-panel__subtitle">
-                  {!gameState || gameState.guessCount === 0
-                    ? "Start with any exercise."
-                    : "Use colors to refine your next guess."}
-                </p>
-                <div className="daily-hints-host daily-hints-host--desktop">
-                  <DailyHints
-                    attempts={gameState?.attempts ?? []}
-                    targetExercise={dailyTargetExercise}
-                  />
+                <div className="game-prompt-panel__head">
+                  <h2 className="game-prompt-panel__title">Hints</h2>
+                  <button
+                    type="button"
+                    className="game-prompt-panel__info"
+                    aria-label="How hints work"
+                    onClick={() => setFooterModal("hints")}
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-prompt-panel__info-icon">
+                      <path d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Zm0 3.55a1.15 1.15 0 1 0 0 2.3 1.15 1.15 0 0 0 0-2.3Zm-1 4.55v1.9h.55v3.95H11a1 1 0 0 0 0 2h2.1a1 1 0 1 0 0-2h-.55v-5.85H11a1 1 0 0 0 0 2Z" fill="currentColor" />
+                    </svg>
+                  </button>
                 </div>
+                <DailyHints
+                  attempts={gameState?.attempts ?? []}
+                  targetExercise={dailyTargetExercise}
+                />
               </div>
             ) : null}
 
@@ -2039,55 +2041,12 @@ export function GameShell({ initialState }: GameShellProps) {
             </div>
           ) : null}
 
-          {mode === "daily" && shouldShowDailyPrompt ? (
-            <section className="daily-hints-host daily-hints-host--mobile" aria-label="Daily hints">
-              <DailyHints
-                attempts={gameState?.attempts ?? []}
-                targetExercise={dailyTargetExercise}
-              />
-            </section>
-          ) : null}
-
           {mode === "daily" ? (
             <>
               <section
                 className="yesterday-exercise"
                 aria-label="Yesterday exercise"
               >
-                <section className="game-quick-tools game-quick-tools--mobile" aria-label="Game tools">
-                  <button
-                    type="button"
-                    className="game-quick-tools__item"
-                    onClick={() => setFooterModal("stats")}
-                    aria-label="Open statistics"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                      <path d="M4 20V11H8V20H4ZM10 20V4H14V20H10ZM16 20V8H20V20H16Z" />
-                    </svg>
-                    <span className="game-quick-tools__label">Stats</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="game-quick-tools__item"
-                    onClick={() => setFooterModal("how-to-play")}
-                    aria-label="Open how to play"
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon">
-                      <path d="M7 3H17C18.1046 3 19 3.89543 19 5V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3ZM8 7V9H16V7H8ZM8 11V13H16V11H8ZM8 15V17H13V15H8Z" />
-                    </svg>
-                    <span className="game-quick-tools__label">How To Play</span>
-                  </button>
-                  <div
-                    className="game-quick-tools__item game-quick-tools__item--streak"
-                    aria-label={`Current streak ${stats?.currentStreak ?? 0}`}
-                  >
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="game-quick-tools__icon game-quick-tools__icon--accent">
-                      <path d="M13.5 2.2C13.5 5.1 11.7 6.8 10.1 8.2C8.7 9.4 7.5 10.5 7.5 12.3C7.5 14.9 9.6 17 12.2 17C14.8 17 16.9 14.9 16.9 12.3C16.9 10.6 16 9 14.4 7.3C13.8 6.7 13.5 5.9 13.5 5.1C14.9 6.3 16.5 8.4 17.6 10.1C18.5 11.6 19 13.1 19 14.6C19 18.7 15.9 22 12 22C8.1 22 5 18.7 5 14.6C5 12 6.3 9.7 8.1 7.8C9.6 6.2 11.2 4.9 11.9 2H13.5Z" />
-                    </svg>
-                    <span className="game-quick-tools__value">{stats?.currentStreak ?? 0}</span>
-                    <span className="game-quick-tools__label">Current Streak</span>
-                  </div>
-                </section>
                 <p className="yesterday-exercise__text">
                   Yesterday&apos;s exercise was{" "}
                   <span className="yesterday-exercise__name">
@@ -2123,7 +2082,9 @@ export function GameShell({ initialState }: GameShellProps) {
               <h2 className="info-sheet__title">
                 {footerModal === "how-to-play"
                   ? "How To Play"
-                  : "Statistics"}
+                  : footerModal === "hints"
+                    ? "Hints"
+                    : "Statistics"}
               </h2>
               <button
                 type="button"
@@ -2256,6 +2217,29 @@ export function GameShell({ initialState }: GameShellProps) {
                   <p>
                     Use cell tooltips to read fast definitions of shown values.
                   </p>
+                </section>
+              </div>
+            ) : footerModal === "hints" ? (
+              <div className="info-sheet__body">
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">Unlock rules</h3>
+                  <p>Hints unlock only after wrong guesses.</p>
+                  <p>
+                    <strong>Attribute clue</strong>: unlocks after 5 wrong guesses.
+                  </p>
+                  <p>
+                    <strong>Visual hint</strong>: unlocks after 10 wrong guesses.
+                  </p>
+                  <p>
+                    <strong>Name clue</strong>: unlocks after 15 wrong guesses.
+                  </p>
+                </section>
+
+                <section className="info-sheet__section">
+                  <h3 className="info-sheet__section-title">What they do</h3>
+                  <p>Attribute clue reveals one or two correct attributes from the hidden exercise.</p>
+                  <p>Visual hint shows a media preview of the exercise.</p>
+                  <p>Name clue reveals the masked start of the exercise name.</p>
                 </section>
               </div>
             ) : footerModal === "stats" ? (

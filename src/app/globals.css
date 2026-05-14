@@ -104,9 +104,13 @@ body {
   width: min(100%, 1180px);
 }
 
+.shared-brand-header--daily-tools {
+  --shared-header-side-width: 12rem;
+}
+
 .shared-brand-header__home {
-  width: 2.9rem;
-  height: 2.9rem;
+  width: 3.45rem;
+  height: 3.45rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -129,9 +133,100 @@ body {
 }
 
 .shared-brand-header__home-icon {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.34rem;
+  height: 1.34rem;
   display: block;
+}
+
+.shared-brand-header--daily-tools .shared-brand-header__slot {
+  flex-basis: var(--shared-header-side-width);
+  min-width: var(--shared-header-side-width);
+}
+
+.shared-brand-header--daily-tools .shared-brand-header__slot--center {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shared-brand-header__actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.shared-brand-header__tool {
+  position: relative;
+  width: 3.45rem;
+  height: 3.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(17, 18, 20, 0.82);
+  color: rgba(245, 245, 245, 0.9);
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.shared-brand-header__tool:hover,
+.shared-brand-header__tool:focus-visible {
+  border-color: var(--accent-border);
+  background: rgba(23, 24, 28, 0.96);
+  color: #ffb15a;
+  transform: translateY(-1px);
+}
+
+.shared-brand-header__tool:active {
+  background: rgba(29, 20, 15, 0.92);
+  border-color: rgba(255, 138, 0, 0.58);
+  color: #ffd49f;
+  transform: scale(0.97);
+}
+
+.shared-brand-header__tool--accent {
+  color: var(--accent);
+}
+
+.shared-brand-header__tool-icon {
+  width: 1.34rem;
+  height: 1.34rem;
+  display: block;
+}
+
+.shared-brand-header__tool-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  padding: 0.34rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(14, 15, 18, 0.96);
+  color: rgba(245, 245, 245, 0.92);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.35rem);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.shared-brand-header__tool:hover .shared-brand-header__tool-tooltip,
+.shared-brand-header__tool:focus-visible .shared-brand-header__tool-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 button,
@@ -337,10 +432,9 @@ input {
 }
 
 .game-prompt-panel {
-  margin-top: 0.5rem;
-  border: 1px solid var(--accent);
-  border-radius: 0.7rem;
-  background: #1f1f1f;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.92rem;
+  background: rgba(11, 11, 13, 0.22);
   padding: clamp(0.82rem, 2.6vw, 1.3rem);
   position: relative;
 }
@@ -354,23 +448,70 @@ input {
   letter-spacing: -0.02em;
   text-transform: uppercase;
   line-height: 1.15;
+  text-align: left;
 }
 
-.game-prompt-panel__subtitle {
-  margin: 0.4rem 0 0;
-  color: var(--text-muted);
-  font-family: var(--font-body), sans-serif;
-  font-size: clamp(0.8rem, 1.8vw, 0.92rem);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  text-transform: none;
-  line-height: 1.3;
+.game-prompt-panel--daily .game-prompt-panel__title {
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.game-prompt-panel--daily {
+  width: min(100%, 960px);
+  margin-inline: auto;
+  padding: clamp(0.95rem, 2.25vw, 1.22rem) clamp(1.3rem, 2.45vw, 1.7rem);
+}
+
+.game-prompt-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.game-prompt-panel__info {
+  width: 1.4rem;
+  height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.game-prompt-panel__info:hover,
+.game-prompt-panel__info:focus-visible {
+  border-color: var(--accent-border);
+  background: transparent;
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.game-prompt-panel__info-icon {
+  width: 0.86rem;
+  height: 0.86rem;
+  display: block;
 }
 
 .daily-hints {
-  margin-top: 0.85rem;
-  width: 386px;
+  margin-top: 0;
+  width: 100%;
   max-width: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .daily-hints-host--mobile {
@@ -380,41 +521,47 @@ input {
 .daily-hints__tiles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.55rem;
+  gap: 0;
+  align-items: stretch;
+}
+
+.daily-hints__tile-slot {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px;
+  align-items: stretch;
+}
+
+.daily-hints__tile-slot:last-child {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .daily-hints__tile {
-  border: 1px solid #3e3e3e;
-  background: #202020;
-  min-height: 6rem;
-  padding: 0.52rem 0.45rem;
+  border: 0;
+  background: transparent;
+  min-height: 5.75rem;
+  width: auto;
+  padding: 1rem 1.15rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
-  text-align: center;
+  gap: 0.8rem;
+  text-align: left;
   cursor: pointer;
-  transition:
-    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: none;
 }
 
 .daily-hints__tile:not(:disabled):hover,
 .daily-hints__tile:not(:disabled):focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--accent);
-  box-shadow: none;
-}
-
-.daily-hints__tile:not(:disabled) {
-  border-color: var(--accent);
+  transform: none;
+  border-color: transparent;
+  background: transparent;
 }
 
 .daily-hints__tile:focus-visible {
-  outline: 2px solid rgba(249, 115, 22, 0.76);
-  outline-offset: 1px;
+  outline: 1px solid rgba(255, 138, 0, 0.38);
+  outline-offset: 0;
 }
 
 .daily-hints__tile:active:not(:disabled) {
@@ -422,7 +569,8 @@ input {
 }
 
 .daily-hints__tile--active {
-  border-color: var(--accent);
+  border-color: transparent;
+  background: transparent;
 }
 
 .daily-hints__tile--locked {
@@ -431,20 +579,24 @@ input {
   transform: none;
 }
 
+.daily-hints__tile--unlocked {
+  opacity: 1;
+}
+
 .daily-hints__tile-icon {
-  width: 2.4rem;
-  height: 2.4rem;
-  border: 1px solid #4f4f4f;
-  border-radius: 0.45rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #181818;
+  background: rgba(17, 18, 20, 0.8);
 }
 
 .daily-hints__tile-icon-image {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.2rem;
+  height: 1.2rem;
   opacity: 0.9;
   filter: brightness(0) saturate(100%) invert(92%) sepia(0%) saturate(0%)
     hue-rotate(194deg) brightness(96%) contrast(90%);
@@ -463,27 +615,72 @@ input {
   opacity: 0.55;
 }
 
-.daily-hints__tile-label {
-  color: #f1f1f1;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+.daily-hints__tile--locked .daily-hints__tile-icon {
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
-.daily-hints__tile-meta {
-  color: #acacac;
-  font-size: 0.6rem;
+.daily-hints__tile--unlocked .daily-hints__tile-icon {
+  border-color: rgba(255, 138, 0, 0.2);
+  background: rgba(17, 18, 20, 0.92);
+}
+
+.daily-hints__tile--unlocked .daily-hints__tile-icon-image {
+  opacity: 1;
+  filter: brightness(0) saturate(100%) invert(58%) sepia(72%) saturate(2483%)
+    hue-rotate(6deg) brightness(102%) contrast(97%);
+}
+
+.daily-hints__tile-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.daily-hints__divider {
+  width: 1px;
+  align-self: stretch;
+  margin-block: 1rem;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.daily-hints__tile-label {
+  color: #f1f1f1;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
+.daily-hints__tile-meta {
+  color: #acacac;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.daily-hints__tile--locked .daily-hints__tile-label {
+  color: rgba(241, 241, 241, 0.78);
+}
+
+.daily-hints__tile--locked .daily-hints__tile-meta {
+  color: rgba(172, 172, 172, 0.72);
+}
+
+.daily-hints__tile--unlocked .daily-hints__tile-label {
+  color: var(--text-primary);
+}
+
+.daily-hints__tile--unlocked .daily-hints__tile-meta {
+  color: rgba(232, 215, 168, 0.9);
+}
+
 .daily-hints__content {
-  margin-top: 0.62rem;
-  border: 1px solid #3b3b3b;
-  background: #212121;
-  padding: 0.6rem;
+  margin-top: 0.82rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  padding-top: 0.82rem;
 }
 
 .daily-hints__attribute-grid {
@@ -1181,7 +1378,7 @@ button.game-quick-tools__item:active {
 }
 
 .game-input-zone {
-  width: min(100%, 690px);
+  width: min(100%, 860px);
 }
 
 .game-win-zone {
@@ -1535,6 +1732,7 @@ button.game-quick-tools__item:active {
 
 .guess-input__row {
   display: grid;
+  padding: 1rem 0;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: stretch;
   gap: 0.55rem;
@@ -3854,16 +4052,6 @@ button.game-quick-tools__item:active {
     text-align: right;
   }
 
-  .daily-hints-host--desktop {
-    display: none;
-  }
-
-  .daily-hints-host--mobile {
-    display: block;
-    width: min(100%, 560px);
-    max-width: 100%;
-  }
-
   .attempts-layout--desktop {
     display: none;
   }
@@ -3889,21 +4077,6 @@ button.game-quick-tools__item:active {
     min-width: 0;
   }
 
-  .game-quick-tools {
-    width: min(100%, 360px);
-    gap: 0.3rem;
-    padding: 0.3rem;
-  }
-
-  .game-quick-tools--desktop {
-    display: none;
-  }
-
-  .game-quick-tools--mobile {
-    display: grid;
-    margin: 0 0 0.5rem;
-  }
-
   .daily-tracker-copy {
     margin: 1rem auto;
     width: 100%;
@@ -3913,51 +4086,46 @@ button.game-quick-tools__item:active {
     row-gap: 0.14rem;
   }
 
-  .game-quick-tools__item {
-    min-height: 3.25rem;
-    padding: 0.22rem 0.2rem;
-  }
-
-  .game-quick-tools__icon {
-    width: 1.18rem;
-    height: 1.18rem;
-  }
-
-  .game-quick-tools__value {
-    font-size: 0.9rem;
-  }
-
-  .game-quick-tools__label {
-    font-size: 0.48rem;
-    letter-spacing: 0.08em;
-  }
-
   .daily-hints {
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    padding: 0;
   }
 
   .daily-hints__tiles {
-    gap: 0.36rem;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .daily-hints__tile-slot {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .daily-hints__tile {
-    min-height: 4.6rem;
-    padding: 0.36rem 0.24rem;
+    min-height: 0;
+    padding: 0.8rem 0;
+    justify-content: flex-start;
   }
 
   .daily-hints__tile-icon {
-    width: 1.9rem;
-    height: 1.9rem;
+    width: 2.3rem;
+    height: 2.3rem;
   }
 
   .daily-hints__tile-label {
-    font-size: 0.54rem;
+    font-size: 0.66rem;
   }
 
   .daily-hints__tile-meta {
-    font-size: 0.48rem;
+    font-size: 0.72rem;
+  }
+
+  .daily-hints__divider {
+    width: 100%;
+    height: 1px;
+    margin: 0.15rem 0;
   }
 
   .daily-hints__attribute-grid--combo {
@@ -8047,14 +8215,45 @@ button.game-quick-tools__item:active {
     min-width: 2.45rem;
   }
 
+  .shared-brand-header--daily-tools .shared-brand-header__row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .shared-brand-header--daily-tools .shared-brand-header__slot--start,
+  .shared-brand-header--daily-tools .shared-brand-header__slot--end {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .shared-brand-header--daily-tools .shared-brand-header__slot--center {
+    order: 3;
+    flex: 0 0 100%;
+    margin-top: 0.6rem;
+  }
+
+  .shared-brand-header--daily-tools .shared-brand-header__actions {
+    gap: 0.42rem;
+  }
+
+.shared-brand-header--daily-tools .shared-brand-header__tool {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+
+  .shared-brand-header--daily-tools .shared-brand-header__tool-icon {
+    width: 1.02rem;
+    height: 1.02rem;
+  }
+
   .shared-brand-header__home {
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 2.8rem;
+    height: 2.8rem;
   }
 
   .shared-brand-header__home-icon {
-    width: 0.9rem;
-    height: 0.9rem;
+    width: 1.02rem;
+    height: 1.02rem;
   }
 
   .hub-page {
@@ -8212,8 +8411,6 @@ button.game-quick-tools__item:active {
 }
 
 :where(
-  .game-prompt-panel,
-  .daily-hints__tile,
   .game-quick-tools__item,
   .mode-switch__button,
   .guess-input__submit,
@@ -8231,8 +8428,6 @@ button.game-quick-tools__item:active {
   .feedback-modal__pill
 ):hover,
 :where(
-  .game-prompt-panel,
-  .daily-hints__tile,
   .game-quick-tools__item,
   .mode-switch__button,
   .guess-input__submit,
@@ -8252,6 +8447,40 @@ button.game-quick-tools__item:active {
   border-color: var(--accent-border);
   background: var(--surface-hover);
   transform: translateY(-2px);
+}
+
+.game-prompt-panel:hover,
+.game-prompt-panel:focus-visible {
+  border-color: var(--border-subtle);
+  background: rgba(11, 11, 13, 0.22);
+  transform: none;
+}
+
+.game-prompt-panel--daily:hover,
+.game-prompt-panel--daily:focus-visible {
+  background: rgba(11, 11, 13, 0.18);
+}
+
+.daily-hints__tile--unlocked:hover,
+.daily-hints__tile--unlocked:focus-visible {
+  background: transparent;
+  transform: none;
+}
+
+.daily-hints__tile--unlocked:hover .daily-hints__tile-label,
+.daily-hints__tile--unlocked:focus-visible .daily-hints__tile-label {
+  color: var(--text-primary);
+}
+
+.daily-hints__tile--unlocked:hover .daily-hints__tile-meta,
+.daily-hints__tile--unlocked:focus-visible .daily-hints__tile-meta {
+  color: rgba(255, 240, 202, 0.96);
+}
+
+.daily-hints__tile--unlocked:hover .daily-hints__tile-icon,
+.daily-hints__tile--unlocked:focus-visible .daily-hints__tile-icon {
+  border-color: rgba(255, 138, 0, 0.38);
+  background: rgba(21, 22, 26, 0.98);
 }
 
 :where(
@@ -8343,15 +8572,11 @@ button.game-quick-tools__item:active {
 }
 
 .game-prompt-panel {
-  margin-top: 0.7rem;
   padding: clamp(0.95rem, 2.8vw, 1.45rem);
 }
 
-.game-prompt-panel__title,
-.victory-panel__title,
-.liftgrid-panel__title,
-.exercise-page__title {
-  letter-spacing: 0.01em;
+.game-prompt-panel--daily {
+  background: rgba(11, 11, 13, 0.18);
 }
 
 .game-prompt-panel__subtitle {
@@ -8360,10 +8585,9 @@ button.game-quick-tools__item:active {
 }
 
 .daily-hints {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
-.daily-hints__tiles,
 .mode-switch,
 .game-quick-tools,
 .victory-panel__actions,
@@ -8371,8 +8595,6 @@ button.game-quick-tools__item:active {
   gap: 0.65rem;
 }
 
-.daily-hints__tile,
-.daily-hints__content,
 .daily-hints__visual,
 .daily-hints__tile-icon,
 .game-quick-tools,
@@ -8383,6 +8605,15 @@ button.game-quick-tools__item:active {
 .attempts-exercise-cell {
   border: 1px solid var(--border-subtle);
   background: var(--surface-strong);
+}
+
+.daily-hints__tile,
+.daily-hints__content {
+  background: transparent;
+}
+
+.daily-hints__tile {
+  border: 0;
 }
 
 .daily-hints__tile-icon,
