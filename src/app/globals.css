@@ -8324,17 +8324,6 @@ button.game-quick-tools__item:active {
     background-position: right 0.7rem center;
   }
 
-  .hub-card--liftgrid .hub-card__visual {
-    background-size:
-      auto,
-      2.6rem 2.6rem,
-      2.6rem 2.6rem;
-    background-position:
-      center,
-      right 0.8rem top 2.9rem,
-      right 0.8rem top 2.9rem;
-  }
-
   .hub-card--weightguess .hub-card__visual {
     background-size: 52% auto;
     background-position: right 0.95rem center;
@@ -8433,7 +8422,6 @@ button.game-quick-tools__item:active {
   }
 
   .hub-grid__row {
-    flex-direction: column;
     align-items: center;
     gap: 1.1rem;
   }
@@ -8539,6 +8527,10 @@ button.game-quick-tools__item:active {
 
   .daily-game-page .daily-hints__tile-slot {
     justify-items: center;
+  }
+
+  .liftgrid-board__header span {
+    font-size: clamp(.6rem, calc(var(--liftgrid-cell-size) * .148), .1rem);
   }
 }
 
