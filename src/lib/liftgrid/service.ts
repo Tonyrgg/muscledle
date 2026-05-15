@@ -51,6 +51,13 @@ type LiftGridStatsRow = {
   surrendered: boolean | null;
 };
 
+type LiftGridAttemptSolvedRow = {
+  row_index: number | null;
+  column_index: number | null;
+  matched_exercise_id: string | null;
+  matched_exercise_name: string | null;
+};
+
 function parseDateKey(input: string): number {
   const [year, month, day] = input.split("-").map((value) => Number(value));
   return Date.UTC(year, month - 1, day);
@@ -72,6 +79,52 @@ function getLiftGridResultScore(row: LiftGridResultRow | null | undefined) {
     (row.status === "completed" ? 10 : 0) +
     (row.surrendered === true ? 100 : 0)
   );
+}
+
+async function loadSolvedBeforeSurrenderCellsFromAttempts(resultId: string): Promise<LiftGridSolvedCell[]> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("liftgrid_attempts")
+    .select("row_index, column_index, matched_exercise_id, matched_exercise_name")
+    .eq("result_id", resultId)
+    .eq("is_correct", true)
+    .order("created_at", { ascending: true })
+    .returns<LiftGridAttemptSolvedRow[]>();
+
+  if (error) {
+    throw new Error(`Failed to load LiftGrid solved attempts: ${error.message}`);
+  }
+
+  const seenKeys = new Set<string>();
+  const seenExerciseIds = new Set<string>();
+  const solved: LiftGridSolvedCell[] = [];
+
+  for (const row of data ?? []) {
+    const rowIndex = typeof row.row_index === "number" ? Math.trunc(row.row_index) : -1;
+    const columnIndex = typeof row.column_index === "number" ? Math.trunc(row.column_index) : -1;
+    const exerciseId = row.matched_exercise_id?.trim() ?? "";
+    const exerciseName = row.matched_exercise_name?.trim() ?? "";
+
+    if (rowIndex < 0 || columnIndex < 0 || !exerciseId || !exerciseName) {
+      continue;
+    }
+
+    const key = `${rowIndex}:${columnIndex}`;
+    if (seenKeys.has(key) || seenExerciseIds.has(exerciseId)) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    seenExerciseIds.add(exerciseId);
+    solved.push({
+      rowIndex,
+      columnIndex,
+      exerciseId,
+      exerciseName,
+    });
+  }
+
+  return solved;
 }
 
 function getExerciseCategoryValues(
@@ -717,7 +770,28 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
 
   const totalCells = puzzle.rowValues.length * puzzle.columnValues.length;
   const solvedCells = normalizeSolvedCells(result?.solved_cells, puzzle, exercises);
+  let solvedBeforeSurrenderCells = result?.solved_before_surrender_cells ?? [];
   const storedCompletedCount = result?.completed_count ?? 0;
+
+  if (
+    result?.surrendered === true &&
+    result.id &&
+    solvedBeforeSurrenderCells.length !== (result.completed_before_surrender ?? 0)
+  ) {
+    solvedBeforeSurrenderCells = await loadSolvedBeforeSurrenderCellsFromAttempts(result.id);
+
+    const admin = createAdminClient();
+    const { error: repairError } = await admin
+      .from("liftgrid_results")
+      .update({
+        solved_before_surrender_cells: solvedBeforeSurrenderCells,
+      })
+      .eq("id", result.id);
+
+    if (repairError) {
+      throw new Error(`Failed to repair LiftGrid surrender cells: ${repairError.message}`);
+    }
+  }
 
   if (
     result &&
@@ -745,7 +819,7 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
     isComplete: solvedCells.length === totalCells,
     isSurrendered: result?.surrendered === true,
     completedBeforeSurrender: result?.completed_before_surrender ?? null,
-    solvedBeforeSurrenderCells: result?.solved_before_surrender_cells ?? [],
+    solvedBeforeSurrenderCells,
   };
 }
 
