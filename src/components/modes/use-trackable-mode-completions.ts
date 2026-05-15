@@ -10,11 +10,13 @@ import {
 
 export type TrackableModeKey = "daily" | "liftgrid";
 
-export type TrackableModeCompletions = Record<TrackableModeKey, boolean>;
+export type TrackableModeCompletionState = "none" | "won" | "lost";
+
+export type TrackableModeCompletions = Record<TrackableModeKey, TrackableModeCompletionState>;
 
 const EMPTY_COMPLETIONS: TrackableModeCompletions = {
-  daily: false,
-  liftgrid: false,
+  daily: "none",
+  liftgrid: "none",
 };
 
 type CompletionOverrides = Partial<TrackableModeCompletions>;
@@ -35,12 +37,20 @@ export function useTrackableModeCompletions(overrides?: CompletionOverrides) {
       const nextCompletions = {
         daily:
           dailyResult.status === "fulfilled"
-            ? dailyResult.value.status !== "in_progress"
-            : false,
+            ? dailyResult.value.status === "won"
+              ? "won"
+              : dailyResult.value.status === "lost"
+                ? "lost"
+                : "none"
+            : "none",
         liftgrid:
           liftgridResult.status === "fulfilled"
-            ? liftgridResult.value.isComplete
-            : false,
+            ? liftgridResult.value.isSurrendered
+              ? "lost"
+              : liftgridResult.value.isComplete
+                ? "won"
+                : "none"
+            : "none",
       } satisfies TrackableModeCompletions;
 
       if (dailyResult.status === "fulfilled") {

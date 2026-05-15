@@ -4,6 +4,7 @@ import { gameDateRome } from "@/lib/game/date";
 import { AuthRequiredError } from "@/lib/game/shared";
 import {
   buildLiftGridPuzzle,
+  normalizeLiftGridCategoryValue,
   toLiftGridExercise,
   validateLiftGridGuess,
   type LiftGridExercise,
@@ -32,6 +33,9 @@ type LiftGridResultRow = {
   solved_cells: LiftGridSolvedCell[] | null;
   completed_count: number | null;
   status: "in_progress" | "completed";
+  surrendered: boolean | null;
+  completed_before_surrender: number | null;
+  solved_before_surrender_cells: LiftGridSolvedCell[] | null;
 };
 
 type LiftGridAttemptInsertRow = {
@@ -44,6 +48,7 @@ type LiftGridStatsRow = {
   game_date: string;
   status: "in_progress" | "completed";
   completed_count: number | null;
+  surrendered: boolean | null;
 };
 
 function parseDateKey(input: string): number {
@@ -60,6 +65,15 @@ function round1(value: number): number {
   return Number(value.toFixed(1));
 }
 
+function getLiftGridResultScore(row: LiftGridResultRow | null | undefined) {
+  if (!row) return -1;
+  return (
+    (row.completed_count ?? 0) +
+    (row.status === "completed" ? 10 : 0) +
+    (row.surrendered === true ? 100 : 0)
+  );
+}
+
 function getExerciseCategoryValues(
   exercise: LiftGridExercise,
   categoryKey: LiftGridCategoryKey,
@@ -70,8 +84,8 @@ function getExerciseCategoryValues(
       if (!value) return;
       for (const part of value
         .split(/[\/,&|]+/g)
-        .map((entry) => entry.trim().toLowerCase())
-        .filter(Boolean)) {
+        .map((entry) => normalizeLiftGridCategoryValue(categoryKey, entry))
+        .filter((entry): entry is string => Boolean(entry))) {
         values.add(part);
       }
     };
@@ -86,7 +100,9 @@ function getExerciseCategoryValues(
 
   const rawValue = exercise[categoryKey];
   const values = Array.isArray(rawValue) ? rawValue : [rawValue];
-  return values.map((value) => String(value).trim().toLowerCase()).filter(Boolean);
+  return values
+    .map((value) => normalizeLiftGridCategoryValue(categoryKey, String(value)))
+    .filter((value): value is string => Boolean(value));
 }
 
 function buildLiftGridSolvedAssignment(args: {
@@ -252,9 +268,11 @@ function normalizeSolvedCells(
     ) {
       const exerciseRowValues = exercise.muscle_group
         .split(/[\/,&|]+/g)
-        .map((entry) => entry.trim().toLowerCase())
-        .filter(Boolean);
-      const exerciseColumnValues = exercise.equipment.map((entry) => entry.trim().toLowerCase());
+        .map((entry) => normalizeLiftGridCategoryValue("muscle_group", entry))
+        .filter((entry): entry is string => Boolean(entry));
+      const exerciseColumnValues = exercise.equipment
+        .map((entry) => normalizeLiftGridCategoryValue("equipment", entry))
+        .filter((entry): entry is string => Boolean(entry));
 
       if (!exerciseRowValues.includes(rowValue) || !exerciseColumnValues.includes(columnValue)) {
         continue;
@@ -357,20 +375,100 @@ async function loadExistingResult(args: {
   sessionPublicId: string | null;
 }) {
   const admin = createAdminClient();
-  let query = admin
+  const baseQuery = admin
     .from("liftgrid_results")
-    .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status")
+    .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status, surrendered, completed_before_surrender, solved_before_surrender_cells")
     .eq("game_date", args.gameDate);
 
   if (args.userId) {
-    query = query.eq("user_id", args.userId);
-  } else if (args.sessionPublicId) {
-    query = query.is("user_id", null).eq("session_public_id", args.sessionPublicId);
-  } else {
+    const { data: userOwned, error: userError } = await baseQuery
+      .eq("user_id", args.userId)
+      .maybeSingle<LiftGridResultRow>();
+
+    if (userError) {
+      throw new Error(`Failed to load LiftGrid result: ${userError.message}`);
+    }
+
+    if (args.sessionPublicId) {
+      const { data: sessionOwned, error: sessionError } = await admin
+        .from("liftgrid_results")
+        .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status, surrendered, completed_before_surrender, solved_before_surrender_cells")
+        .eq("game_date", args.gameDate)
+        .is("user_id", null)
+        .eq("session_public_id", args.sessionPublicId)
+        .maybeSingle<LiftGridResultRow>();
+
+      if (sessionError) {
+        throw new Error(`Failed to load LiftGrid result: ${sessionError.message}`);
+      }
+
+      if (sessionOwned) {
+        if (userOwned) {
+          if (getLiftGridResultScore(sessionOwned) > getLiftGridResultScore(userOwned)) {
+            const { data: merged, error: mergeError } = await admin
+              .from("liftgrid_results")
+              .update({
+                solved_cells: sessionOwned.solved_cells ?? [],
+                completed_count: sessionOwned.completed_count ?? 0,
+                status: sessionOwned.status,
+                surrendered: sessionOwned.surrendered ?? false,
+                completed_before_surrender: sessionOwned.completed_before_surrender,
+                solved_before_surrender_cells: sessionOwned.solved_before_surrender_cells ?? [],
+                finished_at: sessionOwned.status === "completed" ? new Date().toISOString() : null,
+              })
+              .eq("id", userOwned.id)
+              .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status, surrendered, completed_before_surrender, solved_before_surrender_cells")
+              .maybeSingle<LiftGridResultRow>();
+
+            if (mergeError) {
+              throw new Error(`Failed to merge LiftGrid result: ${mergeError.message}`);
+            }
+
+            return merged ?? {
+              ...userOwned,
+              solved_cells: sessionOwned.solved_cells,
+              completed_count: sessionOwned.completed_count,
+              status: sessionOwned.status,
+              surrendered: sessionOwned.surrendered,
+              completed_before_surrender: sessionOwned.completed_before_surrender,
+              solved_before_surrender_cells: sessionOwned.solved_before_surrender_cells,
+            };
+          }
+
+          return userOwned;
+        }
+
+        const { data: claimed, error: claimError } = await admin
+          .from("liftgrid_results")
+          .update({
+            user_id: args.userId,
+          })
+          .eq("id", sessionOwned.id)
+          .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status, surrendered, completed_before_surrender, solved_before_surrender_cells")
+          .maybeSingle<LiftGridResultRow>();
+
+        if (claimError) {
+          throw new Error(`Failed to claim LiftGrid result: ${claimError.message}`);
+        }
+
+        return claimed ?? {
+          ...sessionOwned,
+          user_id: args.userId,
+        };
+      }
+    }
+
+    return userOwned;
+  }
+
+  if (!args.sessionPublicId) {
     return null;
   }
 
-  const { data, error } = await query.maybeSingle<LiftGridResultRow>();
+  const { data, error } = await baseQuery
+    .is("user_id", null)
+    .eq("session_public_id", args.sessionPublicId)
+    .maybeSingle<LiftGridResultRow>();
 
   if (error) {
     throw new Error(`Failed to load LiftGrid result: ${error.message}`);
@@ -394,8 +492,11 @@ async function createResultRow(args: {
       solved_cells: [],
       completed_count: 0,
       status: "in_progress",
+      surrendered: false,
+      completed_before_surrender: null,
+      solved_before_surrender_cells: [],
     })
-    .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status")
+    .select("id, game_date, user_id, session_public_id, solved_cells, completed_count, status, surrendered, completed_before_surrender, solved_before_surrender_cells")
     .single<LiftGridResultRow>();
 
   if (error) {
@@ -440,7 +541,7 @@ export async function getLiftGridStats(): Promise<PublicLiftGridStats> {
   const admin = createAdminClient();
   let query = admin
     .from("liftgrid_results")
-    .select("game_date, status, completed_count")
+    .select("game_date, status, completed_count, surrendered")
     .order("game_date", { ascending: true });
 
   if (viewer.userId) {
@@ -458,7 +559,7 @@ export async function getLiftGridStats(): Promise<PublicLiftGridStats> {
     (row) => (row.completed_count ?? 0) > 0 || row.status === "completed",
   );
   const gamesPlayed = rows.length;
-  const wins = rows.filter((row) => row.status === "completed");
+  const wins = rows.filter((row) => row.status === "completed" && row.surrendered !== true);
   const gamesWon = wins.length;
   const winRate = gamesPlayed > 0 ? round1((gamesWon / gamesPlayed) * 100) : 0;
   const averageCompletedCells =
@@ -482,7 +583,7 @@ export async function getLiftGridStats(): Promise<PublicLiftGridStats> {
       continue;
     }
 
-    const isWin = row.status === "completed";
+    const isWin = row.status === "completed" && row.surrendered !== true;
     if (!isWin) {
       runningStreak = 0;
       currentStreak = 0;
@@ -642,6 +743,9 @@ export async function getLiftGridTodayState(): Promise<LiftGridPublicState> {
     completedCount: solvedCells.length,
     totalCells,
     isComplete: solvedCells.length === totalCells,
+    isSurrendered: result?.surrendered === true,
+    completedBeforeSurrender: result?.completed_before_surrender ?? null,
+    solvedBeforeSurrenderCells: result?.solved_before_surrender_cells ?? [],
   };
 }
 
@@ -667,11 +771,34 @@ export async function revealLiftGridSolution(): Promise<LiftGridRevealResponse> 
     throw new Error("Could not reveal the remaining grid.");
   }
 
+  if (result) {
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from("liftgrid_results")
+      .update({
+        solved_cells: assigned,
+        completed_count: assigned.length,
+        status: assigned.length === totalCells ? "completed" : "in_progress",
+        surrendered: true,
+        completed_before_surrender: solvedCells.length,
+        solved_before_surrender_cells: solvedCells,
+        finished_at: new Date().toISOString(),
+      })
+      .eq("id", result.id);
+
+    if (error) {
+      throw new Error(`Failed to persist LiftGrid reveal: ${error.message}`);
+    }
+  }
+
   return {
     solvedCells: assigned,
     completedCount: assigned.length,
     totalCells,
     isComplete: assigned.length === totalCells,
+    isSurrendered: true,
+    completedBeforeSurrender: solvedCells.length,
+    solvedBeforeSurrenderCells: solvedCells,
   };
 }
 
@@ -752,6 +879,9 @@ export async function submitLiftGridGuess(input: {
         solved_cells: nextSolvedCells,
         completed_count: nextCompletedCount,
         status: nextStatus,
+        surrendered: false,
+        completed_before_surrender: null,
+        solved_before_surrender_cells: [],
         finished_at: nextStatus === "completed" ? new Date().toISOString() : null,
       })
       .eq("id", result.id);
@@ -912,6 +1042,9 @@ export async function resetLiftGridForViewer(): Promise<LiftGridPublicState> {
         solved_cells: [],
         completed_count: 0,
         status: "in_progress",
+        surrendered: false,
+        completed_before_surrender: null,
+        solved_before_surrender_cells: [],
         finished_at: null,
       })
       .eq("id", result.id);

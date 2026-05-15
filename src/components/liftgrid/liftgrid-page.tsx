@@ -12,6 +12,7 @@ import {
 } from "@/lib/game/exercise-media-client";
 import {
   buildLiftGridShareText,
+  normalizeLiftGridCategoryValue,
 } from "@/lib/liftgrid/puzzle";
 import {
   fetchLiftGridStats,
@@ -129,6 +130,19 @@ function getMuscleIconPath(label: string) {
   return getMuscleGroupIconPath(getMuscleGroupIconKey(normalize(label)));
 }
 
+function preloadImageUrl(url: string): Promise<void> {
+  if (!url || typeof Image === "undefined") {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = url;
+  });
+}
+
 function getMsUntilNextRomeMidnight(now: Date): number {
   const formatter = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Rome",
@@ -177,8 +191,8 @@ function getExerciseCategoryValues(
       if (!value) return;
       for (const part of value
         .split(/[\/,&|]+/g)
-        .map((entry) => normalize(entry))
-        .filter(Boolean)) {
+        .map((entry) => normalizeLiftGridCategoryValue(categoryKey, entry))
+        .filter((entry): entry is string => Boolean(entry))) {
         values.add(part);
       }
     };
@@ -193,7 +207,9 @@ function getExerciseCategoryValues(
 
   const rawValue = exercise[categoryKey];
   const values = Array.isArray(rawValue) ? rawValue : [rawValue];
-  return values.map((value) => normalize(String(value))).filter(Boolean);
+  return values
+    .map((value) => normalizeLiftGridCategoryValue(categoryKey, String(value)))
+    .filter((value): value is string => Boolean(value));
 }
 
 function matchesExerciseCategory(
@@ -201,7 +217,10 @@ function matchesExerciseCategory(
   categoryKey: LiftGridPublicState["rowCategoryKey"] | LiftGridPublicState["columnCategoryKey"],
   categoryLabel: string,
 ) {
-  const normalizedLabel = normalize(categoryLabel);
+  const normalizedLabel = normalizeLiftGridCategoryValue(categoryKey, categoryLabel);
+  if (!normalizedLabel) {
+    return false;
+  }
   return getExerciseCategoryValues(exercise, categoryKey).includes(normalizedLabel);
 }
 
@@ -308,8 +327,7 @@ export function LiftGridPage() {
   const [revealedCellKeys, setRevealedCellKeys] = useState<string[]>([]);
   const [showDebugOverlay, setShowDebugOverlay] = useState(false);
   const stateRef = useRef<LiftGridPublicState | null>(null);
-  const previousCompleteRef = useRef(false);
-  const completionStateInitializedRef = useRef(false);
+  const initializedGameDateRef = useRef<string | null>(null);
   const victoryCardRef = useRef<HTMLElement | null>(null);
   const liftgridInputRef = useRef<HTMLInputElement | null>(null);
   const boardRenderedRef = useRef(false);
@@ -317,6 +335,8 @@ export function LiftGridPage() {
   const queryChangeTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const shakeTimerRef = useRef<number | null>(null);
+  const revealTimerRefs = useRef<number[]>([]);
+  const endgameTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -364,6 +384,12 @@ export function LiftGridPage() {
       }
       if (shakeTimerRef.current !== null) {
         window.clearTimeout(shakeTimerRef.current);
+      }
+      if (endgameTimerRef.current !== null) {
+        window.clearTimeout(endgameTimerRef.current);
+      }
+      for (const timer of revealTimerRefs.current) {
+        window.clearTimeout(timer);
       }
     };
   }, []);
@@ -453,10 +479,38 @@ export function LiftGridPage() {
           fetchLiveExercises(),
         ]);
 
+        const iconUrls = [
+          ...todayState.rows.map((row) => getMuscleIconPath(row)),
+          ...todayState.columns.map((column) => getEquipmentIconPath(column)),
+        ];
+        const relevantSlugs = [...new Set(
+          todayState.rows.flatMap((rowLabel) =>
+            todayState.columns.flatMap((columnLabel) =>
+              liveExercises
+                .filter(
+                  (exercise) =>
+                    matchesExerciseCategory(exercise, todayState.rowCategoryKey, rowLabel) &&
+                    matchesExerciseCategory(exercise, todayState.columnCategoryKey, columnLabel),
+                )
+                .map((exercise) => exercise.slug)
+                .filter(Boolean),
+            ),
+          ),
+        )];
+
+        await Promise.allSettled([
+          ...iconUrls.map((url) => preloadImageUrl(url)),
+          ...relevantSlugs.map((slug) => preloadExerciseMedia(slug)),
+        ]);
+
         if (cancelled) return;
 
         setState(todayState);
-        writeTrackableModeCompletion("liftgrid", todayState.isComplete, todayState.gameDate);
+        writeTrackableModeCompletion(
+          "liftgrid",
+          todayState.isSurrendered ? "lost" : todayState.isComplete ? "won" : "none",
+          todayState.gameDate,
+        );
         setExercises(liveExercises);
         emitEvent({
           eventName: "today_state_received",
@@ -662,14 +716,14 @@ export function LiftGridPage() {
   );
   const effectiveCompletedCount = effectiveSolvedCells.length;
   const effectiveIsComplete = state ? effectiveCompletedCount === state.totalCells : false;
-  const didSurrender = gameOutcome === "lose";
+  const didSurrender = gameOutcome === "lose" || state?.isSurrendered === true;
   const completedBeforeSurrender = didSurrender
-    ? Math.max(0, effectiveSolvedCells.length - revealedCellKeys.length)
+    ? (state?.completedBeforeSurrender ?? Math.max(0, effectiveSolvedCells.length - revealedCellKeys.length))
     : effectiveCompletedCount;
 
   const shareText = useMemo(() => {
     if (!state) return "";
-    if (gameOutcome !== "lose") {
+    if (gameOutcome !== "lose" && !state.isSurrendered) {
       return buildLiftGridShareText({
         dailyNumber: state.dailyNumber,
         rows: state.rows.length,
@@ -679,19 +733,19 @@ export function LiftGridPage() {
       });
     }
 
+    const persistedSolvedBeforeSurrender = state.solvedBeforeSurrenderCells ?? [];
     const solvedBeforeSurrender = new Set(
-      effectiveSolvedCells
-        .filter((cell) => !revealedCellKeys.includes(cellKey(cell.rowIndex, cell.columnIndex)))
+      (persistedSolvedBeforeSurrender.length > 0 ? persistedSolvedBeforeSurrender : effectiveSolvedCells
+        .filter((cell) => !revealedCellKeys.includes(cellKey(cell.rowIndex, cell.columnIndex))))
         .map((cell) => cellKey(cell.rowIndex, cell.columnIndex)),
     );
-    const revealedSet = new Set(revealedCellKeys);
     const lines: string[] = [];
 
     for (let rowIndex = 0; rowIndex < state.rows.length; rowIndex += 1) {
       let line = "";
       for (let columnIndex = 0; columnIndex < state.columns.length; columnIndex += 1) {
         const key = cellKey(rowIndex, columnIndex);
-        line += solvedBeforeSurrender.has(key) ? "\u{1F7E9}" : revealedSet.has(key) ? "\u{1F7E5}" : "\u2B1B";
+        line += solvedBeforeSurrender.has(key) ? "\u{1F7E9}" : "\u{1F7E5}";
       }
       lines.push(line);
     }
@@ -723,80 +777,14 @@ export function LiftGridPage() {
       return;
     }
 
-    if (!completionStateInitializedRef.current) {
-      completionStateInitializedRef.current = true;
-      previousCompleteRef.current = effectiveIsComplete;
+    if (initializedGameDateRef.current !== state.gameDate) {
+      initializedGameDateRef.current = state.gameDate;
       setShowVictoryCelebration(false);
-      setShowVictoryCard(effectiveIsComplete);
-
-      if (!effectiveIsComplete) {
-        return;
-      }
-
-      const timer = window.setTimeout(() => {
-        victoryCardRef.current?.scrollIntoView({
-          behavior: "auto",
-          block: "start",
-          inline: "nearest",
-        });
-      }, 0);
-
-      return () => {
-        window.clearTimeout(timer);
-      };
+      setShowVictoryCard(state.isComplete);
+      setGameOutcome(state.isSurrendered ? "lose" : state.isComplete ? "win" : null);
+      setRevealedCellKeys([]);
     }
-
-    const justCompleted = effectiveIsComplete && !previousCompleteRef.current;
-    previousCompleteRef.current = effectiveIsComplete;
-
-    if (!effectiveIsComplete) {
-      setShowVictoryCard(false);
-      return;
-    }
-
-    if (!justCompleted) {
-      return;
-    }
-
-    if (didSurrender) {
-      const timer = window.setTimeout(() => {
-        setShowVictoryCelebration(false);
-        setShowVictoryCard(true);
-        window.requestAnimationFrame(() => {
-          victoryCardRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-            inline: "nearest",
-          });
-        });
-      }, 1000);
-
-      return () => {
-        window.clearTimeout(timer);
-      };
-    }
-
-    void loadStats({ silent: true, force: true });
-    setShowVictoryCard(false);
-    setVictoryCelebrationSeed((current) => current + 1);
-    setShowVictoryCelebration(true);
-
-    const timer = window.setTimeout(() => {
-      setShowVictoryCelebration(false);
-      setShowVictoryCard(true);
-      window.requestAnimationFrame(() => {
-        victoryCardRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-          inline: "nearest",
-        });
-      });
-    }, 2000);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [didSurrender, effectiveIsComplete, loadStats, state]);
+  }, [state]);
 
   const debugSolutions = useMemo(() => {
     if (!state) return [];
@@ -846,23 +834,13 @@ export function LiftGridPage() {
   }, [exercises, state]);
 
   const dailyRelevantExerciseSlugs = useMemo(() => {
-    if (!state) return [];
-
     return [...new Set(
-      exercises
-        .filter(
-          (exercise) =>
-            state.rows.some((rowLabel) =>
-              matchesExerciseCategory(exercise, state.rowCategoryKey, rowLabel),
-            ) &&
-            state.columns.some((columnLabel) =>
-              matchesExerciseCategory(exercise, state.columnCategoryKey, columnLabel),
-            ),
-        )
+      [...solutionCandidatesByCell.values()]
+        .flat()
         .map((exercise) => exercise.slug)
         .filter(Boolean),
     )];
-  }, [exercises, state]);
+  }, [solutionCandidatesByCell]);
 
   useEffect(() => {
     if (dailyRelevantExerciseSlugs.length === 0) {
@@ -920,6 +898,7 @@ export function LiftGridPage() {
     if (!state) return;
     const nextGuess = (guessValue ?? query).trim();
     if (!nextGuess) return;
+    let shouldRefocus = true;
 
     emitEvent({
       eventName: "guess_submit_clicked",
@@ -963,15 +942,18 @@ export function LiftGridPage() {
               solvedCells: [...current.solvedCells, solvedCell],
               completedCount: response.completedCount,
               isComplete: response.isComplete,
+              isSurrendered: false,
+              completedBeforeSurrender: null,
             }
           : current,
       );
-      writeTrackableModeCompletion("liftgrid", response.isComplete, state.gameDate);
+      writeTrackableModeCompletion("liftgrid", response.isComplete ? "won" : "none", state.gameDate);
       setLocalSolvedCells((current) => (current ? [...current, solvedCell] : current));
       setQuery("");
       setSelectedExerciseId(null);
       setShareStatus("idle");
       setGameOutcome(response.isComplete ? "win" : null);
+      setRevealedCellKeys([]);
       emitEvent({
         eventName: "guess_result_rendered",
         uiSurface: "entry",
@@ -989,6 +971,30 @@ export function LiftGridPage() {
           isComplete: response.isComplete,
         },
       });
+
+      if (response.isComplete) {
+        shouldRefocus = false;
+        if (endgameTimerRef.current !== null) {
+          window.clearTimeout(endgameTimerRef.current);
+          endgameTimerRef.current = null;
+        }
+        setShowVictoryCard(false);
+        setShowVictoryCelebration(true);
+        setVictoryCelebrationSeed((current) => current + 1);
+        void loadStats({ silent: true, force: true });
+        endgameTimerRef.current = window.setTimeout(() => {
+          setShowVictoryCelebration(false);
+          setShowVictoryCard(true);
+          window.requestAnimationFrame(() => {
+            victoryCardRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+              inline: "nearest",
+            });
+          });
+          endgameTimerRef.current = null;
+        }, 2000);
+      }
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : "Failed to submit guess.";
@@ -1006,7 +1012,7 @@ export function LiftGridPage() {
       });
     } finally {
       setSubmitting(false);
-      if (!effectiveIsComplete) {
+      if (shouldRefocus) {
         setFocusTick((current) => current + 1);
       }
     }
@@ -1038,9 +1044,34 @@ export function LiftGridPage() {
 
     setIsSurrendering(true);
     try {
+      for (const timer of revealTimerRefs.current) {
+        window.clearTimeout(timer);
+      }
+      revealTimerRefs.current = [];
+      if (endgameTimerRef.current !== null) {
+        window.clearTimeout(endgameTimerRef.current);
+        endgameTimerRef.current = null;
+      }
+
       const response = await revealLiftGridRequest();
-      const assigned = new Map(
-        response.solvedCells.map((cell) => [cellKey(cell.rowIndex, cell.columnIndex), cell]),
+      const previouslySolved = [...effectiveSolvedCells];
+      const previouslySolvedKeys = new Set(
+        previouslySolved.map((cell) => cellKey(cell.rowIndex, cell.columnIndex)),
+      );
+      const newlyRevealedCells = shuffleArray(
+        response.solvedCells.filter(
+          (cell) => !previouslySolvedKeys.has(cellKey(cell.rowIndex, cell.columnIndex)),
+        ),
+      );
+      const revealDelayMs = 120;
+
+      await Promise.all(
+        newlyRevealedCells.map(async (cell) => {
+          const exercise = exercisesById.get(cell.exerciseId);
+          if (exercise?.slug) {
+            await preloadExerciseMedia(exercise.slug);
+          }
+        }),
       );
 
       setShowSurrenderDialog(false);
@@ -1050,49 +1081,60 @@ export function LiftGridPage() {
       setQuery("");
       setSelectedExerciseId(null);
       setGameOutcome("lose");
-      setLocalSolvedCells(response.solvedCells);
-
-      const revealOrder = shuffleArray(pendingCells);
-      const revealDelayMs = 110;
-
-      revealOrder.forEach((cell, index) => {
-        window.setTimeout(() => {
-          const solvedCell = assigned.get(cell.key);
-          if (!solvedCell) {
-            return;
-          }
-
-          setLocalSolvedCells((current) => {
-            const existing = current ?? state.solvedCells;
-            if (existing.some((entry) => entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex)) {
-              return existing.map((entry) =>
-                entry.rowIndex === cell.rowIndex && entry.columnIndex === cell.columnIndex
-                  ? solvedCell
-                  : entry,
-              );
+      setLocalSolvedCells(previouslySolved);
+      setRevealedCellKeys([]);
+      setState((current) =>
+        current
+          ? {
+              ...current,
+              solvedCells: response.solvedCells,
+              completedCount: response.completedCount,
+              isComplete: response.isComplete,
+              isSurrendered: response.isSurrendered,
+              completedBeforeSurrender: response.completedBeforeSurrender,
+              solvedBeforeSurrenderCells: response.solvedBeforeSurrenderCells,
             }
-            return [...existing, solvedCell];
-          });
-          setRevealedCellKeys((current) => [...current, cell.key]);
+          : current,
+      );
+      writeTrackableModeCompletion("liftgrid", "lost", state.gameDate);
 
-          if (index === revealOrder.length - 1) {
-            window.setTimeout(() => {
-              setState((current) =>
-                current
-                  ? {
-                      ...current,
-                      solvedCells: response.solvedCells,
-                      completedCount: response.completedCount,
-                      isComplete: response.isComplete,
-                    }
-                  : current,
-              );
-              writeTrackableModeCompletion("liftgrid", response.isComplete, state.gameDate);
+      newlyRevealedCells.forEach((cell, index) => {
+        const timer = window.setTimeout(() => {
+          setLocalSolvedCells((current) => [...(current ?? previouslySolved), cell]);
+          setRevealedCellKeys((current) => [...current, cellKey(cell.rowIndex, cell.columnIndex)]);
+
+          if (index === newlyRevealedCells.length - 1) {
+            endgameTimerRef.current = window.setTimeout(() => {
+              setShowVictoryCard(true);
               setIsSurrendering(false);
-            }, 20);
+              window.requestAnimationFrame(() => {
+                victoryCardRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                  inline: "nearest",
+                });
+              });
+              endgameTimerRef.current = null;
+            }, 1000);
           }
         }, revealDelayMs * index);
+        revealTimerRefs.current.push(timer);
       });
+
+      if (newlyRevealedCells.length === 0) {
+        endgameTimerRef.current = window.setTimeout(() => {
+          setShowVictoryCard(true);
+          setIsSurrendering(false);
+          window.requestAnimationFrame(() => {
+            victoryCardRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+              inline: "nearest",
+            });
+          });
+          endgameTimerRef.current = null;
+        }, 1000);
+      }
     } catch (caughtError) {
       const message =
         caughtError instanceof Error ? caughtError.message : "Could not reveal the remaining grid";
@@ -1168,7 +1210,11 @@ export function LiftGridPage() {
     try {
       const nextState = await resetLiftGridRequest();
       setState(nextState);
-      writeTrackableModeCompletion("liftgrid", nextState.isComplete, nextState.gameDate);
+      writeTrackableModeCompletion(
+        "liftgrid",
+        nextState.isSurrendered ? "lost" : nextState.isComplete ? "won" : "none",
+        nextState.gameDate,
+      );
       setLocalSolvedCells(null);
       setRevealedCellKeys([]);
       setQuery("");
@@ -1220,7 +1266,7 @@ export function LiftGridPage() {
           <ModeIconNav
             activeMode="liftgrid"
             className="liftgrid-mode-nav"
-            completionOverrides={{ liftgrid: effectiveIsComplete }}
+            completionOverrides={{ liftgrid: didSurrender ? "lost" : effectiveIsComplete ? "won" : "none" }}
           />
           <div onClickCapture={handleTrackedClickCapture} className="liftgrid-panel__interaction-layer">
           {loading ? (

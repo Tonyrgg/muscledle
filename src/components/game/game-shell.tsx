@@ -853,7 +853,7 @@ export function GameShell({ initialState }: GameShellProps) {
     try {
       const state = await fetchTodayGameState();
       setGameState(state);
-      writeTrackableModeCompletion("daily", state.status !== "in_progress", state.gameDate);
+      writeTrackableModeCompletion("daily", state.status === "in_progress" ? "none" : state.status, state.gameDate);
       setDailyVictoryPhase(state.status === "won" ? "complete" : "idle");
       setShowDailyCelebration(false);
       return state;
@@ -1206,7 +1206,7 @@ export function GameShell({ initialState }: GameShellProps) {
           if (updated.status === "won") {
             setDailyVictoryPhase("revealing");
           }
-          writeTrackableModeCompletion("daily", updated.status !== "in_progress", updated.gameDate);
+          writeTrackableModeCompletion("daily", updated.status === "in_progress" ? "none" : updated.status, updated.gameDate);
           setGameState((current) => {
             if (!current || current.gameDate !== updated.gameDate) {
               return current;
@@ -1245,7 +1245,7 @@ export function GameShell({ initialState }: GameShellProps) {
       if (nextStatus === "won") {
         setDailyVictoryPhase("revealing");
       }
-      writeTrackableModeCompletion("daily", nextStatus !== "in_progress", gameState.gameDate);
+      writeTrackableModeCompletion("daily", nextStatus === "in_progress" ? "none" : nextStatus, gameState.gameDate);
 
       setGameState((current) => {
         if (!current || current.gameDate !== gameState.gameDate) {
@@ -1277,7 +1277,7 @@ export function GameShell({ initialState }: GameShellProps) {
               guessCount: Math.max(current.guessCount, synced.guessCount),
             };
           });
-          writeTrackableModeCompletion("daily", synced.status !== "in_progress", synced.gameDate);
+          writeTrackableModeCompletion("daily", synced.status === "in_progress" ? "none" : synced.status, synced.gameDate);
           refreshStatsAfterDailySubmit();
           void loadDailyTracker();
         })
@@ -1728,7 +1728,7 @@ export function GameShell({ initialState }: GameShellProps) {
           <header className="game-hero">
             <ModeIconNav
               activeMode="daily"
-              completionOverrides={{ daily: Boolean(gameState && gameState.status !== "in_progress") }}
+              completionOverrides={{ daily: !gameState ? "none" : gameState.status === "in_progress" ? "none" : gameState.status }}
             />
             {mode === "daily" ? (
               <>

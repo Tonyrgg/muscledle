@@ -1,4 +1,8 @@
-import type { TrackableModeCompletions, TrackableModeKey } from "@/components/modes/use-trackable-mode-completions";
+import type {
+  TrackableModeCompletionState,
+  TrackableModeCompletions,
+  TrackableModeKey,
+} from "@/components/modes/use-trackable-mode-completions";
 
 const STORAGE_PREFIX = "liftdle:mode-completion";
 
@@ -23,7 +27,7 @@ function getRomeDateString(now = new Date()) {
 
 type CachedModeCompletion = {
   date: string;
-  completed: boolean;
+  outcome: TrackableModeCompletionState;
 };
 
 function normalizeGameDate(gameDate?: string | null) {
@@ -41,13 +45,24 @@ function readModeCompletion(mode: TrackableModeKey): CachedModeCompletion | null
   try {
     const raw = window.localStorage.getItem(getStorageKey(mode));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<CachedModeCompletion>;
-    if (typeof parsed?.date !== "string" || typeof parsed?.completed !== "boolean") {
+    const parsed = JSON.parse(raw) as Partial<CachedModeCompletion> & { completed?: boolean };
+    if (typeof parsed?.date !== "string") {
+      return null;
+    }
+    const outcome =
+      parsed?.outcome === "won" || parsed?.outcome === "lost" || parsed?.outcome === "none"
+        ? parsed.outcome
+        : typeof parsed?.completed === "boolean"
+          ? parsed.completed
+            ? "won"
+            : "none"
+          : null;
+    if (!outcome) {
       return null;
     }
     return {
       date: parsed.date,
-      completed: parsed.completed,
+      outcome,
     };
   } catch {
     return null;
@@ -61,21 +76,21 @@ export function readTrackableModeCompletionsSnapshot(): TrackableModeCompletions
   const liftgrid = readModeCompletion("liftgrid");
 
   return {
-    daily: daily?.date === today ? daily.completed : false,
-    liftgrid: liftgrid?.date === today ? liftgrid.completed : false,
+    daily: daily?.date === today ? daily.outcome : "none",
+    liftgrid: liftgrid?.date === today ? liftgrid.outcome : "none",
   };
 }
 
 export function writeTrackableModeCompletion(
   mode: TrackableModeKey,
-  completed: boolean,
+  outcome: TrackableModeCompletionState,
   gameDate?: string | null,
 ) {
   if (typeof window === "undefined") return;
 
   try {
     const date = normalizeGameDate(gameDate);
-    const payload: CachedModeCompletion = { date, completed };
+    const payload: CachedModeCompletion = { date, outcome };
     window.localStorage.setItem(getStorageKey(mode), JSON.stringify(payload));
   } catch {
     // Ignore storage failures.

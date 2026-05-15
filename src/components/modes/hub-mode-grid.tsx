@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ModeIcon } from "@/components/modes/mode-icon";
 import {
   useTrackableModeCompletions,
+  type TrackableModeCompletionState,
   type TrackableModeKey,
 } from "@/components/modes/use-trackable-mode-completions";
 import type { GameModeKey } from "@/lib/game-modes";
@@ -73,14 +74,24 @@ const secondaryHubCards: readonly HubCardConfig[] = [
   },
 ] as const;
 
-function CompletionCheck({ className }: { className: string }) {
+function CompletionCheck({ className, outcome }: { className: string; outcome: TrackableModeCompletionState }) {
   return (
-    <span className={className} aria-hidden="true">
+    <span className={`${className} ${outcome === "lost" ? `${className}--lost` : ""}`.trim()} aria-hidden="true">
       <svg viewBox="0 0 16 16" className={`${className}__icon`}>
-        <path
-          d="M6.55 10.95 3.7 8.1l-1.1 1.1 3.95 3.95 6.85-6.85-1.1-1.1z"
-          fill="currentColor"
-        />
+        {outcome === "lost" ? (
+          <path
+            d="M4.15 4.15 8 8m0 0 3.85 3.85M8 8l3.85-3.85M8 8 4.15 11.85"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        ) : (
+          <path
+            d="M6.55 10.95 3.7 8.1l-1.1 1.1 3.95 3.95 6.85-6.85-1.1-1.1z"
+            fill="currentColor"
+          />
+        )}
       </svg>
     </span>
   );
@@ -96,8 +107,8 @@ function HubCard({
   disabled,
   className,
   ariaLabel,
-  completed,
-}: HubCardConfig & { completed: boolean }) {
+  outcome,
+}: HubCardConfig & { outcome: TrackableModeCompletionState }) {
   const cardInner = (
     <>
       <div className="hub-card__topline">
@@ -106,7 +117,7 @@ function HubCard({
         </span>
         <span className="hub-card__status-cluster">
           {status ? <span className="hub-card__pill">{status}</span> : null}
-          {completed ? <CompletionCheck className="hub-card__check" /> : null}
+          {outcome !== "none" ? <CompletionCheck className="hub-card__check" outcome={outcome} /> : null}
         </span>
       </div>
       <div className="hub-card__visual" aria-hidden="true" />
@@ -121,7 +132,7 @@ function HubCard({
     </>
   );
 
-  const completedClass = completed && !disabled ? "hub-card--completed" : "";
+  const completedClass = outcome !== "none" && !disabled ? "hub-card--completed" : "";
   const nextClassName = `hub-card ${className} ${completedClass}`.trim();
 
   if (disabled || !href) {
@@ -158,13 +169,13 @@ export function HubModeGrid() {
           <HubCard
             key={card.title}
             {...card}
-            completed={card.trackableMode ? completions[card.trackableMode] : false}
+            outcome={card.trackableMode ? completions[card.trackableMode] : "none"}
           />
         ))}
       </div>
       <div className="hub-grid__row hub-grid__row--secondary">
         {secondaryHubCards.map((card) => (
-          <HubCard key={card.title} {...card} completed={false} />
+          <HubCard key={card.title} {...card} outcome="none" />
         ))}
       </div>
     </section>

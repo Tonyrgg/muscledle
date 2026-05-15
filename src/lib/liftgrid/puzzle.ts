@@ -51,7 +51,7 @@ const DAY_ZERO = "2026-01-01";
 const DEFAULT_SEED = "Liftdle-liftgrid-v1";
 const EQUIPMENT_LABELS: Record<string, string> = {
   barbell: "Barbell",
-  dumbbells: "Dumbbell",
+  dumbbell: "Dumbbell",
   bodyweight: "Bodyweight",
   machine: "Machine",
   cable: "Cable",
@@ -64,8 +64,34 @@ export const DEFAULT_LIFTGRID_MODE: LiftGridModeConfig = {
   rowCategoryKey: "muscle_group",
   columnCategoryKey: "equipment",
   rowPool: ["chest", "back", "legs", "shoulders", "arms", "core"],
-  columnPool: ["barbell", "dumbbells", "bodyweight", "machine", "cable", "kettlebell"],
+  columnPool: ["barbell", "dumbbell", "bodyweight", "machine", "cable", "kettlebell"],
 };
+
+export function normalizeLiftGridCategoryValue(
+  categoryKey: LiftGridCategoryKey,
+  value: string | null | undefined,
+): string | null {
+  if (!value) return null;
+
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+  if (categoryKey !== "equipment") {
+    return normalized;
+  }
+
+  if (normalized === "dumbbells" || normalized === "dumbbell") return "dumbbell";
+  if (normalized === "barbells" || normalized === "barbell") return "barbell";
+  if (normalized === "kettlebells" || normalized === "kettlebell") return "kettlebell";
+  if (normalized === "cables" || normalized === "cable") return "cable";
+  if (normalized === "machines" || normalized === "machine") return "machine";
+  if (normalized === "body weight" || normalized === "bodyweight") return "bodyweight";
+
+  return normalized.replace(/\s+/g, "");
+}
 
 const validGridCache = new Map<string, Array<{ rows: string[]; columns: string[] }>>();
 
@@ -134,8 +160,8 @@ function getExerciseCategoryValues(
       if (!value) return;
       for (const part of value
         .split(/[\/,&|]+/g)
-        .map((entry) => entry.trim().toLowerCase())
-        .filter(Boolean)) {
+        .map((entry) => normalizeLiftGridCategoryValue(categoryKey, entry))
+        .filter((entry): entry is string => Boolean(entry))) {
         values.add(part);
       }
     };
@@ -149,7 +175,10 @@ function getExerciseCategoryValues(
   }
 
   const value = exercise[categoryKey];
-  return Array.isArray(value) ? value : [value];
+  const values = Array.isArray(value) ? value : [value];
+  return values
+    .map((entry) => normalizeLiftGridCategoryValue(categoryKey, String(entry)))
+    .filter((entry): entry is string => Boolean(entry));
 }
 
 function matchesCategory(

@@ -24,6 +24,9 @@ export type LiftGridPublicState = {
   completedCount: number;
   totalCells: number;
   isComplete: boolean;
+  isSurrendered: boolean;
+  completedBeforeSurrender: number | null;
+  solvedBeforeSurrenderCells: LiftGridSolvedCell[];
 };
 
 export type LiftGridGuessFailureReason =
@@ -49,6 +52,9 @@ export type LiftGridRevealResponse = {
   completedCount: number;
   totalCells: number;
   isComplete: boolean;
+  isSurrendered: boolean;
+  completedBeforeSurrender: number;
+  solvedBeforeSurrenderCells: LiftGridSolvedCell[];
 };
 
 export type LiftGridFeedbackChoice = "yes_make_it" | "maybe" | "not_for_me";

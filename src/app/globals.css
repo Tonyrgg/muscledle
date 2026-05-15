@@ -5973,7 +5973,7 @@ button.game-quick-tools__item:active {
 
 .liftgrid-board__header span {
   color: #f8efe8;
-  font-size: clamp(0.72rem, calc(var(--liftgrid-cell-size) * 0.148), 0.98rem);
+  font-size: clamp(0.72rem, calc(var(--liftgrid-cell-size) * 0.148), 0.8rem);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -7875,6 +7875,13 @@ button.game-quick-tools__item:active {
   transform: none;
 }
 
+.hub-card__check--lost {
+  border-color: rgba(176, 56, 56, 0.55);
+  background: rgba(176, 56, 56, 0.18);
+  color: #ff8f8f;
+  box-shadow: 0 0 0 1px rgba(176, 56, 56, 0.08);
+}
+
 .hub-card__check__icon {
   width: 0.92rem;
   height: 0.92rem;
@@ -8981,6 +8988,13 @@ button.game-quick-tools__item:active {
   color: #8de2aa;
   box-shadow: 0 0 0 1px rgba(47, 142, 82, 0.08);
   transform: none;
+}
+
+.mode-icon-nav__check--lost {
+  border-color: rgba(176, 56, 56, 0.55);
+  background: rgba(176, 56, 56, 0.72);
+  color: #ffd0d0;
+  box-shadow: 0 0 0 1px rgba(176, 56, 56, 0.08);
 }
 
 .mode-icon-nav__check-icon {
