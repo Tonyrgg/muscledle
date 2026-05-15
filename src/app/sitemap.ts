@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { listLiveExerciseSeoEntries } from "@/lib/exercises/catalog";
 
 const SITE_URL = "https://liftdle.com";
-const LAST_MODIFIED = new Date("2026-04-20T00:00:00.000Z");
+const LAST_MODIFIED = new Date("2026-05-15T00:00:00.000Z");
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
@@ -13,56 +13,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${SITE_URL}/archive`,
+      url: `${SITE_URL}/daily`,
       lastModified: LAST_MODIFIED,
       changeFrequency: "daily",
-      priority: 0.8,
+      priority: 0.95,
+    },
+    {
+      url: `${SITE_URL}/liftgrid`,
+      lastModified: LAST_MODIFIED,
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/about`,
+      lastModified: LAST_MODIFIED,
+      changeFrequency: "monthly",
+      priority: 0.85,
     },
     {
       url: `${SITE_URL}/how-to-play`,
       lastModified: LAST_MODIFIED,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
+    {
+      url: `${SITE_URL}/archive`,
+      lastModified: LAST_MODIFIED,
       changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${SITE_URL}/daily`,
-      lastModified: LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/marathon`,
-      lastModified: LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/weightGuess`,
-      lastModified: LAST_MODIFIED,
-      changeFrequency: "daily",
-      priority: 0.8,
+      priority: 0.75,
     },
     {
       url: `${SITE_URL}/privacy`,
       lastModified: LAST_MODIFIED,
       changeFrequency: "yearly",
-      priority: 0.4,
+      priority: 0.25,
     },
     {
       url: `${SITE_URL}/cookies`,
       lastModified: LAST_MODIFIED,
       changeFrequency: "yearly",
-      priority: 0.4,
+      priority: 0.25,
     },
   ];
 
   try {
     const exercises = await listLiveExerciseSeoEntries();
+
     const exerciseEntries: MetadataRoute.Sitemap = exercises.map((exercise) => ({
       url: `${SITE_URL}/exercise/${exercise.slug}`,
       lastModified: LAST_MODIFIED,
-      changeFrequency: "weekly",
-      priority: 0.7,
+      changeFrequency: "monthly",
+      priority: 0.8,
     }));
 
     return [...staticEntries, ...exerciseEntries];
