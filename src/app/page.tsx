@@ -4,9 +4,9 @@ import { HubModeGrid } from "@/components/modes/hub-mode-grid";
 
 const SITE_URL = "https://liftdle.com";
 const OG_IMAGE_PATH = "/og-image.png";
-const META_TITLE = "Liftdle Hub - Daily, LiftGrid, and WeightGuess";
+const META_TITLE = "Liftdle - Daily Fitness Guessing Game & Gym Wordle ";
 const SITE_DESCRIPTION =
-  "Enter the Liftdle hub and choose between the daily exercise challenge, LiftGrid, and WeightGuess.";
+  "Play Liftdle, the daily fitness guessing game where you guess gym exercises using clues like muscle group, equipment, movement pattern, reps, and training goal.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -373,12 +373,6 @@ export default function AboutPage() {
           Liftdle as a quick daily test of exercise knowledge.
         </p>
 
-        <h3>Can I play old Liftdle exercises?</h3>
-        <p>
-          Yes. The archive lets you review previous Liftdle exercises and their
-          attributes.
-        </p>
-
         <div className="legal-page__cta-wrap">
           <p className="legal-page__line legal-page__line--cta">
             Ready to test your gym IQ?
